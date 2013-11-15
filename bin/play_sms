@@ -1,0 +1,9 @@
+#!/bin/bash
+
+/home/pi/bin/midi_off
+
+while true; do
+  sudo nice --adjustment=-20 python /home/pi/py/synchronized_lights.py --playlist=/home/pi/music/halloween/.playlist
+done
+
+/home/pi/bin/lights_off

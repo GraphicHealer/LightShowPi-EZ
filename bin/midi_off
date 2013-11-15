@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Kill lightorgan
+sudo killall lightorgan
+
+# Stop timidity
+sudo /etc/init.d/timidity stop
+

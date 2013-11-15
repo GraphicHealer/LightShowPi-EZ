@@ -1,0 +1,17 @@
+#!/bin/bash
+
+midi_off
+
+for f in $@
+do
+  filename=$(basename "$f")
+  extension="${f##*.}"
+  if [ "$extension" = "mid" ]
+  then
+    play_midi "$f"
+  else
+    sudo python /home/pi/py/synchronized_lights.py --file="$f"
+  fi
+done
+
+lights_off

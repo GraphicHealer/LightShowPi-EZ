@@ -1,0 +1,12 @@
+#!/bin/bash
+
+midi_on
+
+for f in $@
+do
+  echo "Playing file: $f"
+  aplaymidi --port=14 "$f"
+done
+
+midi_off
+lights_off

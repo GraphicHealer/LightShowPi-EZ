@@ -1,0 +1,6 @@
+#!/bin/bash
+
+while true; do
+  sudo nice --adjustment=10 python /home/pi/py/check_sms.py --playlist=/home/pi/music/halloween/.playlist
+  sleep 15
+done

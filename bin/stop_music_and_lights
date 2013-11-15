@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Ensure that all the music and lights are off
+
+sudo killall play_sms
+sudo killall check_sms
+sudo killall play_midi
+sudo killall play
+sudo killall python
+
+/home/pi/bin/midi_off
+/home/pi/bin/lights_off
