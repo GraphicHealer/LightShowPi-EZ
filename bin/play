@@ -1,4 +1,14 @@
 #!/bin/bash
+#
+# Play audio files with synchronized lights.  Supports
+# midi, mp3, wav, ogg, wma, etc...
+#
+# Sample Usage:
+#
+# play /home/pi/music/*
+# play /home/pi/music/jingle_bells.mp3
+#
+# Author: Todd Giles (todd.giles@gmail.com)
 
 midi_off
 

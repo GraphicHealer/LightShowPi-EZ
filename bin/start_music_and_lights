@@ -1,7 +1,9 @@
 #!/bin/bash
-
+#
 # Start the music and lights show (killing any existing instances first)
-/home/pi/bin/stop_music_and_lights
+#
+# Author: Todd Giles (todd.giles@gmail.com)
 
+/home/pi/bin/stop_music_and_lights
 /home/pi/bin/play_sms &
 /home/pi/bin/check_sms &

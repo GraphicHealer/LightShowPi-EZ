@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# Turn off all midi playback / support
+#
+# Author: Todd Giles (todd.giles@gmail.com)
 
 # Kill lightorgan
 sudo killall lightorgan

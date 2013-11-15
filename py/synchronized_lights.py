@@ -1,30 +1,78 @@
 #!/usr/bin/env python
+#
+# Author: Todd Giles (todd.giles@gmail.com)
+#
+# Feel free to use, just send any enhancements back my way ;)
 
-from struct import unpack
-import alsaaudio as aa
-import os
-import numpy as np
-import wave
-import RPi.GPIO as GPIO
+"""Play any audio file and synchronize lights to the music
+
+When executed, this script will play an audio file, as well as turn on and off 8 channels
+of lights to the music (via the first 8 GPIO channels on the Rasberry Pi), based upon 
+music it is playing. Many types of audio files are supported (see decoder.py below), but 
+it has only been tested with wav and mp3 at the time of this writing.
+
+The timing of the lights turning on and off are controlled based upon the frequency response
+of the music being played.  A short segment of the music is analyzed via FFT to get the 
+frequency response across 8 channels in the audio range.  Each light channel is then turned
+on or off based upon whether the amplitude of the frequency response in the corresponding 
+channel has crossed a dynamic threshold.
+
+The threshold for each channel is "dynamic" in that it is adjusted upwards and downwards 
+during the song playback based upon the frequency response amplitude of the song. This ensures
+that soft songs, or even soft portions of songs will still turn all 8 channels on and off
+during the song.
+
+FFT caculation is quite CPU intensive and can adversely affect playback of songs (especially if
+attempting to decode the song as well, as is the case for an mp3).  For this reason, the timing
+values of the lights turning on and off is cached after it is calculated upon the first time a
+new song is played.  The values are cached in a gzip'd text file in the same location as the
+song itself.  Subsequent requests to play the same song will use the cached information and not
+recompute the FFT, thus reducing CPU utilization dramatically and allowing for clear music 
+playback of all audio file types.
+
+Sample usage:
+
+sudo python synchronized_lights.py --playlist=/home/pi/music/.playlist
+sudo python synchronized_lights.py --file=/home/pi/music/jingle_bells.mp3
+
+Third party dependencies:
+
+alsaaudio: for audio output - http://pyalsaaudio.sourceforge.net/
+decoder.py: decoding mp3, ogg, wma, and other audio files - https://pypi.python.org/pypi/decoder.py/1.5XB
+numpy: for FFT calcuation - http://www.numpy.org/
+raspberry-gpio-python: control GPIO output - https://code.google.com/p/raspberry-gpio-python/
+"""
+
 import argparse 
 import csv
-import sys
-import random
 import fcntl
-import decoder
 import gzip
+import os
+import random
+from struct import unpack
+import sys
 import time
+import wave
+
+import alsaaudio as aa
+import decoder
+import numpy as np
+import RPi.GPIO as GPIO
 
 import log as l
 
 parser = argparse.ArgumentParser()
 filegroup = parser.add_mutually_exclusive_group()
-filegroup.add_argument('--playlist', help='playlist to pick song from')
-filegroup.add_argument('--file', help='music file to play (overrides playlist)')
-parser.add_argument('-v', '--verbosity', type=int, choices=[0, 1, 2], default=1,
-                    help='change output verbosity')
+filegroup.add_argument('--playlist', help='Playlist to choose song from (see check_sms for details on format)')
+filegroup.add_argument('--file', help='music file to play (required if no playlist designated)')
+parser.add_argument('-v', '--verbosity', type=int, choices=[0, 1, 2], default=1, help='change output verbosity')
 args = parser.parse_args()
 l.verbosity = args.verbosity
+
+# Make sure one of --playlist or --file was specified
+if args.file == None and args.playlist == None:
+    print "One of --playlist or --file must be specified"
+    sys.exit()
 
 # Determine the file to play
 file = args.file

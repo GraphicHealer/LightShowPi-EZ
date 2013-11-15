@@ -15,18 +15,27 @@ When a song is voted for, the playlist file will be updated with the sender's ce
 phone number to indicate it has received a vote from that caller.  This also enforces
 only a single vote per phone number per song (until that song is played).
 
-pygooglevoice: http://sphinxdoc.github.io/pygooglevoice/
-Beuatiful Soup: http://www.crummy.com/software/BeautifulSoup/
-"""
+Sample usage:
 
-from googlevoice import Voice
-from bs4 import BeautifulSoup
+sudo check_sms.py --playlist=/home/pi/music/.playlist
+
+Third party dependencies:
+
+pygooglevoice: http://sphinxdoc.github.io/pygooglevoice/
+Beautiful Soup: http://www.crummy.com/software/BeautifulSoup/
+
+Note, I used the following version of pygooglevoice w/auth fix:
+https://code.google.com/r/bwpayne-pygooglevoice-auth-fix/
+"""
 
 import argparse 
 import csv
 import fcntl
 import sys
 import time
+
+from googlevoice import Voice
+from bs4 import BeautifulSoup
 
 import log as l
 

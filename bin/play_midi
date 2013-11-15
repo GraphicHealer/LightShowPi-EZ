@@ -1,4 +1,14 @@
 #!/bin/bash
+#
+# Play midi files with synchronized lights!
+#
+# Sample Usage:
+#
+#   play_midi /home/pi/music/midi/jingle_bells.mid
+#   play_midi /home/pi/music/midi/*
+#
+# Author: Todd Giles (todd.giles@gmail.com)
+#
 
 midi_on
 

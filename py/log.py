@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+#
+# Author: Todd Giles (todd.giles@gmail.com)
+#
+# Feel free to use, but do send any improvements back to me - thanks!
+
 
 """Provide simple logging support for scripts"""
 

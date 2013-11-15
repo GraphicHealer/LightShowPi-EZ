@@ -1,6 +1,8 @@
 #!/bin/bash
-
+#
 # Ensure that all the music and lights are off
+#
+# Author: Todd Giles (todd.giles@gmail.com)
 
 sudo killall play_sms
 sudo killall check_sms

@@ -1,8 +1,16 @@
 #!/bin/bash
+#
+# Turn on and setup everything for midi playback with lights.
+#
+# Third party dependencies:
+#   lightorgan - https://code.google.com/p/pi-lightorgan/
+#   timidity - http://timidity.sourceforge.net/
+#
+# Author: Todd Giles
 
 # Start lightorgan
 sudo killall lightorgan
-sudo ~/svn/pi-lightorgan-read-only/lightorgan
+sudo /home/pi/svn/pi-lightorgan-read-only/lightorgan
 
 # Start timidity
 sudo /etc/init.d/timidity start

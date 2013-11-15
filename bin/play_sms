@@ -1,4 +1,12 @@
 #!/bin/bash
+#
+# Plays audio files from the playlist specified.
+#
+# If check_sms is also running, then any votes received from SMS messages
+# will affect the next song to be played.  Otherwise a random song from
+# the playlist will be played.
+#
+# Author: Todd Giles (todd.giles@gmail.com)
 
 /home/pi/bin/midi_off
 
