@@ -3,6 +3,13 @@
 # Author: Todd Giles (todd.giles@gmail.com)
 #
 # Feel free to use, just send any enhancements back my way ;)
+#
+# Modifications By: Chris Usey (chris.usey@gmail.com)
+# - Adapted to add argument --activelowmode to allow use of activelow devices such as relays
+# - Adapted to use wiringpi2 for easier access of port expanders
+# - Adapted to use 16 channels via MCP23017 Port Expander
+# - Adapted to add argument --preshowpause to allow user to present show every "n" minutes instead of having a continuous show
+# - Adapted to add argument --readcache to allow user to specify if the cache should be read or not, useful for debugging
 
 """Play any audio file and synchronize lights to the music
 
@@ -57,7 +64,7 @@ import wave
 import alsaaudio as aa
 import decoder
 import numpy as np
-import RPi.GPIO as GPIO
+import wiringpi2 as wiringpi
 
 import log as l
 
@@ -66,6 +73,10 @@ filegroup = parser.add_mutually_exclusive_group()
 filegroup.add_argument('--playlist', help='Playlist to choose song from (see check_sms for details on format)')
 filegroup.add_argument('--file', help='music file to play (required if no playlist designated)')
 parser.add_argument('-v', '--verbosity', type=int, choices=[0, 1, 2], default=1, help='change output verbosity')
+parser.add_argument('--activelowmode', type=int, default=0, help='turn active low mode on and off. Default: false')
+parser.add_argument('--readcache', type=int, default=1, help='read from the cache file. Default: true')
+parser.add_argument('--preshowpause', type=int, default=0, help='amount of time in minutes to show lights before show starts')
+
 args = parser.parse_args()
 l.verbosity = args.verbosity
 
@@ -73,6 +84,43 @@ l.verbosity = args.verbosity
 if args.file == None and args.playlist == None:
     print "One of --playlist or --file must be specified"
     sys.exit()
+
+# Initialize GPIO
+GPIOACTIVE = 1
+GPIOINACTIVE = 0
+GPIOASINPUT = 0
+GPIOASOUTPUT = 1
+pin_base = 65
+i2c_addr = 0x20
+gpio = [65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80]
+wiringpi.wiringPiSetup()
+wiringpi.mcp23017Setup(pin_base,i2c_addr)
+
+# If activelowmode is set to true switch GPIOACTIVE and GPIOINACTIVE
+if (bool(args.activelowmode)):
+  GPIOACTIVE=0
+  GPIOINACTIVE=1
+
+for i in gpio:
+    wiringpi.pinMode(i,GPIOASOUTPUT)
+
+def TurnOffLights():
+    for i in range(16):
+        TurnOffLight(i)
+
+def TurnOnLights():
+    for i in range(16):
+        TurnOnLight(i)
+
+def TurnOffLight(i):
+    wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
+
+def TurnOnLight(i):
+    wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
+
+# Pre show pause (show our lights for n minutes before show starts)
+TurnOnLights()
+time.sleep(args.preshowpause)
 
 # Determine the file to play
 file = args.file
@@ -116,34 +164,16 @@ if args.playlist != None:
     else:
         file = songs[random.randint(0, len(songs)-1)][1]
 
-# Initialize GPIO
-GPIO.setwarnings(False)
-GPIO.cleanup()
-GPIO.setmode(GPIO.BOARD)
 
-gpio = [11,12,13,15,16,18,22,7]
-for i in gpio:
-    GPIO.setup(i, GPIO.OUT)
-
-def TurnOffLights():
-    for i in range(8):
-        TurnOffLight(i)
-
-def TurnOffLight(i):
-    GPIO.output(gpio[i], GPIO.LOW)
-
-def TurnOnLight(i):
-    GPIO.output(gpio[i], GPIO.HIGH)
-
-# Initialize Lights
+# Get ready to start the show ( Dim the lights for a few seconds )
 TurnOffLights()
+time.sleep(5)
 
 # Initialize FFT stats
-matrix    = [0,0,0,0,0,0,0,0]
+matrix    = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 power     = []
-weighting = [2,2,4,4,8,16,32,16] # Power of 2
-limit     = [5,5,5,5,5,5,5,5]
-offct     = [0,0,0,0,0,0,0,0]
+limit     = [5,5,5,5,5,5,5,5,0,5,5,5,5,5,5,5]
+offct     = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
 # Set up audio
 if file.endswith('.wav'):
@@ -169,13 +199,13 @@ cache = []
 cache_found = False
 cache_filename = os.path.dirname(file) + "/." + os.path.basename(file) + ".sync.gz"
 try:
-   with gzip.open(cache_filename, 'rb') as f:
-      cachefile = csv.reader(f, delimiter=',')
-      for row in cachefile:
-         cache.append(row)
-      cache_found = True
+  with gzip.open(cache_filename, 'rb') as f:
+    cachefile = csv.reader(f, delimiter=',')
+    for row in cachefile:
+      cache.append(row)
+    cache_found = True
 except IOError:
-   l.log("Cached sync data file not found: '" + cache_filename + ".", 1)
+  l.log("Cached sync data file not found: '" + cache_filename + ".", 1)
 
 # Return power array index corresponding to a particular frequency
 def piff(val):
@@ -186,10 +216,13 @@ def calculate_levels(data, chunk, sample_rate):
    # Convert raw data (ASCII string) to numpy array
    data = unpack("%dh"%(len(data)/2),data)
    data = np.array(data, dtype='h')
+   
    # Apply FFT - real data
    fourier=np.fft.rfft(data)
+   
    # Remove last element in array to make it the same size as chunk
    fourier=np.delete(fourier,len(fourier)-1)
+   
    # Find average 'amplitude' for specific frequency ranges in Hz
    power = np.abs(fourier)   
    matrix[0]= np.mean(power[piff(0)    :piff(156):1])
@@ -200,10 +233,17 @@ def calculate_levels(data, chunk, sample_rate):
    matrix[5]= np.mean(power[piff(2500) :piff(5000):1])
    matrix[6]= np.mean(power[piff(5000) :piff(10000):1])
    matrix[7]= np.mean(power[piff(10000):piff(15000):1])
+   matrix[8]= np.mean(power[piff(10000):piff(15000):1])
+   matrix[9]= np.mean(power[piff(5000)  :piff(10000):1])
+   matrix[10]= np.mean(power[piff(2500)  :piff(5000):1])
+   matrix[11]= np.mean(power[piff(1250)  :piff(2500):1])
+   matrix[12]= np.mean(power[piff(625) :piff(1250):1])
+   matrix[13]= np.mean(power[piff(313) :piff(625):1])
+   matrix[14]= np.mean(power[piff(156) :piff(313):1])
+   matrix[15]= np.mean(power[piff(0):piff(156):1])
+
    # Tidy up column values for output to lights
-   matrix=np.divide(np.multiply(matrix,weighting),100000)
-   # Set floor at 0 and ceiling at 100 for lights
-   matrix=matrix.clip(0,100) 
+   matrix=np.divide(matrix,100000)
    return matrix
 
 # Process audio file
@@ -213,11 +253,11 @@ while data!='':
    output.write(data)
 
    # Control lights with cached timing values if they exist
-   if cache_found:
+   if cache_found and args.readcache:
       if row < len(cache):
          entry = cache[row]
-         for i in range (0,8):
-            if int(entry[i]):
+         for i in range (0,16):
+            if ((int(entry[i])) or (i == 8)): # KEEP 8 ON ALL THE TIME
                TurnOnLight(i)
             else:
                TurnOffLight(i)
@@ -228,19 +268,20 @@ while data!='':
    else:
       entry = []
       matrix=calculate_levels(data, chunk, sample_rate)
-      for i in range (0,8):
-         if limit[i] < matrix[i] * 0.6:
-            limit[i] = limit[i] * 1.2
+      for i in range (0,16):
+         if limit[i] < matrix[i] * 0.725: # old value 0.6
+            limit[i] = limit[i] * 1.35 # old value 1.2
             l.log("++++ channel: {0}; limit: {1:.3f}".format(i, limit[i]), 2)
+         # Amplitude has reached threshold
          if matrix[i] > limit[i]:
             TurnOnLight(i)
             offct[i] = 0
             entry.append('1')
-         else:
+         else: # Amplitude did not reach threshold
             offct[i] = offct[i]+1
             if offct[i] > 10:
                offct[i] = 0
-               limit[i] = limit[i] * 0.8
+               limit[i] = limit[i] * 0.925 # old value 0.8
             l.log("---- channel: {0}; limit: {1:.3f}".format(i, limit[i]), 2)
             TurnOffLight(i)
             entry.append('0')
