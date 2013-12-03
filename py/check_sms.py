@@ -5,6 +5,10 @@
 # Feel free to use as you'd like, but I'd love to hear back from you on any
 # improvements, changes, etc...
 
+# Modifications by: Chris Usey (chris.usey@gmail.com)
+# - Volume Change via SMS - A user in the admins list will be able to request a change in the volume by sending an sms
+#   Text "Volume" for help. Make sure to adjust the #ADMIN SETTINGS
+
 """Check SMS messages from a Google Voice account
 
 When executed, this script will check all the SMS messages from a Google Voice account
@@ -33,11 +37,16 @@ import csv
 import fcntl
 import sys
 import time
+import subprocess
 
 from googlevoice import Voice
 from bs4 import BeautifulSoup
 
 import log as l
+
+# ADMIN SETTINGS
+admins=[]    # Place any numbers in the following list to allow them to use admin features. Pay Attention to format "+15555555555:"
+volscript='/home/pi/bin/vol'    # location of the volume script
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--playlist', required=True, help='filename with the song playlist, one song per line in the format: <song name><tab><path to song>')
@@ -69,19 +78,19 @@ def extractsms(htmlsms) :
     Output is a list of dictionaries, one per message.
     """
     msgitems = []
-    tree = BeautifulSoup(htmlsms)			# parse HTML into tree
+    tree = BeautifulSoup(htmlsms)           # parse HTML into tree
     conversations = tree("div",attrs={"id" : True, "class" : "gc-message-unread"},recursive=False)
     for conversation in conversations :
-        #	For each conversation, extract each row, which is one SMS message.
+        #   For each conversation, extract each row, which is one SMS message.
         rows = conversation(attrs={"class" : "gc-message-sms-row"})
-        for row in rows :								# for all rows
-            #	For each row, which is one message, extract all the fields.
-            msgitem = {"id" : conversation["id"]}		# tag this message with conversation ID
+        for row in rows :                               # for all rows
+            #   For each row, which is one message, extract all the fields.
+            msgitem = {"id" : conversation["id"]}       # tag this message with conversation ID
             spans = row("span",attrs={"class" : True}, recursive=False)
-            for span in spans :							# for all spans in row
+            for span in spans :                         # for all spans in row
                 cl = span['class'][0].replace('gc-message-sms-', '')
-                msgitem[cl] = (" ".join(span.findAll(text=True))).strip()	# put text in dict
-            msgitems.append(msgitem)					# add msg dictionary to list
+                msgitem[cl] = (" ".join(span.findAll(text=True))).strip()   # put text in dict
+            msgitems.append(msgitem)                    # add msg dictionary to list
     return msgitems
 
 # Load playlist from file, notifying users of any of their requests that have now played
@@ -135,6 +144,44 @@ for msg in extractsms(voice.sms.html):
             voice.send_sms(msg['from'], header + division)
             header = ''
             time.sleep(5)
+    # ADMIN ACTIONS
+    # Do we want to change the volume?
+    elif (('volume' in msg['text'].lower()[0:6]) and (msg['from'] in admins)):
+        volmessage = msg['text'][6:7]
+        if ('-' in volmessage): 
+            l.log('Volume Down Request: ' + msg['from'])
+            output, error = subprocess.Popen(volscript + " -", shell=True,stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
+            if error:
+                l.log('Volume Down Request Failed: ' + str(error))
+            else:
+                l.log('Volume decreased to: ' + str(output))
+                voice.send_sms(msg['from'],'Volume decreased to: ' + str(output))
+        elif ('+' in volmessage):
+            l.log('Volume Increase Request: ' + msg['from'])
+            output, error = subprocess.Popen(volscript + " +", shell=True,stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
+            if error:
+                l.log('Volume Increase Request Failed: ' + str(error))
+            else:
+                l.log('Volume increased to: ' + str(output))
+                voice.send_sms(msg['from'],'Volume increased to: ' + str(output))
+        else:
+            try:
+                volume = int(msg['text'][6:])
+                l.log('Volume Change To "' + str(volume) + '" Request: ' + msg['from'])
+                if (volume >= 0 and volume < 100):
+                    l.log('Volume Down Request: ' + msg['from'])
+                    output, error = subprocess.Popen(volscript + " " + str(volume), shell=True,stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
+                    if error:
+                        l.log('Volume Set Request Failed: ' + str(error))
+                    else:
+                        l.log('Volume set to: ' + str(output))
+                        voice.send_sms(msg['from'],'Volume set to: ' + str(output))
+                else:
+                    l.log('Volume Change Value Invalid: "' + str(volume) + '"')
+                    voice.send_sms(msg['from'],'Ivalid Volume: Volume must be a value from 0-99')
+            except ValueError:
+                l.log('Volume Change Not Understood: "' + volmessage + '"')
+                voice.send_sms(msg['from'],'Volume Help: \n - "volume-" to decrease \n - "volume+" to increase \n - "volume##" to set volume to ##')
     else:
         l.log('Unknown request: "' + msg['text'] + '" from ' + msg['from'])
         voice.send_sms(msg['from'], 'Hrm, not sure what you want.  Try texting "help" for... well some help!')
@@ -154,4 +201,3 @@ with open(args.playlist, 'wb') as f:
 # Delete all mesages now that we've processed them
 for msg in messages:
     msg.delete(1)
-
