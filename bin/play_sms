@@ -11,7 +11,7 @@
 /home/pi/bin/midi_off
 
 while true; do
-  sudo nice --adjustment=-20 python /home/pi/py/synchronized_lights.py --playlist=/home/pi/music/halloween/.playlist
+  sudo nice --adjustment=-20 python /home/pi/py/synchronized_lights.py --playlist=/home/pi/music/christmas/.playlist --activelowmode=1
 done
 
 /home/pi/bin/lights_off
