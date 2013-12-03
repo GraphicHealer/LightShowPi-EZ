@@ -5,12 +5,21 @@
 #
 # Depends on the wiringPi gpio binary - http://wiringpi.com/
 
-/usr/local/bin/gpio write 0 0
-/usr/local/bin/gpio write 1 0
-/usr/local/bin/gpio write 2 0
-/usr/local/bin/gpio write 3 0
-/usr/local/bin/gpio write 4 0
-/usr/local/bin/gpio write 5 0
-/usr/local/bin/gpio write 6 0
-/usr/local/bin/gpio write 7 0
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 65 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 66 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 67 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 68 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 69 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 70 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 71 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 72 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 73 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 74 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 75 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 76 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 77 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 78 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 79 1
+/usr/local/bin/gpio -x mcp23017:65:0x20:0 write 80 1
+
 
