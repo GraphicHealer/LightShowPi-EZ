@@ -6,8 +6,6 @@
 # improvements, changes, etc...
 
 # Modifications by: Chris Usey (chris.usey@gmail.com)
-# - Volume Change via SMS - A user in the admins list will be able to request a change in the volume by sending an sms
-#   Text "Volume" for help. Make sure to adjust the #ADMIN SETTINGS
 
 """Check SMS messages from a Google Voice account
 
@@ -43,13 +41,38 @@ from googlevoice import Voice
 from bs4 import BeautifulSoup
 
 import log as l
+import ConfigParser
+import ast
 
+# get configurations
+config = ConfigParser.RawConfigParser()
+config.read('/home/pi/py/synchronized_lights.cfg')
+try:
+  admins = config.get('sms_settings','admins_list').split(',')
+except:
+  admins = []
+
+try:
+  requestsongslistcmd = config.get('sms_settings','request_songs_list_cmd')
+except:
+  requestsongslistcmd  = "help"
+
+try:
+  adminvolumemanagementcmd = config.get('sms_settings','admin_volume_management_cmd')
+except:
+  adminvolumemanagementcmd  = "volume"
+
+try:
+  playlistpath = config.get('light_show_settings','playlist_path')
+except:
+  playlistpath  = "/home/pi/music/.playlist"
+
+print "Admins" + str(admins)
 # ADMIN SETTINGS
-admins=[]    # Place any numbers in the following list to allow them to use admin features. Pay Attention to format "+15555555555:"
 volscript='/home/pi/bin/vol'    # location of the volume script
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--playlist', required=True, help='filename with the song playlist, one song per line in the format: <song name><tab><path to song>')
+parser.add_argument('--playlist', default=playlistpath, help='filename with the song playlist, one song per line in the format: <song name><tab><path to song>')
 parser.add_argument('-v', '--verbosity', type=int, choices=[0, 1, 2], default=1, help='change output logging verbosity')
 args = parser.parse_args()
 l.verbosity = args.verbosity
@@ -128,7 +151,7 @@ for msg in extractsms(voice.sms.html):
         song[2].add(msg['from'])
         l.log('Song requested: ' + str(song))
         voice.send_sms(msg['from'], 'Thank you for requesting "' + song[0] + '", we\'ll notify you when it starts!')
-    elif 'help' in msg['text'].lower():
+    elif requestsongslistcmd in msg['text'].lower():
         l.log('Help requested from ' + msg['from'])
         songlist = ['']
         division = 0
@@ -146,7 +169,7 @@ for msg in extractsms(voice.sms.html):
             time.sleep(5)
     # ADMIN ACTIONS
     # Do we want to change the volume?
-    elif (('volume' in msg['text'].lower()[0:6]) and (msg['from'] in admins)):
+    elif ((adminvolumemanagementcmd in msg['text'].lower()[0:6]) and (msg['from'] in admins)):
         volmessage = msg['text'][6:7]
         if ('-' in volmessage): 
             l.log('Volume Down Request: ' + msg['from'])

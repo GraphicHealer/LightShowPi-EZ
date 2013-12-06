@@ -5,11 +5,7 @@
 # Feel free to use, just send any enhancements back my way ;)
 #
 # Modifications By: Chris Usey (chris.usey@gmail.com)
-# - Adapted to add argument --activelowmode to allow use of activelow devices such as relays
-# - Adapted to use wiringpi2 for easier access of port expanders
-# - Adapted to use 16 channels via MCP23017 Port Expander
-# - Adapted to add argument --preshowpause to allow user to present show every "n" minutes instead of having a continuous show
-# - Adapted to add argument --readcache to allow user to specify if the cache should be read or not, useful for debugging
+# Modifications By: Ryan Jennings
 
 """Play any audio file and synchronize lights to the music
 
@@ -65,17 +61,46 @@ import alsaaudio as aa
 import decoder
 import numpy as np
 import wiringpi2 as wiringpi
+import ConfigParser
+import ast
 
 import log as l
 
+# get configurations
+config = ConfigParser.RawConfigParser()
+config.read('/home/pi/py/synchronized_lights.cfg')
+gpio = map(int,config.get('hardware','gpios_to_use').split(',')) # List of pins to use defined by 
+activelowmode = config.getboolean('hardware','active_low_mode')
+limitlist = map(int,config.get('auto_tuning','limit_list').split(',')) # List of pins to use defined by 
+limitthreshold = config.getfloat('auto_tuning','limit_threshold')
+limitthresholdincrease = config.getfloat('auto_tuning','limit_threshold_increase')
+limitthresholddecrease = config.getfloat('auto_tuning','limit_threshold_decrease')
+maxoffcycles = config.getfloat('auto_tuning','max_off_cycles')
+minfrequency = config.getfloat('audio_processing','min_frequency')
+maxfrequency = config.getfloat('audio_processing','max_frequency')
+try:
+  customchannelmapping = map(int,config.get('audio_processing','custom_channel_mapping').split(','))
+except:
+  customchannelmapping = 0
+try:
+  playlistpath = config.get('light_show_settings','playlist_path')
+except:
+  playlistpath  = "/home/pi/music/.playlist"
+try:
+  mcp23017 = ast.literal_eval(config.get('hardware','mcp23017'))
+except:
+  mcp23017 = 0
+
+preshowlightsonofforder = config.get('light_show_settings','preshow_lights_onoff_order')
+preshowlightsontime = config.getfloat('light_show_settings','preshow_lights_on_time')
+preshowlightsofftime =config.getfloat('light_show_settings','preshow_lights_off_time')
+
 parser = argparse.ArgumentParser()
 filegroup = parser.add_mutually_exclusive_group()
-filegroup.add_argument('--playlist', help='Playlist to choose song from (see check_sms for details on format)')
+filegroup.add_argument('--playlist', default=playlistpath, help='Playlist to choose song from (see check_sms for details on format)')
 filegroup.add_argument('--file', help='music file to play (required if no playlist designated)')
 parser.add_argument('-v', '--verbosity', type=int, choices=[0, 1, 2], default=1, help='change output verbosity')
-parser.add_argument('--activelowmode', type=int, default=0, help='turn active low mode on and off. Default: false')
 parser.add_argument('--readcache', type=int, default=1, help='read from the cache file. Default: true')
-parser.add_argument('--preshowpause', type=int, default=0, help='amount of time in minutes to show lights before show starts')
 
 args = parser.parse_args()
 l.verbosity = args.verbosity
@@ -86,30 +111,31 @@ if args.file == None and args.playlist == None:
     sys.exit()
 
 # Initialize GPIO
-GPIOACTIVE = 1
-GPIOINACTIVE = 0
 GPIOASINPUT = 0
 GPIOASOUTPUT = 1
-pin_base = 65
-i2c_addr = 0x20
-gpio = [65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80]
+GPIOLEN = len(gpio)
 wiringpi.wiringPiSetup()
-wiringpi.mcp23017Setup(pin_base,i2c_addr)
 
-# If activelowmode is set to true switch GPIOACTIVE and GPIOINACTIVE
-if (bool(args.activelowmode)):
+if (mcp23017):
+  l.log("Initializing MCP23017 Port Expander", 2)
+  wiringpi.mcp23017Setup(mcp23017['pin_base'],mcp23017['i2c_addr'])   # set up the pins and i2c address
+
+if (activelowmode):
   GPIOACTIVE=0
   GPIOINACTIVE=1
+else: 
+  GPIOACTIVE=1        # Value to set when pin is to be turned on
+  GPIOINACTIVE=0      # Value to set when pin is to be turned off
 
 for i in gpio:
     wiringpi.pinMode(i,GPIOASOUTPUT)
 
 def TurnOffLights():
-    for i in range(16):
+    for i in range(GPIOLEN):
         TurnOffLight(i)
 
 def TurnOnLights():
-    for i in range(16):
+    for i in range(GPIOLEN):
         TurnOnLight(i)
 
 def TurnOffLight(i):
@@ -118,9 +144,17 @@ def TurnOffLight(i):
 def TurnOnLight(i):
     wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
 
-# Pre show pause (show our lights for n minutes before show starts)
-TurnOnLights()
-time.sleep(args.preshowpause)
+# Pre Show Light Management
+if preshowlightsonofforder == 'on-off':
+  TurnOnLights()
+  time.sleep(preshowlightsontime);
+  TurnOffLights()
+  time.sleep(preshowlightsofftime)
+else:
+  TurnOffLights()
+  time.sleep(preshowlightsofftime)
+  TurnOnLights()
+  time.sleep(preshowlightsontime);
 
 # Determine the file to play
 file = args.file
@@ -164,16 +198,20 @@ if args.playlist != None:
     else:
         file = songs[random.randint(0, len(songs)-1)][1]
 
-
-# Get ready to start the show ( Dim the lights for a few seconds )
-TurnOffLights()
-time.sleep(5)
-
 # Initialize FFT stats
-matrix    = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+matrix    = [0 for i in range(GPIOLEN)]
 power     = []
-limit     = [5,5,5,5,5,5,5,5,0,5,5,5,5,5,5,5]
-offct     = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+offct     = [0 for i in range(GPIOLEN)]
+
+# Build the limit list
+if len(limitlist) == 1:
+  print "Limit List is equal to one: " + str(limitlist[0])
+  limit =[limitlist[0] for i in range(GPIOLEN)]
+else:
+  limit = limitlist
+
+print "Limit List size: " + str(len(limit))
+print (limit)
 
 # Set up audio
 if file.endswith('.wav'):
@@ -210,8 +248,47 @@ except IOError:
 # Return power array index corresponding to a particular frequency
 def piff(val):
    return int(2*chunk*val/sample_rate)
+
+#calculate frequency values for each channel
+def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_mapping):
+  # How many channels do we need to calculate the frequency for
+  if custom_channel_mapping != 0 and len(custom_channel_mapping) == GPIOLEN:
+    l.log("Custom Channel Mapping is being used.")
+    channelLength = max(custom_channel_mapping)
+  else:
+    l.log("Normal Channel Mapping is being used.")
+    channelLength = GPIOLEN
+  l.log("Calculating frequencies for %d channels." % (channelLength), 2)
+
+  octaves = (np.log(max_frequency/min_frequency))/np.log(2)
+  l.log("octaves in selected frequency range ... %s" % octaves, 2)
+  
+  octaves_per_channel = octaves/channelLength
+  frequency_limits = []
+  frequency_store = []
+
+  frequency_limits.append(min_frequency)
+  for i in range(1, GPIOLEN+1):
+    frequency_limits.append(frequency_limits[-1]*10**(3/(10*(1/octaves_per_channel))))
+  for i in range(0, channelLength):
+    frequency_store.append((frequency_limits[i], frequency_limits[i+1]))
+    print "channel %d is %6.2f to %6.2f " % (i, frequency_limits[i], frequency_limits[i+1])
    
-def calculate_levels(data, chunk, sample_rate):
+  # we have the frequencies now lets map them if custom mapping is defined
+  if custom_channel_mapping != 0 and len(custom_channel_mapping) == GPIOLEN:
+    frequency_map=[]
+    for i in range(0, GPIOLEN):
+      mapped_channel = custom_channel_mapping[i] -1
+      mapped_frequency_set= frequency_store[mapped_channel]
+      mapped_frequency_set_low= mapped_frequency_set[0]
+      mapped_frequency_set_high= mapped_frequency_set[1]
+      l.log("mapped channel: " + str(mapped_channel) + " will hold LOW: " + str(mapped_frequency_set_low) + ' HIGH: ' + str(mapped_frequency_set_high),2)
+      frequency_map.append(mapped_frequency_set)
+    return frequency_map
+  else:
+    return frequency_store
+
+def calculate_levels(data, chunk, sample_rate, frequency_limits):
    global matrix
    # Convert raw data (ASCII string) to numpy array
    data = unpack("%dh"%(len(data)/2),data)
@@ -225,22 +302,10 @@ def calculate_levels(data, chunk, sample_rate):
    
    # Find average 'amplitude' for specific frequency ranges in Hz
    power = np.abs(fourier)   
-   matrix[0]= np.mean(power[piff(0)    :piff(156):1])
-   matrix[1]= np.mean(power[piff(156)  :piff(313):1])
-   matrix[2]= np.mean(power[piff(313)  :piff(625):1])
-   matrix[3]= np.mean(power[piff(625)  :piff(1250):1])
-   matrix[4]= np.mean(power[piff(1250) :piff(2500):1])
-   matrix[5]= np.mean(power[piff(2500) :piff(5000):1])
-   matrix[6]= np.mean(power[piff(5000) :piff(10000):1])
-   matrix[7]= np.mean(power[piff(10000):piff(15000):1])
-   matrix[8]= np.mean(power[piff(10000):piff(15000):1])
-   matrix[9]= np.mean(power[piff(5000)  :piff(10000):1])
-   matrix[10]= np.mean(power[piff(2500)  :piff(5000):1])
-   matrix[11]= np.mean(power[piff(1250)  :piff(2500):1])
-   matrix[12]= np.mean(power[piff(625) :piff(1250):1])
-   matrix[13]= np.mean(power[piff(313) :piff(625):1])
-   matrix[14]= np.mean(power[piff(156) :piff(313):1])
-   matrix[15]= np.mean(power[piff(0):piff(156):1])
+
+   for i in range(GPIOLEN):
+      print "Matrix %d limit LOW: %6.2f HIGH: %6.2f" % (i, frequency_limits[i][0], frequency_limits[i][1])
+      matrix[i] = np.mean(power[piff(frequency_limits[i][0]) :piff(frequency_limits[i][1]):1])
 
    # Tidy up column values for output to lights
    matrix=np.divide(matrix,100000)
@@ -249,6 +314,7 @@ def calculate_levels(data, chunk, sample_rate):
 # Process audio file
 row = 0
 data = musicfile.readframes(chunk)
+frequency_limits = calculate_channel_frequency(minfrequency,maxfrequency,customchannelmapping)
 while data!='':
    output.write(data)
 
@@ -256,8 +322,8 @@ while data!='':
    if cache_found and args.readcache:
       if row < len(cache):
          entry = cache[row]
-         for i in range (0,16):
-            if ((int(entry[i])) or (i == 8)): # KEEP 8 ON ALL THE TIME
+         for i in range (0,GPIOLEN):
+            if int(entry[i]): ## MAKE CHANGE HERE TO KEEP ON ALL THE TIME
                TurnOnLight(i)
             else:
                TurnOffLight(i)
@@ -267,10 +333,10 @@ while data!='':
    # No cache - Compute FFT from this chunk, and cache results
    else:
       entry = []
-      matrix=calculate_levels(data, chunk, sample_rate)
-      for i in range (0,16):
-         if limit[i] < matrix[i] * 0.725: # old value 0.6
-            limit[i] = limit[i] * 1.35 # old value 1.2
+      matrix=calculate_levels(data, chunk, sample_rate, frequency_limits)
+      for i in range (0,GPIOLEN):
+         if limit[i] < matrix[i] * limitthreshold:
+            limit[i] = limit[i] * limitthresholdincrease
             l.log("++++ channel: {0}; limit: {1:.3f}".format(i, limit[i]), 2)
          # Amplitude has reached threshold
          if matrix[i] > limit[i]:
@@ -279,9 +345,9 @@ while data!='':
             entry.append('1')
          else: # Amplitude did not reach threshold
             offct[i] = offct[i]+1
-            if offct[i] > 10:
+            if offct[i] > maxoffcycles:
                offct[i] = 0
-               limit[i] = limit[i] * 0.925 # old value 0.8
+               limit[i] = limit[i] * limitthresholddecrease # old value 0.8
             l.log("---- channel: {0}; limit: {1:.3f}".format(i, limit[i]), 2)
             TurnOffLight(i)
             entry.append('0')

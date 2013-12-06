@@ -6,39 +6,48 @@
 # arguments secion for specific argument details.
 #
 # Additional Modifications By: Chris Usey (chrisausey@gmail.com)
-# - Adapted to use 8 gpio's of the PI and 16 additional gpio's provided by mcp23017 expander chip
-# - Adapted to add --activelowmode argument for use with active low relays
-# - Adapted to blink all leds if no --led argument is passed or blink specific leds of the led is specified
 
 import time
 import wiringpi2 as wiringpi
 import argparse 
+import ConfigParser
+import ast
 
-gpioList=[7,0,1,2,3,4,5,6,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80] # List of pins to use defined by 
-pin_base = 65       # lowest available starting number is 65
-i2c_addr = 0x20     # A0, A1, A2 pins all wired to GND
-GPIOINPUT=0
-GPIOOUTPUT=1
-GPIOACTIVE=1        # Value to set when pin is to be turned on
-GPIOINACTIVE=0      # Value to set when pin is to be turned off
+# get configurations
+config = ConfigParser.RawConfigParser()
+config.read('/home/pi/py/synchronized_lights.cfg')
+
+gpioList = map(int,config.get('hardware','gpios_to_use').split(',')) # List of pins to use defined by 
+activelowmode = config.getboolean('hardware','active_low_mode')
+try:
+	mcp23017 = ast.literal_eval(config.get('hardware','mcp23017'))
+except:
+	mcp23017 = 0
 
 wiringpi.wiringPiSetup() # Initialise PIN mode
-wiringpi.mcp23017Setup(pin_base,i2c_addr)   # set up the pins and i2c address
+
+if (mcp23017):
+	print "MCP23017 CONFIGURED"
+	wiringpi.mcp23017Setup(mcp23017['pin_base'],mcp23017['i2c_addr'])   # set up the pins and i2c address
+else:
+	print "MCP2307 NOT CONFIGURED"
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--led', type=int, default=-1, help='led to flash (0-24)')
 parser.add_argument('--sleep', type=float, default=.5, help='time to sleep between flash')
-parser.add_argument('--activelowmode', type=bool, default=0, help='turn active low mode on and off')
-
 args = parser.parse_args()
 
 pin = args.led
 sleep = args.sleep
-activelowmode = args.activelowmode
+GPIOINPUT=0
+GPIOOUTPUT=1
 
 if (activelowmode):
 	GPIOACTIVE=0
 	GPIOINACTIVE=1
+else: 
+	GPIOACTIVE=1        # Value to set when pin is to be turned on
+	GPIOINACTIVE=0      # Value to set when pin is to be turned off
 
 def cleanup():
 	# loop through and clean up
