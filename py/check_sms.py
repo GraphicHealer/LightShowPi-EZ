@@ -118,8 +118,8 @@ def extractsms(htmlsms) :
     return msgitems
 
 # Load playlist from file, notifying users of any of their requests that have now played
-l.log('Loading playlist ' + args.playlist, 2)
-with open(args.playlist, 'rb') as f:
+l.log('Loading playlist ' + args.playlist.replace("$SYNCHRONIZED_LIGHTS_HOME",home_directory), 2)
+with open(args.playlist.replace("$SYNCHRONIZED_LIGHTS_HOME",home_directory), 'rb') as f:
     fcntl.lockf(f, fcntl.LOCK_SH)
     playlist = csv.reader(f, delimiter='\t')
     songs = []
@@ -211,7 +211,7 @@ for msg in extractsms(voice.sms.html):
         voice.send_sms(msg['from'], 'Hrm, not sure what you want.  Try texting "help" for... well some help!')
 
 # Update playlist with latest votes
-with open(args.playlist, 'wb') as f:
+with open(args.playlist.replace("$SYNCHRONIZED_LIGHTS_HOME",home_directory), 'wb') as f:
     fcntl.lockf(f, fcntl.LOCK_EX)
     writer = csv.writer(f, delimiter='\t')
     for song in songs:
