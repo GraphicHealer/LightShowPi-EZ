@@ -170,8 +170,8 @@ for msg in extractsms(voice.sms.html):
             time.sleep(5)
     # ADMIN ACTIONS
     # Do we want to change the volume?
-    elif ((adminvolumemanagementcmd in msg['text'].lower()[0:6]) and (msg['from'] in admins)):
-        volmessage = msg['text'][6:7]
+    elif ((adminvolumemanagementcmd in msg['text'].lower()[0:len(adminvolumemanagementcmd)]) and (msg['from'] in admins)):
+        volmessage = msg['text'][len(adminvolumemanagementcmd):len(adminvolumemanagementcmd)+1]
         if ('-' in volmessage): 
             l.log('Volume Down Request: ' + msg['from'])
             output, error = subprocess.Popen(volscript + " -", shell=True,stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
@@ -190,7 +190,7 @@ for msg in extractsms(voice.sms.html):
                 voice.send_sms(msg['from'],'Volume increased to: ' + str(output))
         else:
             try:
-                volume = int(msg['text'][6:])
+                volume = int(msg['text'][len(adminvolumemanagementcmd):])
                 l.log('Volume Change To "' + str(volume) + '" Request: ' + msg['from'])
                 if (volume >= 0 and volume < 100):
                     l.log('Volume Down Request: ' + msg['from'])
@@ -205,7 +205,7 @@ for msg in extractsms(voice.sms.html):
                     voice.send_sms(msg['from'],'Ivalid Volume: Volume must be a value from 0-99')
             except ValueError:
                 l.log('Volume Change Not Understood: "' + volmessage + '"')
-                voice.send_sms(msg['from'],'Volume Help: \n - "volume-" to decrease \n - "volume+" to increase \n - "volume##" to set volume to ##')
+                voice.send_sms(msg['from'], adminvolumemanagementcmd + ' Help: \n - "'+ adminvolumemanagementcmd +'-" to decrease \n - "'+ adminvolumemanagementcmd +'+" to increase \n - "'+ adminvolumemanagementcmd +'##" to set volume to ##')
     else:
         l.log('Unknown request: "' + msg['text'] + '" from ' + msg['from'])
         voice.send_sms(msg['from'], 'Hrm, not sure what you want.  Try texting "help" for... well some help!')
