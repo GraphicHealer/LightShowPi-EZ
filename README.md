@@ -18,3 +18,12 @@ Synchronized Lights
 * crontab/synchronized_lights - Add these via 'sudo crontab -e' to start / stop the lightshow automatically
 * bin/* - Various bash scripts to aid in playing songs, controlling volume, etc...  Copy them all into your /home/pi/bin/ directory, and ensure you add /home/pi/bin/ to your PATH
 
+Setup
+-----
+
+* Setup the environment
+	-Create an enviroment variable to specify the programs home directory. Edit /etc/environment and add the following to line to the file replacing /path/yourdirectory with the location where you placed the program files
+		- $SYNCHRONIZED_LIGHTS_HOME=/path/yourdirectory
+
+	- Modify /etc/sudoers file to allow the SYNCHRONIZED_LIGHTS_HOME variable to be preserved when using sudo. Add the following line to the file.
+		- Defaults	env_keep += "SYNCHRONIZED_LIGHTS_HOME"

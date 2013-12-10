@@ -4,3 +4,11 @@
 
 # Turn off the lights / sms at 10:15pm
 15 22 * * * /home/pi/bin/stop_music_and_lights >> /var/log/music_and_lights.stop 2>&1 &
+
+
+# BETA CMDS
+exec $SYNCHRONIZED_LIGHTS_HOME/bin/check_sms >> $SYNCHRONIZED_LIGHTS_HOME/logs/music_and_lights.check 2>&1 &
+
+exec $SYNCHRONIZED_LIGHTS_HOME/bin/play_sms >> $SYNCHRONIZED_LIGHTS_HOME/logs/music_and_lights.play 2>&1 &
+
+$SYNCHRONIZED_LIGHTS_HOME/bin/stop_music_and_lights >> $SYNCHRONIZED_LIGHTS_HOME/logs/music_and_lights.stop 2>&1 &

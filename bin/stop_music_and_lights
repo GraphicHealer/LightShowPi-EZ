@@ -3,6 +3,10 @@
 # Ensure that all the music and lights are off
 #
 # Author: Todd Giles (todd.giles@gmail.com)
+# Modifications: Chris Usey (chris.usey@gmail.com)
+
+# Check that the home environment variable is set
+${SYNCHRONIZED_LIGHTS_HOME:?"Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"}
 
 sudo killall play_sms
 sudo killall check_sms
@@ -10,5 +14,5 @@ sudo killall play_midi
 sudo killall play
 sudo killall python
 
-/home/pi/bin/midi_off
-/home/pi/bin/lights_off
+$SYNCHRONIZED_LIGHTS_HOME/bin/midi_off
+$SYNCHRONIZED_LIGHTS_HOME/bin/lights_off

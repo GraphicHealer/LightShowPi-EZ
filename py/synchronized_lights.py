@@ -67,8 +67,9 @@ import ast
 import log as l
 
 # get configurations
+home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 config = ConfigParser.RawConfigParser()
-config.read('/home/pi/py/synchronized_lights.cfg')
+config.read(home_directory + '/py/synchronized_lights.cfg')
 gpio = map(int,config.get('hardware','gpios_to_use').split(',')) # List of pins to use defined by 
 activelowmode = config.getboolean('hardware','active_low_mode')
 limitlist = map(int,config.get('auto_tuning','limit_list').split(',')) # List of pins to use defined by 
@@ -83,7 +84,7 @@ try:
 except:
   customchannelmapping = 0
 try:
-  playlistpath = config.get('light_show_settings','playlist_path')
+  playlistpath = config.get('light_show_settings','playlist_path').replace('$SYNCHRONIZED_LIGHTS_HOME',home_directory)
 except:
   playlistpath  = "/home/pi/music/.playlist"
 try:
@@ -119,7 +120,6 @@ wiringpi.wiringPiSetup()
 if (mcp23017):
   l.log("Initializing MCP23017 Port Expander", 2)
   wiringpi.mcp23017Setup(mcp23017['pin_base'],mcp23017['i2c_addr'])   # set up the pins and i2c address
-
 if (activelowmode):
   GPIOACTIVE=0
   GPIOINACTIVE=1
@@ -158,7 +158,7 @@ else:
 
 # Determine the file to play
 file = args.file
-if args.playlist != None:
+if args.playlist != None and args.file == None:
     most_votes = [None, None, []]
     with open(args.playlist, 'rb') as f:
         fcntl.lockf(f, fcntl.LOCK_SH)

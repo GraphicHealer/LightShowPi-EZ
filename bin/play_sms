@@ -7,11 +7,15 @@
 # the playlist will be played.
 #
 # Author: Todd Giles (todd.giles@gmail.com)
+# Modifications: Chris Usey (chris.usey@gmail.com)
 
-/home/pi/bin/midi_off
+# Check that the home environment variable is set
+${SYNCHRONIZED_LIGHTS_HOME:?"Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"}
+
+$SYNCHRONIZED_LIGHTS_HOME/bin/midi_off
 
 while true; do
-  sudo nice --adjustment=-20 python /home/pi/py/synchronized_lights.py
+  sudo nice --adjustment=-20 python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py
 done
 
-/home/pi/bin/lights_off
+$SYNCHRONIZED_LIGHTS_HOME/bin/lights_off

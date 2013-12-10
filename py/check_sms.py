@@ -36,6 +36,7 @@ import fcntl
 import sys
 import time
 import subprocess
+import os
 
 from googlevoice import Voice
 from bs4 import BeautifulSoup
@@ -45,8 +46,9 @@ import ConfigParser
 import ast
 
 # get configurations
+home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 config = ConfigParser.RawConfigParser()
-config.read('/home/pi/py/synchronized_lights.cfg')
+config.read(home_directory + '/py/synchronized_lights.cfg')
 try:
   admins = config.get('sms_settings','admins_list').split(',')
 except:
@@ -67,9 +69,8 @@ try:
 except:
   playlistpath  = "/home/pi/music/.playlist"
 
-print "Admins" + str(admins)
 # ADMIN SETTINGS
-volscript='/home/pi/bin/vol'    # location of the volume script
+volscript=home_directory + '/bin/vol'    # location of the volume script
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--playlist', default=playlistpath, help='filename with the song playlist, one song per line in the format: <song name><tab><path to song>')

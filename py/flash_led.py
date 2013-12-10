@@ -12,11 +12,13 @@ import wiringpi2 as wiringpi
 import argparse 
 import ConfigParser
 import ast
+import os
 
 # get configurations
-config = ConfigParser.RawConfigParser()
-config.read('/home/pi/py/synchronized_lights.cfg')
+home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 
+config = ConfigParser.RawConfigParser()
+config.read(home_directory + '/py/synchronized_lights.cfg')
 gpioList = map(int,config.get('hardware','gpios_to_use').split(',')) # List of pins to use defined by 
 activelowmode = config.getboolean('hardware','active_low_mode')
 try:

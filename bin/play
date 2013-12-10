@@ -9,8 +9,12 @@
 # play /home/pi/music/jingle_bells.mp3
 #
 # Author: Todd Giles (todd.giles@gmail.com)
+# Modifications: Chris Usey (chris.usey@gmail.com)
 
-midi_off
+# Check that the home environment variable is set
+${SYNCHRONIZED_LIGHTS_HOME:?"Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"}
+
+$SYNCHRONIZED_LIGHTS_HOME/bin/midi_off
 
 for f in $@
 do
@@ -20,8 +24,8 @@ do
   then
     play_midi "$f"
   else
-    sudo python /home/pi/py/synchronized_lights.py --file="$f"
+    sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py --file="$f"
   fi
 done
 
-lights_off
+$SYNCHRONIZED_LIGHTS_HOME/bin/lights_off
