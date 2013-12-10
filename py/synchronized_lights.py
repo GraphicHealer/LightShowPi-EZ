@@ -84,6 +84,10 @@ try:
 except:
   customchannelmapping = 0
 try:
+  customchannelfrequencies = map(int,config.get('audio_processing','custom_channel_frequencies').split(','))
+except:
+  customchannelfrequencies = 0
+try:
   playlistpath = config.get('light_show_settings','playlist_path').replace('$SYNCHRONIZED_LIGHTS_HOME',home_directory)
 except:
   playlistpath  = "/home/pi/music/.playlist"
@@ -198,6 +202,9 @@ if args.playlist != None and args.file == None:
     else:
         file = songs[random.randint(0, len(songs)-1)][1]
 
+# replace our environment variable if used in the file name
+file = file.replace("$SYNCHRONIZED_LIGHTS_HOME",home_directory)
+
 # Initialize FFT stats
 matrix    = [0 for i in range(GPIOLEN)]
 power     = []
@@ -250,13 +257,13 @@ def piff(val):
    return int(2*chunk*val/sample_rate)
 
 #calculate frequency values for each channel
-def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_mapping):
+def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_mapping, custom_channel_frequencies):
   # How many channels do we need to calculate the frequency for
   if custom_channel_mapping != 0 and len(custom_channel_mapping) == GPIOLEN:
-    l.log("Custom Channel Mapping is being used.")
+    l.log("Custom Channel Mapping is being used.",2)
     channelLength = max(custom_channel_mapping)
   else:
-    l.log("Normal Channel Mapping is being used.")
+    l.log("Normal Channel Mapping is being used.",2)
     channelLength = GPIOLEN
   l.log("Calculating frequencies for %d channels." % (channelLength), 2)
 
@@ -268,11 +275,17 @@ def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_map
   frequency_store = []
 
   frequency_limits.append(min_frequency)
-  for i in range(1, GPIOLEN+1):
-    frequency_limits.append(frequency_limits[-1]*10**(3/(10*(1/octaves_per_channel))))
+
+  if custom_channel_frequencies != 0 and (len(custom_channel_frequencies) >= channelLength + 1):
+    l.log("Custom channel frequencies are being used",2)
+    frequency_limits = custom_channel_frequencies
+  else:
+    l.log("Custom channel frequencies are not being used",2)
+    for i in range(1, GPIOLEN+1):
+      frequency_limits.append(frequency_limits[-1]*10**(3/(10*(1/octaves_per_channel))))
   for i in range(0, channelLength):
     frequency_store.append((frequency_limits[i], frequency_limits[i+1]))
-    print "channel %d is %6.2f to %6.2f " % (i, frequency_limits[i], frequency_limits[i+1])
+    l.log("channel %d is %6.2f to %6.2f " % (i, frequency_limits[i], frequency_limits[i+1]),2)
    
   # we have the frequencies now lets map them if custom mapping is defined
   if custom_channel_mapping != 0 and len(custom_channel_mapping) == GPIOLEN:
@@ -304,7 +317,6 @@ def calculate_levels(data, chunk, sample_rate, frequency_limits):
    power = np.abs(fourier)   
 
    for i in range(GPIOLEN):
-      print "Matrix %d limit LOW: %6.2f HIGH: %6.2f" % (i, frequency_limits[i][0], frequency_limits[i][1])
       matrix[i] = np.mean(power[piff(frequency_limits[i][0]) :piff(frequency_limits[i][1]):1])
 
    # Tidy up column values for output to lights
@@ -314,7 +326,7 @@ def calculate_levels(data, chunk, sample_rate, frequency_limits):
 # Process audio file
 row = 0
 data = musicfile.readframes(chunk)
-frequency_limits = calculate_channel_frequency(minfrequency,maxfrequency,customchannelmapping)
+frequency_limits = calculate_channel_frequency(minfrequency,maxfrequency,customchannelmapping,customchannelfrequencies)
 while data!='':
    output.write(data)
 
