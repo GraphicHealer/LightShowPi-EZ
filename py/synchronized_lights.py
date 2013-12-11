@@ -81,6 +81,7 @@ minfrequency = config.getfloat('audio_processing','min_frequency')
 maxfrequency = config.getfloat('audio_processing','max_frequency')
 alwaysonchannels = map(int,config.get('light_show_settings','always_on_channels').split(','))
 alwaysoffchannels = map(int,config.get('light_show_settings','always_off_channels').split(','))
+randomizeplaylist = config.getboolean('light_show_settings','randomize_playlist')
 try:
   customchannelmapping = map(int,config.get('audio_processing','custom_channel_mapping').split(','))
 except:
@@ -101,6 +102,8 @@ except:
 # get state
 state = ConfigParser.RawConfigParser()
 state.read(home_directory + '/py/synchronized_lights_state.cfg')
+songtoplay = state.getint('do_not_modify','song_to_play')
+
 
 preshowlightsonofforder = config.get('light_show_settings','preshow_lights_onoff_order')
 preshowlightsontime = config.getfloat('light_show_settings','preshow_lights_on_time')
@@ -164,6 +167,11 @@ def interruptPreShowTimers():
   with open(home_directory + '/py/synchronized_lights_state.cfg', 'wb') as statefile:
         state.write(statefile)
         preshowlightsofftime = 0
+
+def recordNextSongToPlay(i):
+  state.set('do_not_modify','song_to_play',i)
+  with open(home_directory + '/py/synchronized_lights_state.cfg', 'wb') as statefile:
+        state.write(statefile)
 
 
 
@@ -238,7 +246,15 @@ if args.playlist != None and args.file == None:
             fcntl.lockf(f, fcntl.LOCK_UN)
 
     else:
+      if randomizeplaylist:
         file = songs[random.randint(0, len(songs)-1)][1]
+      else:
+        file = songs[songtoplay][1]
+        nextsong = (songtoplay + 1) if ((songtoplay + 1) <= len(songs)-1) else 0
+        # record to list
+        recordNextSongToPlay(nextsong)
+
+
 
 # replace our environment variable if used in the file name
 file = file.replace("$SYNCHRONIZED_LIGHTS_HOME",home_directory)
