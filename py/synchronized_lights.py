@@ -79,6 +79,8 @@ limitthresholddecrease = config.getfloat('auto_tuning','limit_threshold_decrease
 maxoffcycles = config.getfloat('auto_tuning','max_off_cycles')
 minfrequency = config.getfloat('audio_processing','min_frequency')
 maxfrequency = config.getfloat('audio_processing','max_frequency')
+alwaysonchannels = map(int,config.get('light_show_settings','always_on_channels').split(','))
+alwaysoffchannels = map(int,config.get('light_show_settings','always_off_channels').split(','))
 try:
   customchannelmapping = map(int,config.get('audio_processing','custom_channel_mapping').split(','))
 except:
@@ -140,16 +142,20 @@ for i in gpio:
 
 def TurnOffLights():
     for i in range(GPIOLEN):
+      if i+1 not in alwaysonchannels:
         TurnOffLight(i)
 
 def TurnOnLights():
     for i in range(GPIOLEN):
+      if i+1 not in alwaysoffchannels:
         TurnOnLight(i)
 
 def TurnOffLight(i):
+  if i+1 not in alwaysonchannels:
     wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
 
 def TurnOnLight(i):
+  if i+1 not in alwaysoffchannels:
     wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
 
 def interruptPreShowTimers():
