@@ -96,6 +96,10 @@ try:
 except:
   mcp23017 = 0
 
+# get state
+state = ConfigParser.RawConfigParser()
+state.read(home_directory + '/py/synchronized_lights_state.cfg')
+
 preshowlightsonofforder = config.get('light_show_settings','preshow_lights_onoff_order')
 preshowlightsontime = config.getfloat('light_show_settings','preshow_lights_on_time')
 preshowlightsofftime =config.getfloat('light_show_settings','preshow_lights_off_time')
@@ -148,17 +152,45 @@ def TurnOffLight(i):
 def TurnOnLight(i):
     wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
 
-# Pre Show Light Management
+def interruptPreShowTimers():
+  l.log('Skipping preshow lights timers',1)
+  state.set('do_not_modify','skip_pause','0')
+  with open(home_directory + '/py/synchronized_lights_state.cfg', 'wb') as statefile:
+        state.write(statefile)
+        preshowlightsofftime = 0
+
+
+
+# PRE SHOW LIGHT MANAGEMENT
+fullpreshowlightsonofftime = preshowlightsontime + preshowlightsofftime
+count = 0.00
 if preshowlightsonofforder == 'on-off':
-  TurnOnLights()
-  time.sleep(preshowlightsontime);
-  TurnOffLights()
-  time.sleep(preshowlightsofftime)
+  ls1 = TurnOnLights
+  ls2 = TurnOffLights
+  switchtime = preshowlightsontime
 else:
-  TurnOffLights()
-  time.sleep(preshowlightsofftime)
-  TurnOnLights()
-  time.sleep(preshowlightsontime);
+  ls1 = TurnOffLights
+  ls2 = TurnOnLights
+  switchtime = preshowlightsofftime
+
+ls1()
+while count <= fullpreshowlightsonofftime:
+  time.sleep(0.01)
+  # check to see if the preshow timer needs to be interrupted
+  state.read(home_directory + '/py/synchronized_lights_state.cfg')
+  if state.getboolean('do_not_modify','skip_pause'):
+    count = fullpreshowlightsonofftime + 1
+    interruptPreShowTimers()
+    TurnOffLights()
+    time.sleep(3)
+  else:
+    #no interruption continue normally
+    if count > switchtime and count < switchtime + 0.01:
+      ls2()
+    # bump the counter
+    count = count + 0.01
+
+
 
 # Determine the file to play
 file = args.file
@@ -212,13 +244,9 @@ offct     = [0 for i in range(GPIOLEN)]
 
 # Build the limit list
 if len(limitlist) == 1:
-  print "Limit List is equal to one: " + str(limitlist[0])
   limit =[limitlist[0] for i in range(GPIOLEN)]
 else:
   limit = limitlist
-
-print "Limit List size: " + str(len(limit))
-print (limit)
 
 # Set up audio
 if file.endswith('.wav'):
