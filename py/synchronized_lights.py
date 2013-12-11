@@ -192,7 +192,8 @@ while count <= fullpreshowlightsonofftime:
   time.sleep(0.01)
   # check to see if the preshow timer needs to be interrupted
   state.read(home_directory + '/py/synchronized_lights_state.cfg')
-  if state.getboolean('do_not_modify','skip_pause'):
+  skip_pause = state.getint('do_not_modify','skip_pause')
+  if skip_pause != 0:
     count = fullpreshowlightsonofftime + 1
     interruptPreShowTimers()
     TurnOffLights()
@@ -248,6 +249,8 @@ if args.playlist != None and args.file == None:
     else:
       if randomizeplaylist:
         file = songs[random.randint(0, len(songs)-1)][1]
+      elif skip_pause != 0 and skip_pause != -1:
+        file = songs[skip_pause -1][1]
       else:
         file = songs[songtoplay][1]
         nextsong = (songtoplay + 1) if ((songtoplay + 1) <= len(songs)-1) else 0
