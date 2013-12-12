@@ -27,5 +27,3 @@ do
     sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py --file="$f"
   fi
 done
-
-$SYNCHRONIZED_LIGHTS_HOME/bin/lights_off
