@@ -13,27 +13,14 @@ import argparse
 import ConfigParser
 import ast
 import os
+import hardware_controller as hc
 
-# get configurations
+# Configurations
 home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
-
 config = ConfigParser.RawConfigParser()
 config.read(home_directory + '/py/synchronized_lights.cfg')
-gpioList = map(int,config.get('hardware','gpios_to_use').split(',')) # List of pins to use defined by 
-activelowmode = config.getboolean('hardware','active_low_mode')
-try:
-	mcp23017 = ast.literal_eval(config.get('hardware','mcp23017'))
-except:
-	mcp23017 = 0
 
-wiringpi.wiringPiSetup() # Initialise PIN mode
-
-if (mcp23017):
-	print "MCP23017 CONFIGURED"
-	wiringpi.mcp23017Setup(mcp23017['pin_base'],mcp23017['i2c_addr'])   # set up the pins and i2c address
-else:
-	print "MCP2307 NOT CONFIGURED"
-
+# Arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--led', type=int, default=-1, help='led to flash (0-24)')
 parser.add_argument('--sleep', type=float, default=.5, help='time to sleep between flash')
@@ -41,56 +28,42 @@ args = parser.parse_args()
 
 pin = args.led
 sleep = args.sleep
-GPIOINPUT=0
-GPIOOUTPUT=1
 
-if (activelowmode):
-	GPIOACTIVE=0
-	GPIOINACTIVE=1
-else: 
-	GPIOACTIVE=1        # Value to set when pin is to be turned on
-	GPIOINACTIVE=0      # Value to set when pin is to be turned off
+# Cleanup Pins
+hc.TurnOffLights()
+hc.SetPinsAsInputs()
 
-def cleanup():
-	# loop through and clean up
-	print "Cleaning Up Pins"
-	for item in gpioList:
-		wiringpi.digitalWrite(item,GPIOINPUT) # Set port to Input
-		wiringpi.pinMode(item,GPIOINACTIVE) # Set pin to inactive
-	print " "
+# Initialize all pins
+hc.SetPinsAsOutputs()
+hc.TurnOffLights()
 
-def intitalizeAll():
-	# loop through and clean up
-	for item in gpioList:
-		print "Initializing Pin: " + str(item)
-		wiringpi.pinMode(item,GPIOOUTPUT)
-		wiringpi.digitalWrite(item,GPIOINACTIVE) # Set pin to Inactive
-		print " "
-
-cleanup()
-intitalizeAll()
-
-# Blink the 
+# Blink the LED's
 count = 0
 if (pin == -1):
 	print "Blink All pins " + str(count) + " of 5"
-	for item in gpioList:
+	for item in hc.gpio:
 		print "Activating Pin: " + str(item)
-		wiringpi.digitalWrite(item,GPIOACTIVE)
+		#wiringpi.digitalWrite(item,GPIOACTIVE)
+		hc.TurnOnLight(item)
 		time.sleep(sleep)
 		print "Deactivating Pin: " + str(item)
-		wiringpi.digitalWrite(item,GPIOINACTIVE)
+		#wiringpi.digitalWrite(item,GPIOINACTIVE)
+		hc.TurnOffLight(item)
 		time.sleep(sleep)
 else:
 	while count < 5:
 		print "Blink pin " + str(pin) + ": " + str(count) + " of 5"
 		print "Activating Pin: " + str(pin)
-		wiringpi.digitalWrite(gpioList[pin],GPIOACTIVE)
+		#wiringpi.digitalWrite(gpioList[pin],GPIOACTIVE)
+		hc.TurnOnLight(hc.gpio[pin])
 		time.sleep(sleep)
 		print "Deactivating Pin: " + str(pin)
-		wiringpi.digitalWrite(gpioList[pin],GPIOINACTIVE)
+		#wiringpi.digitalWrite(gpioList[pin],GPIOINACTIVE)
+		hc.TurnOffLight(hc.gpio[pin])
 		time.sleep(sleep)
 		count+=1
 
-cleanup()
+# Cleanup Pins
+hc.TurnOffLights()
+hc.SetPinsAsInputs()
 
