@@ -87,17 +87,27 @@ def TurnOffLight(i):
 def TurnOnLight(i):
     if i+1 not in alwaysoffchannels:
         wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
+def CleanUp():
+    TurnOffLights()
+    SetPinsAsInputs()
 
+def Initialize():
+    SetPinsAsOutputs()
+    TurnOffLights()
 
 #__________________Main________________
 if __name__=="__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--state', choices=["off", "on", "flash"], help='turn off on, or flash')
+    parser.add_argument('--state', choices=["off", "on", "flash", "cleanup", "initialize"], help='turn off, on, flash, cleanup, or initialize')
     args = parser.parse_args()
     state = args.state
 
-    if state=="off":
+    if state=="cleanup":
+        CleanUp()
+    elif state=="initialize":
+        Initialize()
+    elif state=="off":
         TurnOffLights()
     elif state=="on":
         TurnOnLights()

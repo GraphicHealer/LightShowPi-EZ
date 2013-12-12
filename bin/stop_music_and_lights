@@ -15,4 +15,6 @@ sudo killall play
 sudo killall python
 
 $SYNCHRONIZED_LIGHTS_HOME/bin/midi_off
-$SYNCHRONIZED_LIGHTS_HOME/bin/lights_off
+
+# Turn off lights and set back to inputs
+sudo python $SYNCHRONIZED_LIGHTS_HOME/py/hardware_controller.py --state=cleanup
