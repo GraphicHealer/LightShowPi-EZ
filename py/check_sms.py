@@ -55,6 +55,11 @@ except:
   admins = []
 
 try:
+  specialguestlist = config.get('sms_settings','special_guest_list').split(',')
+except:
+  specialguestlist = []
+
+try:
   requestsongslistcmd = config.get('sms_settings','request_songs_list_cmd')
 except:
   requestsongslistcmd  = "help"
@@ -178,7 +183,7 @@ for msg in extractsms(voice.sms.html):
             header = ''
             time.sleep(5)
     # ADMIN - Volume management
-    elif ((adminvolumemanagementcmd in msg['text'].lower()[0:len(adminvolumemanagementcmd)]) and (msg['from'] in admins)):
+    elif ((adminvolumemanagementcmd in msg['text'].lower()[0:len(adminvolumemanagementcmd)]) and ((msg['from'] in admins))):
         volmessage = msg['text'][len(adminvolumemanagementcmd):len(adminvolumemanagementcmd)+1]
         if ('-' in volmessage): 
             l.log('Volume Down Request: ' + msg['from'])
@@ -215,7 +220,7 @@ for msg in extractsms(voice.sms.html):
                 l.log('Volume Change Not Understood: "' + volmessage + '"')
                 voice.send_sms(msg['from'], adminvolumemanagementcmd + ' Help: \n - "'+ adminvolumemanagementcmd +'-" to decrease \n - "'+ adminvolumemanagementcmd +'+" to increase \n - "'+ adminvolumemanagementcmd +'##" to set volume to ##')
     # ADMIN - immediatly play the next song - interrupt any pre show lights on off time.
-    elif ((admininterruptpreshowtimerscmd in msg['text'].lower()[0:len(admininterruptpreshowtimerscmd)]) and (msg['from'] in admins)):
+    elif ((admininterruptpreshowtimerscmd in msg['text'].lower()[0:len(admininterruptpreshowtimerscmd)]) and ((msg['from'] in admins) or (msg['from'] in specialguestlist))):
         interruptrequest = msg['text'][len(admininterruptpreshowtimerscmd):].strip()
         # Check if "play" was the only thing sent
         if len(interruptrequest) == 0:
@@ -241,7 +246,7 @@ for msg in extractsms(voice.sms.html):
                     with open(home_directory + '/py/synchronized_lights_state.cfg', 'wb') as statefile:
                         state.write(statefile)
                     l.log('Request to interrupt pre show timers with specified song received: "' + msg['text'] + '"')
-                    voice.send_sms(msg['from'], 'Executed: ' + msg['text'])
+                    voice.send_sms(msg['from'], 'The show will start shortly !: '])
             except ValueError:
                 l.log('Exception with request: "' + msg['text'] + '"')
                 voice.send_sms(msg['from'], 'Help: \n - "' + admininterruptpreshowtimerscmd + '" to begin playing next show \n - "' + admininterruptpreshowtimerscmd + '##" to play song number ##')
