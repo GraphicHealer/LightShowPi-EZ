@@ -156,7 +156,7 @@ else:
   ls2 = hc.TurnOnLights
   switchtime = preshowlightsofftime
 
-ls1()
+ls1(True)
 while count <= fullpreshowlightsonofftime:
   time.sleep(0.01)
   # check to see if the preshow timer needs to be interrupted
@@ -170,7 +170,7 @@ while count <= fullpreshowlightsonofftime:
   else:
     #no interruption continue normally
     if count > switchtime and count < switchtime + 0.01:
-      ls2()
+      ls2(True)
     # bump the counter
     count = count + 0.01
 
@@ -368,9 +368,9 @@ while data!='':
          entry = cache[row]
          for i in range (0,hc.GPIOLEN):
             if int(entry[i]): ## MAKE CHANGE HERE TO KEEP ON ALL THE TIME
-               hc.TurnOnLight(i)
+               hc.TurnOnLight(i,True)
             else:
-               hc.TurnOffLight(i)
+               hc.TurnOffLight(i,True)
       else:
          l.log("!!!! Ran out of cached timing values !!!!", 2)
          
@@ -384,7 +384,7 @@ while data!='':
             l.log("++++ channel: {0}; limit: {1:.3f}".format(i, limit[i]), 2)
          # Amplitude has reached threshold
          if matrix[i] > limit[i]:
-            hc.TurnOnLight(i)
+            hc.TurnOnLight(i,True)
             offct[i] = 0
             entry.append('1')
          else: # Amplitude did not reach threshold
@@ -393,7 +393,7 @@ while data!='':
                offct[i] = 0
                limit[i] = limit[i] * limitthresholddecrease # old value 0.8
             l.log("---- channel: {0}; limit: {1:.3f}".format(i, limit[i]), 2)
-            hc.TurnOffLight(i)
+            hc.TurnOffLight(i,True)
             entry.append('0')
       cache.append(entry)
 

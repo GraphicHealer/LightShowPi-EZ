@@ -19,9 +19,9 @@ home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 config = ConfigParser.RawConfigParser()
 config.read(home_directory + '/py/synchronized_lights.cfg')
 gpio = map(int,config.get('hardware','gpios_to_use').split(',')) # List of pins to use defined by 
+activelowmode = config.getboolean('hardware','active_low_mode')
 alwaysonchannels = map(int,config.get('light_show_settings','always_on_channels').split(','))
 alwaysoffchannels = map(int,config.get('light_show_settings','always_off_channels').split(','))
-activelowmode = config.getboolean('hardware','active_low_mode')
 try:
   mcp23017 = ast.literal_eval(config.get('hardware','mcp23017'))
 except:
@@ -71,23 +71,36 @@ def SetPinAsOutput(i):
 def SetPinAsInput(i):
     wiringpi.pinMode(gpio[i], GPIOASINPUT)
 
-def TurnOffLights():
+def TurnOffLights(usealwaysonoff = 0):
     for i in range(GPIOLEN):
-      if i+1 not in alwaysonchannels:
-        TurnOffLight(i)
+        if usealwaysonoff:
+            if i+1 not in alwaysonchannels:
+                wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
+        else:
+            wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
 
-def TurnOnLights():
+def TurnOnLights(usealwaysonoff = 0):
     for i in range(GPIOLEN):
-      if i+1 not in alwaysoffchannels:
-        TurnOnLight(i)
+        if usealwaysonoff:
+            if i+1 not in alwaysoffchannels:
+                wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
+        else:
+            wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
 
-def TurnOffLight(i):
-    if i+1 not in alwaysonchannels:
+def TurnOffLight(i,usealwaysonoff = 0):
+    if usealwaysonoff:
+        if i+1 not in alwaysonchannels:
+            wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
+    else:
         wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
 
-def TurnOnLight(i):
-    if i+1 not in alwaysoffchannels:
+def TurnOnLight(i,usealwaysonoff = 0):
+    if usealwaysonoff:
+        if i+1 not in alwaysoffchannels:
+            wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
+    else:
         wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
+
 def CleanUp():
     TurnOffLights()
     SetPinsAsInputs()
@@ -100,7 +113,7 @@ def Initialize():
 if __name__=="__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--state', choices=["off", "on", "flash", "cleanup", "initialize"], help='turn off, on, flash, cleanup, or initialize')
+    parser.add_argument('--state', choices=["off", "on", "flash", "cleanup", "initialize","sequencetest"], help='turn off, on, flash, cleanup, or initialize')
     args = parser.parse_args()
     state = args.state
 
@@ -131,5 +144,20 @@ if __name__=="__main__":
                 TurnOffLights()
                 break
             break
+    elif state=="sequencetest":
+        count = 0
+        iterations = 50
+        sleep = 0.09
+        sleepstep = sleep/iterations
+        sleepcount = sleep
+        light = 7
+        while count < iterations:
+            print "Iteration: " + str(count) + " sleepcount: " + str(sleepcount)
+            TurnOnLight(light)
+            time.sleep(float(sleepcount))
+            TurnOffLight(light)
+            time.sleep(float(sleepcount))
+            sleepcount = sleepcount + sleepstep
+            count = count + 1
     else:
         print "invalid state, use on, off, or flash"
