@@ -43,22 +43,18 @@ if (pin == -1):
 	print "Blink All pins " + str(count) + " of 5"
 	for item in hc.gpio:
 		print "Activating Pin: " + str(item)
-		#wiringpi.digitalWrite(item,GPIOACTIVE)
 		hc.TurnOnLight(item)
 		time.sleep(sleep)
 		print "Deactivating Pin: " + str(item)
-		#wiringpi.digitalWrite(item,GPIOINACTIVE)
 		hc.TurnOffLight(item)
 		time.sleep(sleep)
 else:
 	while count < 5:
 		print "Blink pin " + str(pin) + ": " + str(count) + " of 5"
 		print "Activating Pin: " + str(pin)
-		#wiringpi.digitalWrite(gpioList[pin],GPIOACTIVE)
 		hc.TurnOnLight(hc.gpio[pin])
 		time.sleep(sleep)
 		print "Deactivating Pin: " + str(pin)
-		#wiringpi.digitalWrite(gpioList[pin],GPIOINACTIVE)
 		hc.TurnOffLight(hc.gpio[pin])
 		time.sleep(sleep)
 		count+=1
