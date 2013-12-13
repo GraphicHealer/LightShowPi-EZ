@@ -229,7 +229,7 @@ for msg in extractsms(voice.sms.html):
                 with open(home_directory + '/py/synchronized_lights_state.cfg', 'wb') as statefile:
                     state.write(statefile)
                 l.log('Request to interrupt pre show timers: "' + msg['text'] + '" from ' + msg['from'])
-                voice.send_sms(msg['from'], 'Executed: ' + msg['text'])
+                voice.send_sms(msg['from'], 'The show will start shortly !')
             except ValueError:
                 l.log('Exception with request: "' + volmessage + '"' +  ' (' + ValueError + ')')
                 voice.send_sms(msg['from'], 'ERROR: Could not interrupt preshow timers, check logs')
@@ -246,7 +246,7 @@ for msg in extractsms(voice.sms.html):
                     with open(home_directory + '/py/synchronized_lights_state.cfg', 'wb') as statefile:
                         state.write(statefile)
                     l.log('Request to interrupt pre show timers with specified song received: "' + msg['text'] + '"')
-                    voice.send_sms(msg['from'], 'The show will start shortly !: ')
+                    voice.send_sms(msg['from'], 'The show will start shortly !')
             except ValueError:
                 l.log('Exception with request: "' + msg['text'] + '"')
                 voice.send_sms(msg['from'], 'Help: \n - "' + admininterruptpreshowtimerscmd + '" to begin playing next show \n - "' + admininterruptpreshowtimerscmd + '##" to play song number ##')
