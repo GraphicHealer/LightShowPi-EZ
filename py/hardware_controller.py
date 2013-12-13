@@ -12,6 +12,7 @@ import time
 import argparse
 import ConfigParser
 import ast
+import log as l
 
 # Get Configurations
 home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
@@ -65,10 +66,10 @@ def SetPinsAsInputs():
         SetPinAsInput(i)
 
 def SetPinAsOutput(i):
-    wiringpi.pinMode(i, GPIOASOUTPUT)
+    wiringpi.pinMode(gpio[i], GPIOASOUTPUT)
 
 def SetPinAsInput(i):
-    wiringpi.pinMode(i, GPIOASINPUT)
+    wiringpi.pinMode(gpio[i], GPIOASINPUT)
 
 def TurnOffLights():
     for i in range(GPIOLEN):
