@@ -16,7 +16,7 @@ Synchronized Lights
 * py/synchronized_lights.py - Play a single song while synchronizing lights to the music.
 * py/hardware_controller.py - Useful for verifying your hardware configuration (blink all lights, turn them on / off, etc...).
 * py/check_sms.py - Check sms messages from a google voice account to allow for voting for the next song!
-# config/* - Configuration files go here.  Take all the sample files and remove the .sample extension and modify as needed.
+* config/* - Configuration files go here.  Take all the sample files and remove the .sample extension and modify as needed.
 * crontab/synchronized_lights - Add these via 'sudo crontab -e' to start / stop the lightshow automatically
 * bin/* - Various bash scripts to aid in playing songs, controlling volume, etc...  You may want to add this directory to your path for convienence.
 
