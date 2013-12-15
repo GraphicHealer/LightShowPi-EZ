@@ -81,7 +81,7 @@ except:
 
 # get state
 state = ConfigParser.RawConfigParser()
-state.read(home_directory + '/py/synchronized_lights_state.cfg')
+state.read(home_directory + '/config/synchronized_lights_state.cfg')
 
 # ADMIN SETTINGS
 volscript=home_directory + '/bin/vol'    # location of the volume script
@@ -219,19 +219,19 @@ for msg in extractsms(voice.sms.html):
             except ValueError:
                 l.log('Volume Change Not Understood: "' + volmessage + '"')
                 voice.send_sms(msg['from'], adminvolumemanagementcmd + ' Help: \n - "'+ adminvolumemanagementcmd +'-" to decrease \n - "'+ adminvolumemanagementcmd +'+" to increase \n - "'+ adminvolumemanagementcmd +'##" to set volume to ##')
-    # ADMIN - immediatly play the next song - interrupt any pre show lights on off time.
+    # ADMIN - immediately play the next song - interrupt any pre show lights on off time.
     elif ((admininterruptpreshowtimerscmd in msg['text'].lower()[0:len(admininterruptpreshowtimerscmd)]) and ((msg['from'] in admins) or (msg['from'] in specialguestlist))):
         interruptrequest = msg['text'][len(admininterruptpreshowtimerscmd):].strip()
         # Check if "play" was the only thing sent
         if len(interruptrequest) == 0:
             try:
                 state.set('do_not_modify','skip_pause','-1')
-                with open(home_directory + '/py/synchronized_lights_state.cfg', 'wb') as statefile:
+                with open(home_directory + '/config/synchronized_lights_state.cfg', 'wb') as statefile:
                     state.write(statefile)
                 l.log('Request to interrupt pre show timers: "' + msg['text'] + '" from ' + msg['from'])
                 voice.send_sms(msg['from'], 'The show will start shortly !')
             except ValueError:
-                l.log('Exception with request: "' + volmessage + '"' +  ' (' + ValueError + ')')
+                l.log('Exception with request: "' + msg['text'] + '"' +  ' (' + ValueError + ')')
                 voice.send_sms(msg['from'], 'ERROR: Could not interrupt preshow timers, check logs')
         # Check what else was sent and if its a valid song choice
         else:
@@ -239,11 +239,11 @@ for msg in extractsms(voice.sms.html):
                 interruptrequest = int(interruptrequest)
                 # Check if the song selection is valid
                 if interruptrequest > len(songs) or interruptrequest <= 0:
-                    l.log('Invalid song requsted: "' + msg['text'] + '"')
+                    l.log('Invalid song requested: "' + msg['text'] + '"')
                     voice.send_sms(msg['from'], 'Invalid song requested: ' + msg['text'])
                 else:
                     state.set('do_not_modify','skip_pause',interruptrequest)
-                    with open(home_directory + '/py/synchronized_lights_state.cfg', 'wb') as statefile:
+                    with open(home_directory + '/config/synchronized_lights_state.cfg', 'wb') as statefile:
                         state.write(statefile)
                     l.log('Request to interrupt pre show timers with specified song received: "' + msg['text'] + '"')
                     voice.send_sms(msg['from'], 'The show will start shortly !')
@@ -255,7 +255,7 @@ for msg in extractsms(voice.sms.html):
         voice.send_sms(msg['from'], 'Hrm, not sure what you want.  Try texting "help" for... well some help!')
 
 # Update playlist with latest votes
-with open(args.playlist.replace("$SYNCHRONIZED_LIGHTS_HOME",home_directory), 'wb') as f:
+with open(args.playlist.replace("$SYNCHRONIZED_LIGHTS_HOME", home_directory), 'wb') as f:
     fcntl.lockf(f, fcntl.LOCK_EX)
     writer = csv.writer(f, delimiter='\t')
     for song in songs:
