@@ -1,0 +1,2 @@
+# Ignore actual config files (only sync samples to avoid syncing personal info)
+*.cfg

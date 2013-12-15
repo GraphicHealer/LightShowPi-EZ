@@ -17,7 +17,7 @@ import log as l
 # Get Configurations
 home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 config = ConfigParser.RawConfigParser()
-config.read(home_directory + '/py/synchronized_lights.cfg')
+config.read(home_directory + '/config/synchronized_lights.cfg')
 gpio = map(int,config.get('hardware','gpios_to_use').split(',')) # List of pins to use defined by 
 activelowmode = config.getboolean('hardware','active_low_mode')
 alwaysonchannels = map(int,config.get('light_show_settings','always_on_channels').split(','))

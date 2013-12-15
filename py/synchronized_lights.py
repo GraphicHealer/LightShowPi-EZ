@@ -72,7 +72,7 @@ import log as l
 # Configurations
 home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 config = ConfigParser.RawConfigParser()
-config.read(home_directory + '/py/synchronized_lights.cfg')
+config.read(home_directory + '/config/synchronized_lights.cfg')
 limitlist = map(int,config.get('auto_tuning','limit_list').split(',')) # List of pins to use defined by 
 limitthreshold = config.getfloat('auto_tuning','limit_threshold')
 limitthresholdincrease = config.getfloat('auto_tuning','limit_threshold_increase')
@@ -101,8 +101,14 @@ preshowlightsofftime =config.getfloat('light_show_settings','preshow_lights_off_
 
 # State
 state = ConfigParser.RawConfigParser()
-state.read(home_directory + '/py/synchronized_lights_state.cfg')
-songtoplay = state.getint('do_not_modify','song_to_play')
+state.read(home_directory + '/config/synchronized_lights_state.cfg')
+try:
+  songtoplay = state.getint('do_not_modify','song_to_play')
+except:
+  # First time this is run it will not exist - create it now
+  state.add_section('do_not_modify')
+  songtoplay = 0
+  l.log('song_to_play not found in cfg file, reset to 0')
 
 
 
@@ -121,14 +127,14 @@ l.verbosity = args.verbosity
 # Functions
 def interruptPreShowTimers():
   l.log('Skipping preshow lights timers',1)
-  state.set('do_not_modify','skip_pause','0')
-  with open(home_directory + '/py/synchronized_lights_state.cfg', 'wb') as statefile:
+  state.set('do_not_modify', 'skip_pause', '0')
+  with open(home_directory + '/config/synchronized_lights_state.cfg', 'wb') as statefile:
         state.write(statefile)
         preshowlightsofftime = 0
 
 def recordNextSongToPlay(i):
-  state.set('do_not_modify','song_to_play',i)
-  with open(home_directory + '/py/synchronized_lights_state.cfg', 'wb') as statefile:
+  state.set('do_not_modify', 'song_to_play', i)
+  with open(home_directory + '/config/synchronized_lights_state.cfg', 'wb') as statefile:
         state.write(statefile)
 
 
@@ -160,8 +166,11 @@ ls1(True)
 while count <= fullpreshowlightsonofftime:
   time.sleep(0.01)
   # check to see if the preshow timer needs to be interrupted
-  state.read(home_directory + '/py/synchronized_lights_state.cfg')
-  skip_pause = state.getint('do_not_modify','skip_pause')
+  state.read(home_directory + '/config/synchronized_lights_state.cfg')
+  try:
+    skip_pause = state.getint('do_not_modify','skip_pause')
+  except:
+    skip_pause = 0
   if skip_pause != 0:
     count = fullpreshowlightsonofftime + 1
     interruptPreShowTimers()
