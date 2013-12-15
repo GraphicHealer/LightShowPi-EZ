@@ -48,7 +48,7 @@ import ast
 # get configurations
 home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 config = ConfigParser.RawConfigParser()
-config.read(home_directory + '/py/synchronized_lights.cfg')
+config.read(home_directory + '/config/synchronized_lights.cfg')
 try:
   admins = config.get('sms_settings','admins_list').split(',')
 except:

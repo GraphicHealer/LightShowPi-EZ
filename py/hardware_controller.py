@@ -22,6 +22,7 @@ gpio = map(int,config.get('hardware','gpios_to_use').split(',')) # List of pins 
 activelowmode = config.getboolean('hardware','active_low_mode')
 alwaysonchannels = map(int,config.get('light_show_settings','always_on_channels').split(','))
 alwaysoffchannels = map(int,config.get('light_show_settings','always_off_channels').split(','))
+invertedchannels = map(int,config.get('light_show_settings','invert_channels').split(','))
 try:
   mcp23017 = ast.literal_eval(config.get('hardware','mcp23017'))
 except:
@@ -87,17 +88,23 @@ def TurnOnLights(usealwaysonoff = 0):
         else:
             wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
 
-def TurnOffLight(i,usealwaysonoff = 0):
-    if usealwaysonoff:
+def TurnOffLight(i, useoverrides = 0):
+    if useoverrides:
         if i+1 not in alwaysonchannels:
-            wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
+            if i+1 not in invertedchannels:
+                wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
+            else:
+                wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
     else:
         wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
 
-def TurnOnLight(i,usealwaysonoff = 0):
-    if usealwaysonoff:
+def TurnOnLight(i, useoverrides = 0):
+    if useoverrides:
         if i+1 not in alwaysoffchannels:
-            wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
+            if i+1 not in invertedchannels:
+                wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
+            else:
+                wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)    
     else:
         wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
 

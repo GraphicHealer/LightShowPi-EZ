@@ -43,12 +43,13 @@ preshow_lights_onoff_order = on-off
 preshow_lights_on_time = 30
 preshow_lights_off_time = 5
 
-# always_on/off_channels can be used to define channel(s) that will always remain on or always remain off. This
-# is not a 0 based list and the first channel starts at 1. This does not affect the caching of timing values. 
-# Timing values will be cached as normal. set the list to -1 if not in use.
+# always_on/off_channels can be used to define channel(s) that will always remain on or always remain off.
+# inverted channels will turn off when music is played, and off otherwise.  These lists are not 1 based (i.e.
+# the first channel starts at 1. Timing values will be cached as normal. set the list to -1 if not in use.
 # EX: always_on_channels = 2,6
 always_on_channels = -1
 always_off_channels = -1
+invert_channels = -1
 
 
 
