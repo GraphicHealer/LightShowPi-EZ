@@ -54,7 +54,7 @@ import sms_commands as sc
 
 # Parse command line argumenst
 parser = argparse.ArgumentParser()
-parser.add_argument('--playlist', default=cm.lightshow()['playlist_path'], help='filename with the song playlist, one song per line in the format: <song name><tab><path to song>')
+parser.add_argument('--playlist', default=cm.lightshow()['playlist_path'].replace("$SYNCHRONIZED_LIGHTS_HOME", cm.home_dir), help='filename with the song playlist, one song per line in the format: <song name><tab><path to song>')
 parser.add_argument('-v', '--verbosity', type=int, choices=[0, 1, 2], default=1, help='change output logging verbosity')
 args = parser.parse_args()
 l.verbosity = args.verbosity
