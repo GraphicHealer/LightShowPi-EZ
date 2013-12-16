@@ -1,2 +1,6 @@
-# Ignore actual config files (only sync samples to avoid syncing personal info)
-*.cfg
+# Ignore overrides config files (only sync defaults to avoid synching personal setups)
+overrides.cfg
+
+# Ignore the state file (it will be created at startup)
+state.cfg
+

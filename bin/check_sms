@@ -9,6 +9,6 @@
 ${SYNCHRONIZED_LIGHTS_HOME:?"Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"}
 
 while true; do
-  sudo nice --adjustment=10 python $SYNCHRONIZED_LIGHTS_HOME/py/check_sms.py
+  sudo python $SYNCHRONIZED_LIGHTS_HOME/py/check_sms.py
   sleep 15
 done

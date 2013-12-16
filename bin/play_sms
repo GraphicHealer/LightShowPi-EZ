@@ -15,7 +15,7 @@ ${SYNCHRONIZED_LIGHTS_HOME:?"Need to setup SYNCHRONIZED_LIGHTS_HOME environment 
 $SYNCHRONIZED_LIGHTS_HOME/bin/midi_off
 
 while true; do
-  sudo nice --adjustment=-20 python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py
+  sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py
 done
 
 $SYNCHRONIZED_LIGHTS_HOME/bin/lights_off

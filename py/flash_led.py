@@ -7,29 +7,28 @@
 #
 # Additional Modifications By: Chris Usey (chrisausey@gmail.com)
 
-import time
-import wiringpi2 as wiringpi
+# standard python imports
 import argparse 
-import ConfigParser
 import ast
 import os
-import hardware_controller as hc
+import time
 
-# Configurations
-home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
-config = ConfigParser.RawConfigParser()
-config.read(home_directory + '/py/synchronized_lights.cfg')
+# third part imports
+import wiringpi2 as wiringpi
+
+# local imports
+import hardware_controller as hc
 
 # Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('--led', type=int, default=-1, help='led to flash (0-24)')
+parser.add_argument('--led', type=int, default=-1, help='led/pin to flash/toggle (or -1 for all)')
 parser.add_argument('--sleep', type=float, default=.5, help='time to sleep between flash')
 args = parser.parse_args()
 
 pin = args.led
 sleep = args.sleep
 
-# Cleanup Pins
+# Cleanup all pins
 hc.TurnOffLights()
 hc.SetPinsAsInputs()
 
@@ -40,7 +39,7 @@ hc.TurnOffLights()
 # Blink the LED's
 count = 0
 if (pin == -1):
-	print "Blink All pins " + str(count) + " of 5"
+	print "Blink all " + len(hc.gpio) + " pins"
 	for item in hc.gpio:
 		print "Activating Pin: " + str(item)
 		hc.TurnOnLight(item)
@@ -57,7 +56,7 @@ else:
 		print "Deactivating Pin: " + str(pin)
 		hc.TurnOffLight(hc.gpio[pin])
 		time.sleep(sleep)
-		count+=1
+		count += 1
 
 # Cleanup Pins
 hc.TurnOffLights()

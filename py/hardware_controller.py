@@ -13,16 +13,15 @@ import argparse
 import ConfigParser
 import ast
 import log as l
+import configuration_manager as cm
 
-# Get Configurations
-home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
-config = ConfigParser.RawConfigParser()
-config.read(home_directory + '/config/synchronized_lights.cfg')
-gpio = map(int,config.get('hardware','gpios_to_use').split(',')) # List of pins to use defined by 
+# Get Configurations - TODO(toddgiles): Move more of this into configuration manager
+config = cm.config
+gpio = map(int,config.get('hardware','gpio_pins').split(',')) # List of pins to use defined by 
 activelowmode = config.getboolean('hardware','active_low_mode')
-alwaysonchannels = map(int,config.get('light_show_settings','always_on_channels').split(','))
-alwaysoffchannels = map(int,config.get('light_show_settings','always_off_channels').split(','))
-invertedchannels = map(int,config.get('light_show_settings','invert_channels').split(','))
+alwaysonchannels = map(int,config.get('lightshow','always_on_channels').split(','))
+alwaysoffchannels = map(int,config.get('lightshow','always_off_channels').split(','))
+invertedchannels = map(int,config.get('lightshow','invert_channels').split(','))
 try:
   mcp23017 = ast.literal_eval(config.get('hardware','mcp23017'))
 except:

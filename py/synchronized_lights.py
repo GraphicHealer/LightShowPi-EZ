@@ -44,9 +44,12 @@ alsaaudio: for audio output - http://pyalsaaudio.sourceforge.net/
 decoder.py: decoding mp3, ogg, wma, and other audio files - https://pypi.python.org/pypi/decoder.py/1.5XB
 numpy: for FFT calcuation - http://www.numpy.org/
 raspberry-gpio-python: control GPIO output - https://code.google.com/p/raspberry-gpio-python/
+wiringpi2: python wrapper around wiring pi - TODO(toddgiles): Add good link
 """
 
+# Standard python imports
 import argparse 
+import ast
 import csv
 import fcntl
 import gzip
@@ -57,30 +60,29 @@ import sys
 import time
 import wave
 
+# Third party imports
 import alsaaudio as aa
 import decoder
 import numpy as np
 import wiringpi2 as wiringpi
-import ConfigParser
-import ast
 
+# Local imports
+import configuration_manager as cm
 import hardware_controller as hc
 import log as l
 
 
 
-# Configurations
-home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
-config = ConfigParser.RawConfigParser()
-config.read(home_directory + '/config/synchronized_lights.cfg')
-limitlist = map(int,config.get('auto_tuning','limit_list').split(',')) # List of pins to use defined by 
+# Configurations - TODO(toddgiles): Move more of this into configuration manager
+config = cm.config
+limitlist = map(int,config.get('auto_tuning','limit_list').split(','))
 limitthreshold = config.getfloat('auto_tuning','limit_threshold')
 limitthresholdincrease = config.getfloat('auto_tuning','limit_threshold_increase')
 limitthresholddecrease = config.getfloat('auto_tuning','limit_threshold_decrease')
 maxoffcycles = config.getfloat('auto_tuning','max_off_cycles')
 minfrequency = config.getfloat('audio_processing','min_frequency')
 maxfrequency = config.getfloat('audio_processing','max_frequency')
-randomizeplaylist = config.getboolean('light_show_settings','randomize_playlist')
+randomizeplaylist = config.getboolean('lightshow','randomize_playlist')
 try:
   customchannelmapping = map(int,config.get('audio_processing','custom_channel_mapping').split(','))
 except:
@@ -90,27 +92,11 @@ try:
 except:
   customchannelfrequencies = 0
 try:
-  playlistpath = config.get('light_show_settings','playlist_path').replace('$SYNCHRONIZED_LIGHTS_HOME',home_directory)
+  playlistpath = config.get('lightshow','playlist_path').replace('$SYNCHRONIZED_LIGHTS_HOME', cm.home_dir)
 except:
   playlistpath  = "/home/pi/music/.playlist"
-preshowlightsonofforder = config.get('light_show_settings','preshow_lights_onoff_order')
-preshowlightsontime = config.getfloat('light_show_settings','preshow_lights_on_time')
-preshowlightsofftime =config.getfloat('light_show_settings','preshow_lights_off_time')
-
-
-
-# State
-state = ConfigParser.RawConfigParser()
-state.read(home_directory + '/config/synchronized_lights_state.cfg')
-try:
-  songtoplay = state.getint('do_not_modify','song_to_play')
-except:
-  # First time this is run it will not exist - create it now
-  state.add_section('do_not_modify')
-  songtoplay = 0
-  l.log('song_to_play not found in cfg file, reset to 0')
-
-
+songtoplay = int(cm.get_state('song_to_play', 0))
+play_now = int(cm.get_state('play_now', 0))
 
 # Arguments
 parser = argparse.ArgumentParser()
@@ -122,70 +108,38 @@ parser.add_argument('--readcache', type=int, default=1, help='read from the cach
 args = parser.parse_args()
 l.verbosity = args.verbosity
 
-
-
-# Functions
-def interruptPreShowTimers():
-  l.log('Skipping preshow lights timers',1)
-  state.set('do_not_modify', 'skip_pause', '0')
-  with open(home_directory + '/config/synchronized_lights_state.cfg', 'wb') as statefile:
-        state.write(statefile)
-        preshowlightsofftime = 0
-
-def recordNextSongToPlay(i):
-  state.set('do_not_modify', 'song_to_play', i)
-  with open(home_directory + '/config/synchronized_lights_state.cfg', 'wb') as statefile:
-        state.write(statefile)
-
-
-
 # Make sure one of --playlist or --file was specified
 if args.file == None and args.playlist == None:
     print "One of --playlist or --file must be specified"
     sys.exit()
 
-
-
 # Initialize Lights
 hc.SetPinsAsOutputs();
 
+# Execute the "Preshow" for the given preshow configuration
+def execute_preshow(config):
+  for transition in config['transitions']:
+    start = time.time()
+    if transition['type'].lower() == 'on':
+      hc.TurnOnLights(True)
+    else:
+      hc.TurnOffLights(True)
+    l.log('Transition to ' + transition['type'] + ' for '
+        + str(transition['duration']) + ' seconds', 2)
+    while transition['duration'] > (time.time() - start):
+      cm.load_state() # Force a refresh of state from file
+      play_now = int(cm.get_state('play_now', 0))
+      if play_now:
+        return # Skip out on the rest of the preshow
 
-# Pre Show Light Management
-fullpreshowlightsonofftime = preshowlightsontime + preshowlightsofftime
-count = 0.00
-if preshowlightsonofforder == 'on-off':
-  ls1 = hc.TurnOnLights
-  ls2 = hc.TurnOffLights
-  switchtime = preshowlightsontime
-else:
-  ls1 = hc.TurnOffLights
-  ls2 = hc.TurnOnLights
-  switchtime = preshowlightsofftime
+      # Check once every ~ .1 seconds to break out
+      time.sleep(0.1)
 
-ls1(True)
-while count <= fullpreshowlightsonofftime:
-  time.sleep(0.01)
-  # check to see if the preshow timer needs to be interrupted
-  state.read(home_directory + '/config/synchronized_lights_state.cfg')
-  try:
-    skip_pause = state.getint('do_not_modify','skip_pause')
-  except:
-    skip_pause = 0
-  if skip_pause != 0:
-    count = fullpreshowlightsonofftime + 1
-    interruptPreShowTimers()
-    hc.TurnOffLights()
-    time.sleep(3)
-  else:
-    #no interruption continue normally
-    if count > switchtime and count < switchtime + 0.01:
-      ls2(True)
-    # bump the counter
-    count = count + 0.01
-
-
-
-# Determine the file to play
+# Only execute preshow if no specific song has been requested to be played right now
+if not play_now:
+  execute_preshow(cm.lightshow()['preshow'])
+      
+# Determine the next file to play
 file = args.file
 if args.playlist != None and args.file == None:
     most_votes = [None, None, []]
@@ -228,36 +182,31 @@ if args.playlist != None and args.file == None:
       # Get random song
       if randomizeplaylist:
         file = songs[random.randint(0, len(songs)-1)][1]
-      # Get Requested Song
-      elif skip_pause != 0 and skip_pause != -1:
-        file = songs[skip_pause -1][1]
-      # Play next song in lineup
+      # Get a "play now" requested song
+      elif play_now > 0 and play_now <= len(songs):
+        file = songs[play_now - 1][1]
+      # Play next song in the lineup
       else:
-        songtoplay = songtoplay if (songtoplay <= len(songs)-1) else 0
+        songtoplay = songtoplay if (songtoplay <= len(songs) - 1) else 0
         file = songs[songtoplay][1]
         nextsong = (songtoplay + 1) if ((songtoplay + 1) <= len(songs)-1) else 0
-        # record to list
-        recordNextSongToPlay(nextsong)
+        cm.update_state('song_to_play', nextsong)
 
-# replace our environment variable if used in the file name
-file = file.replace("$SYNCHRONIZED_LIGHTS_HOME",home_directory)
-
-
+# Ensure play_now is reset before beginning playback
+if play_now:
+  cm.update_state('play_now', 0)
+  play_now = 0
 
 # Initialize FFT stats
 matrix    = [0 for i in range(hc.GPIOLEN)]
 power     = []
 offct     = [0 for i in range(hc.GPIOLEN)]
 
-
-
 # Build the limit list
 if len(limitlist) == 1:
-  limit =[limitlist[0] for i in range(hc.GPIOLEN)]
+  limit = [limitlist[0] for i in range(hc.GPIOLEN)]
 else:
   limit = limitlist
-
-
 
 # Set up audio
 if file.endswith('.wav'):
@@ -291,11 +240,10 @@ try:
 except IOError:
   l.log("Cached sync data file not found: '" + cache_filename + ".", 1)
 
+
 # Return power array index corresponding to a particular frequency
 def piff(val):
    return int(2*chunk*val/sample_rate)
-
-
 
 #calculate frequency values for each channel
 def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_mapping, custom_channel_frequencies):
@@ -341,7 +289,6 @@ def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_map
     return frequency_store
 
 
-
 def calculate_levels(data, chunk, sample_rate, frequency_limits):
    global matrix
    # Convert raw data (ASCII string) to numpy array
@@ -368,7 +315,7 @@ def calculate_levels(data, chunk, sample_rate, frequency_limits):
 row = 0
 data = musicfile.readframes(chunk)
 frequency_limits = calculate_channel_frequency(minfrequency,maxfrequency,customchannelmapping,customchannelfrequencies)
-while data!='':
+while data != '' and not play_now:
    output.write(data)
 
    # Control lights with cached timing values if they exist
@@ -409,6 +356,10 @@ while data!='':
    # Read next chunk of data from music file
    data = musicfile.readframes(chunk)
    row = row + 1
+
+   # Load new application state in case we've been interrupted
+   cm.load_state()
+   play_now = int(cm.get_state('play_now', 0))
 
 if not cache_found:
    with gzip.open(cache_filename, 'wb') as f:

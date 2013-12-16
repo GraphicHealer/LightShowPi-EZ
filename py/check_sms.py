@@ -17,6 +17,9 @@ When a song is voted for, the playlist file will be updated with the sender's ce
 phone number to indicate it has received a vote from that caller.  This also enforces
 only a single vote per phone number per song (until that song is played).
 
+See the sms_commands.py file for other commands that are also supported (as well as
+instructions on adding your own commands).
+
 Sample usage:
 
 sudo check_sms.py --playlist=/home/pi/music/.playlist
@@ -30,7 +33,9 @@ Note, I used the following version of pygooglevoice w/auth fix:
 https://code.google.com/r/bwpayne-pygooglevoice-auth-fix/
 """
 
+# standard python imports
 import argparse 
+import ConfigParser
 import csv
 import fcntl
 import sys
@@ -38,56 +43,18 @@ import time
 import subprocess
 import os
 
+# third party imports
 from googlevoice import Voice
 from bs4 import BeautifulSoup
 
+# local imports
+import configuration_manager as cm
 import log as l
-import ConfigParser
-import ast
+import sms_commands as sc
 
-# get configurations
-home_directory = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
-config = ConfigParser.RawConfigParser()
-config.read(home_directory + '/config/synchronized_lights.cfg')
-try:
-  admins = config.get('sms_settings','admins_list').split(',')
-except:
-  admins = []
-
-try:
-  specialguestlist = config.get('sms_settings','special_guest_list').split(',')
-except:
-  specialguestlist = []
-
-try:
-  requestsongslistcmd = config.get('sms_settings','request_songs_list_cmd')
-except:
-  requestsongslistcmd  = "help"
-
-try:
-  adminvolumemanagementcmd = config.get('sms_settings','admin_volume_management_cmd')
-except:
-  adminvolumemanagementcmd  = "volume"
-
-try:
-  admininterruptpreshowtimerscmd = config.get('sms_settings','admin_interrupt_preshow_timers_cmd')
-except:
-  admininterruptpreshowtimerscmd  = "play"
-
-try:
-  playlistpath = config.get('light_show_settings','playlist_path')
-except:
-  playlistpath  = "/home/pi/music/.playlist"
-
-# get state
-state = ConfigParser.RawConfigParser()
-state.read(home_directory + '/config/synchronized_lights_state.cfg')
-
-# ADMIN SETTINGS
-volscript=home_directory + '/bin/vol'    # location of the volume script
-
+# Parse command line argumenst
 parser = argparse.ArgumentParser()
-parser.add_argument('--playlist', default=playlistpath, help='filename with the song playlist, one song per line in the format: <song name><tab><path to song>')
+parser.add_argument('--playlist', default=cm.lightshow()['playlist_path'], help='filename with the song playlist, one song per line in the format: <song name><tab><path to song>')
 parser.add_argument('-v', '--verbosity', type=int, choices=[0, 1, 2], default=1, help='change output logging verbosity')
 args = parser.parse_args()
 l.verbosity = args.verbosity
@@ -100,6 +67,7 @@ l.verbosity = args.verbosity
 #
 voice = Voice()
 voice.login()
+
 
 def song_played(song) :
     """Send an sms message to each requesting user that their song is now playing"""
@@ -132,8 +100,8 @@ def extractsms(htmlsms) :
     return msgitems
 
 # Load playlist from file, notifying users of any of their requests that have now played
-l.log('Loading playlist ' + args.playlist.replace("$SYNCHRONIZED_LIGHTS_HOME",home_directory), 2)
-with open(args.playlist.replace("$SYNCHRONIZED_LIGHTS_HOME",home_directory), 'rb') as f:
+l.log('Loading playlist ' + args.playlist, 2)
+with open(args.playlist, 'rb') as f:
     fcntl.lockf(f, fcntl.LOCK_SH)
     playlist = csv.reader(f, delimiter='\t')
     songs = []
@@ -152,110 +120,35 @@ with open(args.playlist.replace("$SYNCHRONIZED_LIGHTS_HOME",home_directory), 'rb
                 song[2] = set()
         songs.append(song)
     fcntl.lockf(f, fcntl.LOCK_UN)
+cm.set_songs(songs)
 
 # Parse and act on any new sms messages
 messages = voice.sms().messages
 for msg in extractsms(voice.sms.html):
     l.log(str(msg), 2)
-    try:
-        song_num = int(msg['text'])
-    except ValueError:
-        song_num = 0
-    if msg['from'] != 'Me' and song_num > 0 and song_num <= len(songs):
-        song = songs[song_num-1]
-        song[2].add(msg['from'])
-        l.log('Song requested: ' + str(song))
-        voice.send_sms(msg['from'], 'Thank you for requesting "' + song[0] + '", we\'ll notify you when it starts!')
-    elif requestsongslistcmd in msg['text'].lower():
-        l.log('Help requested from ' + msg['from'])
-        songlist = ['']
-        division = 0
-        index = 1
-        for song in songs:
-            songlist[division] += str(index) + ' - ' + song[0] + '\n'
-            index += 1
-            if (index - 1) % 5 == 0:
-                division += 1
-                songlist.append('')
-        header = 'Vote by texting the song #:\n'
-        for division in songlist:
-            voice.send_sms(msg['from'], header + division)
-            header = ''
-            time.sleep(5)
-    # ADMIN - Volume management
-    elif ((adminvolumemanagementcmd in msg['text'].lower()[0:len(adminvolumemanagementcmd)]) and ((msg['from'] in admins))):
-        volmessage = msg['text'][len(adminvolumemanagementcmd):len(adminvolumemanagementcmd)+1]
-        if ('-' in volmessage): 
-            l.log('Volume Down Request: ' + msg['from'])
-            output, error = subprocess.Popen(volscript + " -", shell=True,stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
-            if error:
-                l.log('Volume Down Request Failed: ' + str(error))
-            else:
-                l.log('Volume decreased to: ' + str(output))
-                voice.send_sms(msg['from'],'Volume decreased to: ' + str(output))
-        elif ('+' in volmessage):
-            l.log('Volume Increase Request: ' + msg['from'])
-            output, error = subprocess.Popen(volscript + " +", shell=True,stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
-            if error:
-                l.log('Volume Increase Request Failed: ' + str(error))
-            else:
-                l.log('Volume increased to: ' + str(output))
-                voice.send_sms(msg['from'],'Volume increased to: ' + str(output))
-        else:
-            try:
-                volume = int(msg['text'][len(adminvolumemanagementcmd):])
-                l.log('Volume Change To "' + str(volume) + '" Request: ' + msg['from'])
-                if (volume >= 0 and volume < 100):
-                    l.log('Volume Down Request: ' + msg['from'])
-                    output, error = subprocess.Popen(volscript + " " + str(volume), shell=True,stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
-                    if error:
-                        l.log('Volume Set Request Failed: ' + str(error))
-                    else:
-                        l.log('Volume set to: ' + str(output))
-                        voice.send_sms(msg['from'],'Volume set to: ' + str(output))
-                else:
-                    l.log('Volume Change Value Invalid: "' + str(volume) + '"')
-                    voice.send_sms(msg['from'],'Ivalid Volume: Volume must be a value from 0-99')
-            except ValueError:
-                l.log('Volume Change Not Understood: "' + volmessage + '"')
-                voice.send_sms(msg['from'], adminvolumemanagementcmd + ' Help: \n - "'+ adminvolumemanagementcmd +'-" to decrease \n - "'+ adminvolumemanagementcmd +'+" to increase \n - "'+ adminvolumemanagementcmd +'##" to set volume to ##')
-    # ADMIN - immediately play the next song - interrupt any pre show lights on off time.
-    elif ((admininterruptpreshowtimerscmd in msg['text'].lower()[0:len(admininterruptpreshowtimerscmd)]) and ((msg['from'] in admins) or (msg['from'] in specialguestlist))):
-        interruptrequest = msg['text'][len(admininterruptpreshowtimerscmd):].strip()
-        # Check if "play" was the only thing sent
-        if len(interruptrequest) == 0:
-            try:
-                state.set('do_not_modify','skip_pause','-1')
-                with open(home_directory + '/config/synchronized_lights_state.cfg', 'wb') as statefile:
-                    state.write(statefile)
-                l.log('Request to interrupt pre show timers: "' + msg['text'] + '" from ' + msg['from'])
-                voice.send_sms(msg['from'], 'The show will start shortly !')
-            except ValueError:
-                l.log('Exception with request: "' + msg['text'] + '"' +  ' (' + ValueError + ')')
-                voice.send_sms(msg['from'], 'ERROR: Could not interrupt preshow timers, check logs')
-        # Check what else was sent and if its a valid song choice
-        else:
-            try:
-                interruptrequest = int(interruptrequest)
-                # Check if the song selection is valid
-                if interruptrequest > len(songs) or interruptrequest <= 0:
-                    l.log('Invalid song requested: "' + msg['text'] + '"')
-                    voice.send_sms(msg['from'], 'Invalid song requested: ' + msg['text'])
-                else:
-                    state.set('do_not_modify','skip_pause',interruptrequest)
-                    with open(home_directory + '/config/synchronized_lights_state.cfg', 'wb') as statefile:
-                        state.write(statefile)
-                    l.log('Request to interrupt pre show timers with specified song received: "' + msg['text'] + '"')
-                    voice.send_sms(msg['from'], 'The show will start shortly !')
-            except ValueError:
-                l.log('Exception with request: "' + msg['text'] + '"')
-                voice.send_sms(msg['from'], 'Help: \n - "' + admininterruptpreshowtimerscmd + '" to begin playing next show \n - "' + admininterruptpreshowtimerscmd + '##" to play song number ##')
+    response = sc.execute(msg['text'], msg['from'])
+    if response:
+        l.log('Request: "' + msg['text'] + '" from ' + msg['from'])
+        try:
+          if isinstance(response, basestring):
+            voice.send_sms(msg['from'], response)
+          else:
+            # Multiple parts, send them with a delay in hopes to avoid
+            # them being received out of order by the recipient.
+            for part in response:
+              voice.send_sms(msg['from'], str(part))
+              time.sleep(2)
+        except:
+          e = sys.exc_info()[0]
+          l.log('Error sending sms response (command still executed)')
+          l.log(str(e), 2)
+        l.log('Response: "' + str(response) + '"')
     else:
         l.log('Unknown request: "' + msg['text'] + '" from ' + msg['from'])
-        voice.send_sms(msg['from'], 'Hrm, not sure what you want.  Try texting "help" for... well some help!')
+        voice.send_sms(msg['from'], cm.sms()['unknown_command_response'])
 
 # Update playlist with latest votes
-with open(args.playlist.replace("$SYNCHRONIZED_LIGHTS_HOME", home_directory), 'wb') as f:
+with open(args.playlist, 'wb') as f:
     fcntl.lockf(f, fcntl.LOCK_EX)
     writer = csv.writer(f, delimiter='\t')
     for song in songs:

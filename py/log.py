@@ -17,7 +17,7 @@ def log(msg, verbose_level=1, show_time=True):
   if verbosity >= verbose_level:
     if show_time:
       timestr = time.strftime("%b %d %Y %H:%M:%S", time.localtime())
-      print "[" + timestr + "] " + msg
+      print "[" + timestr + "] " + str(msg)
     else:
       print msg
 
