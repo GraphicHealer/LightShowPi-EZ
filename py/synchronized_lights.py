@@ -192,6 +192,8 @@ if args.playlist != None and args.file == None:
         nextsong = (songtoplay + 1) if ((songtoplay + 1) <= len(songs)-1) else 0
         cm.update_state('song_to_play', nextsong)
 
+file = file.replace("$SYNCHRONIZED_LIGHTS_HOME", cm.home_dir)
+
 # Ensure play_now is reset before beginning playback
 if play_now:
   cm.update_state('play_now', 0)
