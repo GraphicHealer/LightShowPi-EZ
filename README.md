@@ -3,6 +3,11 @@ that you send any updates / improvements you may make to them back to me so
 that I can benefit from your improvements, and re-share them with others to
 also benefit!
 
+Join us on our Google+ community page as well to share your experiences
+using lightshowPi, as well as videos of your shows!
+
+https://plus.google.com/communities/101789596301454731630
+
 Thanks, and enjoy ;)
 
 Todd Giles ([todd.giles@gmail.com](mailto:todd.giles@gmail.com))
@@ -16,9 +21,10 @@ Synchronized Lights
 * py/synchronized_lights.py - Play a single song while synchronizing lights to the music.
 * py/hardware_controller.py - Useful for verifying your hardware configuration (blink all lights, turn them on / off, etc...).
 * py/check_sms.py - Check sms messages from a google voice account to allow for voting for the next song!
-* config/* - Configuration files go here.  Take all the sample files and remove the .sample extension and modify as needed.
+* config/* - Configuration files go here.
 * crontab/synchronized_lights - Add these via 'sudo crontab -e' to start / stop the lightshow automatically
-* bin/* - Various bash scripts to aid in playing songs, controlling volume, etc...  You may want to add this directory to your path for convienence.
+* logs/* - Log files go here.
+* bin/* - Various bash scripts / tools to aid in playing songs, controlling volume, etc...
 
 Setup
 -----
