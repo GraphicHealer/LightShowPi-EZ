@@ -8,9 +8,12 @@
 #   play_midi /home/pi/music/midi/*
 #
 # Author: Todd Giles (todd.giles@gmail.com)
-#
+# Modifications: Chris Usey (chris.usey@gmail.com)
 
-midi_on
+# Check that the home environment variable is set
+${SYNCHRONIZED_LIGHTS_HOME:?"Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"}
+
+$SYNCHRONIZED_LIGHTS_HOME/bin/midi_on
 
 for f in $@
 do
@@ -18,5 +21,5 @@ do
   aplaymidi --port=14 "$f"
 done
 
-midi_off
-lights_off
+$SYNCHRONIZED_LIGHTS_HOME/bin/midi_off
+$SYNCHRONIZED_LIGHTS_HOME/bin/lights_off

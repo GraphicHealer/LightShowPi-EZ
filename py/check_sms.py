@@ -5,6 +5,8 @@
 # Feel free to use as you'd like, but I'd love to hear back from you on any
 # improvements, changes, etc...
 
+# Modifications by: Chris Usey (chris.usey@gmail.com)
+
 """Check SMS messages from a Google Voice account
 
 When executed, this script will check all the SMS messages from a Google Voice account
@@ -14,6 +16,9 @@ to the original sender, or a single number indicating which song they are voting
 When a song is voted for, the playlist file will be updated with the sender's cell 
 phone number to indicate it has received a vote from that caller.  This also enforces
 only a single vote per phone number per song (until that song is played).
+
+See the sms_commands.py file for other commands that are also supported (as well as
+instructions on adding your own commands).
 
 Sample usage:
 
@@ -28,19 +33,28 @@ Note, I used the following version of pygooglevoice w/auth fix:
 https://code.google.com/r/bwpayne-pygooglevoice-auth-fix/
 """
 
+# standard python imports
 import argparse 
+import ConfigParser
 import csv
 import fcntl
 import sys
 import time
+import subprocess
+import os
 
+# third party imports
 from googlevoice import Voice
 from bs4 import BeautifulSoup
 
+# local imports
+import configuration_manager as cm
 import log as l
+import sms_commands as sc
 
+# Parse command line argumenst
 parser = argparse.ArgumentParser()
-parser.add_argument('--playlist', required=True, help='filename with the song playlist, one song per line in the format: <song name><tab><path to song>')
+parser.add_argument('--playlist', default=cm.lightshow()['playlist_path'].replace("$SYNCHRONIZED_LIGHTS_HOME", cm.home_dir), help='filename with the song playlist, one song per line in the format: <song name><tab><path to song>')
 parser.add_argument('-v', '--verbosity', type=int, choices=[0, 1, 2], default=1, help='change output logging verbosity')
 args = parser.parse_args()
 l.verbosity = args.verbosity
@@ -53,6 +67,7 @@ l.verbosity = args.verbosity
 #
 voice = Voice()
 voice.login()
+
 
 def song_played(song) :
     """Send an sms message to each requesting user that their song is now playing"""
@@ -69,19 +84,19 @@ def extractsms(htmlsms) :
     Output is a list of dictionaries, one per message.
     """
     msgitems = []
-    tree = BeautifulSoup(htmlsms)			# parse HTML into tree
+    tree = BeautifulSoup(htmlsms)           # parse HTML into tree
     conversations = tree("div",attrs={"id" : True, "class" : "gc-message-unread"},recursive=False)
     for conversation in conversations :
-        #	For each conversation, extract each row, which is one SMS message.
+        #   For each conversation, extract each row, which is one SMS message.
         rows = conversation(attrs={"class" : "gc-message-sms-row"})
-        for row in rows :								# for all rows
-            #	For each row, which is one message, extract all the fields.
-            msgitem = {"id" : conversation["id"]}		# tag this message with conversation ID
+        for row in rows :                               # for all rows
+            #   For each row, which is one message, extract all the fields.
+            msgitem = {"id" : conversation["id"]}       # tag this message with conversation ID
             spans = row("span",attrs={"class" : True}, recursive=False)
-            for span in spans :							# for all spans in row
+            for span in spans :                         # for all spans in row
                 cl = span['class'][0].replace('gc-message-sms-', '')
-                msgitem[cl] = (" ".join(span.findAll(text=True))).strip()	# put text in dict
-            msgitems.append(msgitem)					# add msg dictionary to list
+                msgitem[cl] = (" ".join(span.findAll(text=True))).strip()   # put text in dict
+            msgitems.append(msgitem)                    # add msg dictionary to list
     return msgitems
 
 # Load playlist from file, notifying users of any of their requests that have now played
@@ -105,39 +120,32 @@ with open(args.playlist, 'rb') as f:
                 song[2] = set()
         songs.append(song)
     fcntl.lockf(f, fcntl.LOCK_UN)
+cm.set_songs(songs)
 
 # Parse and act on any new sms messages
 messages = voice.sms().messages
 for msg in extractsms(voice.sms.html):
     l.log(str(msg), 2)
-    try:
-        song_num = int(msg['text'])
-    except ValueError:
-        song_num = 0
-    if msg['from'] != 'Me' and song_num > 0 and song_num <= len(songs):
-        song = songs[song_num-1]
-        song[2].add(msg['from'])
-        l.log('Song requested: ' + str(song))
-        voice.send_sms(msg['from'], 'Thank you for requesting "' + song[0] + '", we\'ll notify you when it starts!')
-    elif 'help' in msg['text'].lower():
-        l.log('Help requested from ' + msg['from'])
-        songlist = ['']
-        division = 0
-        index = 1
-        for song in songs:
-            songlist[division] += str(index) + ' - ' + song[0] + '\n'
-            index += 1
-            if (index - 1) % 5 == 0:
-                division += 1
-                songlist.append('')
-        header = 'Vote by texting the song #:\n'
-        for division in songlist:
-            voice.send_sms(msg['from'], header + division)
-            header = ''
-            time.sleep(5)
+    response = sc.execute(msg['text'], msg['from'])
+    if response:
+        l.log('Request: "' + msg['text'] + '" from ' + msg['from'])
+        try:
+          if isinstance(response, basestring):
+            voice.send_sms(msg['from'], response)
+          else:
+            # Multiple parts, send them with a delay in hopes to avoid
+            # them being received out of order by the recipient.
+            for part in response:
+              voice.send_sms(msg['from'], str(part))
+              time.sleep(2)
+        except:
+          e = sys.exc_info()[0]
+          l.log('Error sending sms response (command still executed)')
+          l.log(str(e), 2)
+        l.log('Response: "' + str(response) + '"')
     else:
         l.log('Unknown request: "' + msg['text'] + '" from ' + msg['from'])
-        voice.send_sms(msg['from'], 'Hrm, not sure what you want.  Try texting "help" for... well some help!')
+        voice.send_sms(msg['from'], cm.sms()['unknown_command_response'])
 
 # Update playlist with latest votes
 with open(args.playlist, 'wb') as f:
@@ -154,4 +162,3 @@ with open(args.playlist, 'wb') as f:
 # Delete all mesages now that we've processed them
 for msg in messages:
     msg.delete(1)
-
