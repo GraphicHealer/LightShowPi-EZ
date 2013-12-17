@@ -29,13 +29,9 @@ Setup
 
 * Setup the environment
 	- Create an enviroment variable to specify the programs home directory. Edit `/etc/environment` and add the following line to the file replacing `/path/to/yourdirectory` with the location where you placed the program files
-...
-SYNCHRONIZED_LIGHTS_HOME=/path/to/yourdirectory
-...
+`SYNCHRONIZED_LIGHTS_HOME=/path/to/yourdirectory`
 	- Modify `/etc/sudoers` file to allow the `SYNCHRONIZED_LIGHTS_HOME` variable to be preserved when using sudo. Add the following line to the file:
-...
-Defaults
-env_keep="SYNCHRONIZED_LIGHTS_HOME"
-...
+`Defaults
+env_keep="SYNCHRONIZED_LIGHTS_HOME"`
 * Modify the configuration files to fit your system.  The configuration files are located in the `config` directory.
 	- TODO(toddgiles): Add step-by-step instructions to what configurations MUST be modified to get things working in a new setup.
