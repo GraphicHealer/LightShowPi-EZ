@@ -54,7 +54,7 @@ fi
 	wget http://www.brailleweb.com/downloads/decoder-1.5XB-Unix.zip
 	unzip decoder-1.5XB-Unix.zip
  	cd decoder-1.5.XB-Unix
-	cp decoder.py codecs.pdc fileinfo.py ${INSTALL_DIR}/py/.
+	cp decoder.py codecs.pdc fileinfo.py /usr/lib/python2.7/.
 	
 #install mutegen
 # rough test to see if it is installed
@@ -124,6 +124,18 @@ sudo easy_install -U pygooglevoice
 if [ $? -ne 0 ]; then
 error_hdlr($1)
 fi
+
+wget -O google_voice_authfix.zip https://bwpayne-pygooglevoice-auth-fix.googlecode.com/archive/56f4aaf3b1804977205076861e19ef79359bd7dd.zip
+
+unzip google_voice_authfix.zip
+cd bwpayne-pygooglevoice-auth-fix-56f4aaf3b180
+sudo python setup.py install
+if [ $? -ne 0 ]; then
+error_hdlr($1)
+fi
+
+#install beautiful soup
+sudo  easy_install beautifulsoup4
 
 #Test to see if we are working
 echo "test installation by doing the following 
