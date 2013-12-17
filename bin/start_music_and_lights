@@ -6,7 +6,7 @@
 # Modifications: Chris Usey (chris.usey@gmail.com)
 
 # Check that the home environment variable is set
-if [ -z ${SYNCHRONIZED_LIGHTS_HOME]; then
+if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
     echo "Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"
     exit 1
 fi
