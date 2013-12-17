@@ -6,7 +6,10 @@
 # Modifications: Chris Usey (chris.usey@gmail.com)
 
 # Check that the home environment variable is set
-${SYNCHRONIZED_LIGHTS_HOME:?"Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"}
+if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
+    echo "Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"
+    exit 1
+fi 
 
 sudo killall play_sms
 sudo killall check_sms
