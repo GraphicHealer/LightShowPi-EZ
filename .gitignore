@@ -1,0 +1,6 @@
+# Ignore decoder.py and fileinfo.py (if installed locally)
+decoder.py
+fileinfo.py
+
+# Ignore all compiled python files
+*.pyc
