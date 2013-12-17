@@ -3,6 +3,9 @@
 # Author: Todd Giles (todd.giles@gmail.com)
 #
 # Feel free to use, just send any enhancements back my way ;)
+#
+# Modifications By: Chris Usey (chris.usey@gmail.com)
+# Modifications By: Ryan Jennings
 
 """Play any audio file and synchronize lights to the music
 
@@ -41,9 +44,12 @@ alsaaudio: for audio output - http://pyalsaaudio.sourceforge.net/
 decoder.py: decoding mp3, ogg, wma, and other audio files - https://pypi.python.org/pypi/decoder.py/1.5XB
 numpy: for FFT calcuation - http://www.numpy.org/
 raspberry-gpio-python: control GPIO output - https://code.google.com/p/raspberry-gpio-python/
+wiringpi2: python wrapper around wiring pi - TODO(toddgiles): Add good link
 """
 
+# Standard python imports
 import argparse 
+import ast
 import csv
 import fcntl
 import gzip
@@ -54,18 +60,51 @@ import sys
 import time
 import wave
 
+# Third party imports
 import alsaaudio as aa
 import decoder
 import numpy as np
-import RPi.GPIO as GPIO
+import wiringpi2 as wiringpi
 
+# Local imports
+import configuration_manager as cm
+import hardware_controller as hc
 import log as l
 
+
+
+# Configurations - TODO(toddgiles): Move more of this into configuration manager
+config = cm.config
+limitlist = map(int,config.get('auto_tuning','limit_list').split(','))
+limitthreshold = config.getfloat('auto_tuning','limit_threshold')
+limitthresholdincrease = config.getfloat('auto_tuning','limit_threshold_increase')
+limitthresholddecrease = config.getfloat('auto_tuning','limit_threshold_decrease')
+maxoffcycles = config.getfloat('auto_tuning','max_off_cycles')
+minfrequency = config.getfloat('audio_processing','min_frequency')
+maxfrequency = config.getfloat('audio_processing','max_frequency')
+randomizeplaylist = config.getboolean('lightshow','randomize_playlist')
+try:
+  customchannelmapping = map(int,config.get('audio_processing','custom_channel_mapping').split(','))
+except:
+  customchannelmapping = 0
+try:
+  customchannelfrequencies = map(int,config.get('audio_processing','custom_channel_frequencies').split(','))
+except:
+  customchannelfrequencies = 0
+try:
+  playlistpath = config.get('lightshow','playlist_path').replace('$SYNCHRONIZED_LIGHTS_HOME', cm.home_dir)
+except:
+  playlistpath  = "/home/pi/music/.playlist"
+songtoplay = int(cm.get_state('song_to_play', 0))
+play_now = int(cm.get_state('play_now', 0))
+
+# Arguments
 parser = argparse.ArgumentParser()
 filegroup = parser.add_mutually_exclusive_group()
-filegroup.add_argument('--playlist', help='Playlist to choose song from (see check_sms for details on format)')
+filegroup.add_argument('--playlist', default=playlistpath, help='Playlist to choose song from (see check_sms for details on format)')
 filegroup.add_argument('--file', help='music file to play (required if no playlist designated)')
 parser.add_argument('-v', '--verbosity', type=int, choices=[0, 1, 2], default=1, help='change output verbosity')
+parser.add_argument('--readcache', type=int, default=1, help='read from the cache file. Default: true')
 args = parser.parse_args()
 l.verbosity = args.verbosity
 
@@ -74,9 +113,35 @@ if args.file == None and args.playlist == None:
     print "One of --playlist or --file must be specified"
     sys.exit()
 
-# Determine the file to play
+# Initialize Lights
+hc.SetPinsAsOutputs();
+
+# Execute the "Preshow" for the given preshow configuration
+def execute_preshow(config):
+  for transition in config['transitions']:
+    start = time.time()
+    if transition['type'].lower() == 'on':
+      hc.TurnOnLights(True)
+    else:
+      hc.TurnOffLights(True)
+    l.log('Transition to ' + transition['type'] + ' for '
+        + str(transition['duration']) + ' seconds', 2)
+    while transition['duration'] > (time.time() - start):
+      cm.load_state() # Force a refresh of state from file
+      play_now = int(cm.get_state('play_now', 0))
+      if play_now:
+        return # Skip out on the rest of the preshow
+
+      # Check once every ~ .1 seconds to break out
+      time.sleep(0.1)
+
+# Only execute preshow if no specific song has been requested to be played right now
+if not play_now:
+  execute_preshow(cm.lightshow()['preshow'])
+      
+# Determine the next file to play
 file = args.file
-if args.playlist != None:
+if args.playlist != None and args.file == None:
     most_votes = [None, None, []]
     with open(args.playlist, 'rb') as f:
         fcntl.lockf(f, fcntl.LOCK_SH)
@@ -114,36 +179,36 @@ if args.playlist != None:
             fcntl.lockf(f, fcntl.LOCK_UN)
 
     else:
+      # Get random song
+      if randomizeplaylist:
         file = songs[random.randint(0, len(songs)-1)][1]
+      # Get a "play now" requested song
+      elif play_now > 0 and play_now <= len(songs):
+        file = songs[play_now - 1][1]
+      # Play next song in the lineup
+      else:
+        songtoplay = songtoplay if (songtoplay <= len(songs) - 1) else 0
+        file = songs[songtoplay][1]
+        nextsong = (songtoplay + 1) if ((songtoplay + 1) <= len(songs)-1) else 0
+        cm.update_state('song_to_play', nextsong)
 
-# Initialize GPIO
-GPIO.setwarnings(False)
-GPIO.cleanup()
-GPIO.setmode(GPIO.BOARD)
+file = file.replace("$SYNCHRONIZED_LIGHTS_HOME", cm.home_dir)
 
-gpio = [11,12,13,15,16,18,22,7]
-for i in gpio:
-    GPIO.setup(i, GPIO.OUT)
-
-def TurnOffLights():
-    for i in range(8):
-        TurnOffLight(i)
-
-def TurnOffLight(i):
-    GPIO.output(gpio[i], GPIO.LOW)
-
-def TurnOnLight(i):
-    GPIO.output(gpio[i], GPIO.HIGH)
-
-# Initialize Lights
-TurnOffLights()
+# Ensure play_now is reset before beginning playback
+if play_now:
+  cm.update_state('play_now', 0)
+  play_now = 0
 
 # Initialize FFT stats
-matrix    = [0,0,0,0,0,0,0,0]
+matrix    = [0 for i in range(hc.GPIOLEN)]
 power     = []
-weighting = [2,2,4,4,8,16,32,16] # Power of 2
-limit     = [5,5,5,5,5,5,5,5]
-offct     = [0,0,0,0,0,0,0,0]
+offct     = [0 for i in range(hc.GPIOLEN)]
+
+# Build the limit list
+if len(limitlist) == 1:
+  limit = [limitlist[0] for i in range(hc.GPIOLEN)]
+else:
+  limit = limitlist
 
 # Set up audio
 if file.endswith('.wav'):
@@ -169,86 +234,134 @@ cache = []
 cache_found = False
 cache_filename = os.path.dirname(file) + "/." + os.path.basename(file) + ".sync.gz"
 try:
-   with gzip.open(cache_filename, 'rb') as f:
-      cachefile = csv.reader(f, delimiter=',')
-      for row in cachefile:
-         cache.append(row)
-      cache_found = True
+  with gzip.open(cache_filename, 'rb') as f:
+    cachefile = csv.reader(f, delimiter=',')
+    for row in cachefile:
+      cache.append(row)
+    cache_found = True
 except IOError:
-   l.log("Cached sync data file not found: '" + cache_filename + ".", 1)
+  l.log("Cached sync data file not found: '" + cache_filename + ".", 1)
+
 
 # Return power array index corresponding to a particular frequency
 def piff(val):
    return int(2*chunk*val/sample_rate)
+
+#calculate frequency values for each channel
+def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_mapping, custom_channel_frequencies):
+  # How many channels do we need to calculate the frequency for
+  if custom_channel_mapping != 0 and len(custom_channel_mapping) == hc.GPIOLEN:
+    l.log("Custom Channel Mapping is being used.",2)
+    channelLength = max(custom_channel_mapping)
+  else:
+    l.log("Normal Channel Mapping is being used.",2)
+    channelLength = hc.GPIOLEN
+  
+  l.log("Calculating frequencies for %d channels." % (channelLength), 2)
+  octaves = (np.log(max_frequency/min_frequency))/np.log(2)
+  l.log("octaves in selected frequency range ... %s" % octaves, 2)
+  octaves_per_channel = octaves/channelLength
+  frequency_limits = []
+  frequency_store = []
+  
+  frequency_limits.append(min_frequency)
+  if custom_channel_frequencies != 0 and (len(custom_channel_frequencies) >= channelLength + 1):
+    l.log("Custom channel frequencies are being used",2)
+    frequency_limits = custom_channel_frequencies
+  else:
+    l.log("Custom channel frequencies are not being used",2)
+    for i in range(1, hc.GPIOLEN+1):
+      frequency_limits.append(frequency_limits[-1]*10**(3/(10*(1/octaves_per_channel))))
+  for i in range(0, channelLength):
+    frequency_store.append((frequency_limits[i], frequency_limits[i+1]))
+    l.log("channel %d is %6.2f to %6.2f " % (i, frequency_limits[i], frequency_limits[i+1]),2)
    
-def calculate_levels(data, chunk, sample_rate):
+  # we have the frequencies now lets map them if custom mapping is defined
+  if custom_channel_mapping != 0 and len(custom_channel_mapping) == hc.GPIOLEN:
+    frequency_map=[]
+    for i in range(0, hc.GPIOLEN):
+      mapped_channel = custom_channel_mapping[i] -1
+      mapped_frequency_set= frequency_store[mapped_channel]
+      mapped_frequency_set_low= mapped_frequency_set[0]
+      mapped_frequency_set_high= mapped_frequency_set[1]
+      l.log("mapped channel: " + str(mapped_channel) + " will hold LOW: " + str(mapped_frequency_set_low) + ' HIGH: ' + str(mapped_frequency_set_high),2)
+      frequency_map.append(mapped_frequency_set)
+    return frequency_map
+  else:
+    return frequency_store
+
+
+def calculate_levels(data, chunk, sample_rate, frequency_limits):
    global matrix
    # Convert raw data (ASCII string) to numpy array
    data = unpack("%dh"%(len(data)/2),data)
    data = np.array(data, dtype='h')
+   
    # Apply FFT - real data
    fourier=np.fft.rfft(data)
+   
    # Remove last element in array to make it the same size as chunk
    fourier=np.delete(fourier,len(fourier)-1)
+   
    # Find average 'amplitude' for specific frequency ranges in Hz
    power = np.abs(fourier)   
-   matrix[0]= np.mean(power[piff(0)    :piff(156):1])
-   matrix[1]= np.mean(power[piff(156)  :piff(313):1])
-   matrix[2]= np.mean(power[piff(313)  :piff(625):1])
-   matrix[3]= np.mean(power[piff(625)  :piff(1250):1])
-   matrix[4]= np.mean(power[piff(1250) :piff(2500):1])
-   matrix[5]= np.mean(power[piff(2500) :piff(5000):1])
-   matrix[6]= np.mean(power[piff(5000) :piff(10000):1])
-   matrix[7]= np.mean(power[piff(10000):piff(15000):1])
+
+   for i in range(hc.GPIOLEN):
+      matrix[i] = np.mean(power[piff(frequency_limits[i][0]) :piff(frequency_limits[i][1]):1])
+
    # Tidy up column values for output to lights
-   matrix=np.divide(np.multiply(matrix,weighting),100000)
-   # Set floor at 0 and ceiling at 100 for lights
-   matrix=matrix.clip(0,100) 
+   matrix=np.divide(matrix,100000)
    return matrix
 
 # Process audio file
 row = 0
 data = musicfile.readframes(chunk)
-while data!='':
+frequency_limits = calculate_channel_frequency(minfrequency,maxfrequency,customchannelmapping,customchannelfrequencies)
+while data != '' and not play_now:
    output.write(data)
 
    # Control lights with cached timing values if they exist
-   if cache_found:
+   if cache_found and args.readcache:
       if row < len(cache):
          entry = cache[row]
-         for i in range (0,8):
-            if int(entry[i]):
-               TurnOnLight(i)
+         for i in range (0,hc.GPIOLEN):
+            if int(entry[i]): ## MAKE CHANGE HERE TO KEEP ON ALL THE TIME
+               hc.TurnOnLight(i,True)
             else:
-               TurnOffLight(i)
+               hc.TurnOffLight(i,True)
       else:
          l.log("!!!! Ran out of cached timing values !!!!", 2)
          
    # No cache - Compute FFT from this chunk, and cache results
    else:
       entry = []
-      matrix=calculate_levels(data, chunk, sample_rate)
-      for i in range (0,8):
-         if limit[i] < matrix[i] * 0.6:
-            limit[i] = limit[i] * 1.2
+      matrix=calculate_levels(data, chunk, sample_rate, frequency_limits)
+      for i in range (0,hc.GPIOLEN):
+         if limit[i] < matrix[i] * limitthreshold:
+            limit[i] = limit[i] * limitthresholdincrease
             l.log("++++ channel: {0}; limit: {1:.3f}".format(i, limit[i]), 2)
+         # Amplitude has reached threshold
          if matrix[i] > limit[i]:
-            TurnOnLight(i)
+            hc.TurnOnLight(i,True)
             offct[i] = 0
             entry.append('1')
-         else:
+         else: # Amplitude did not reach threshold
             offct[i] = offct[i]+1
-            if offct[i] > 10:
+            if offct[i] > maxoffcycles:
                offct[i] = 0
-               limit[i] = limit[i] * 0.8
+               limit[i] = limit[i] * limitthresholddecrease # old value 0.8
             l.log("---- channel: {0}; limit: {1:.3f}".format(i, limit[i]), 2)
-            TurnOffLight(i)
+            hc.TurnOffLight(i,True)
             entry.append('0')
       cache.append(entry)
 
    # Read next chunk of data from music file
    data = musicfile.readframes(chunk)
    row = row + 1
+
+   # Load new application state in case we've been interrupted
+   cm.load_state()
+   play_now = int(cm.get_state('play_now', 0))
 
 if not cache_found:
    with gzip.open(cache_filename, 'wb') as f:
@@ -257,4 +370,5 @@ if not cache_found:
       l.log("Cached sync data written to '." + cache_filename + "' [" + str(len(cache)) + " rows]", 1)
 
 # We're done, turn it all off ;)
-TurnOffLights()
+hc.TurnOffLights()
+hc.SetPinsAsInputs()

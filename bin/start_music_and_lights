@@ -3,7 +3,11 @@
 # Start the music and lights show (killing any existing instances first)
 #
 # Author: Todd Giles (todd.giles@gmail.com)
+# Modifications: Chris Usey (chris.usey@gmail.com)
 
-/home/pi/bin/stop_music_and_lights
-/home/pi/bin/play_sms &
-/home/pi/bin/check_sms &
+# Check that the home environment variable is set
+${SYNCHRONIZED_LIGHTS_HOME:?"Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"}
+
+$SYNCHRONIZED_LIGHTS_HOME/bin/stop_music_and_lights
+$SYNCHRONIZED_LIGHTS_HOME/bin/play_sms &
+$SYNCHRONIZED_LIGHTS_HOME/bin/check_sms &
