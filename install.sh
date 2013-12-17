@@ -94,4 +94,4 @@ cd $INSTALL_DIR
 
 sudo py/hardware_controller.py --state flash
 
-echo "If your lights blinked
+echo "If your lights blinked then this must have worked!"
