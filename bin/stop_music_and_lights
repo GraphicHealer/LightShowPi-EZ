@@ -3,7 +3,7 @@
 # Ensure that all the music and lights are off
 #
 # Author: Todd Giles (todd.giles@gmail.com)
-# Modifications: Chris Usey (chris.usey@gmail.com)
+# Modifications: Chris Usey (chris.usey@gmail.com), Sean Millar (sean.millar@gmail.com) 
 
 # Check that the home environment variable is set
 if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
