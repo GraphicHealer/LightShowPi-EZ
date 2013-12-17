@@ -132,6 +132,10 @@ state = ConfigParser.RawConfigParser()
 state_section = 'do_not_modify'
 state_file = config_dir + '/state.cfg'
 
+# Ensure state file has been created
+if not os.path.isfile(state_file):
+  open(state_file, 'a').close()
+
 # Force the state to be reloaded from disk
 def load_state():
   global state
