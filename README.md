@@ -6,7 +6,7 @@ also benefit!
 Join us on our Google+ community page as well to share your experiences
 using lightshowPi, as well as videos of your shows!
 
-https://plus.google.com/communities/101789596301454731630
+[https://plus.google.com/communities/101789596301454731630]
 
 Thanks, and enjoy ;)
 
