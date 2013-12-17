@@ -9,6 +9,8 @@
 #add dependencies for using sms (us Canadians don't get google voice :(  )
 #better error hanlding
 #clean this up so it looks pretty
+#
+
 
 #Root check
 if [ `whoami` != 'root' ]; then
