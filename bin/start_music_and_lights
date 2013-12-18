@@ -3,10 +3,13 @@
 # Start the music and lights show (killing any existing instances first)
 #
 # Author: Todd Giles (todd.giles@gmail.com)
-# Modifications: Chris Usey (chris.usey@gmail.com)
+# Modifications: Chris Usey (chris.usey@gmail.com), Sean Millar (sean.millar@gmail.com)
 
 # Check that the home environment variable is set
-${SYNCHRONIZED_LIGHTS_HOME:?"Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"}
+if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
+    echo "Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"
+    exit 1
+fi
 
 $SYNCHRONIZED_LIGHTS_HOME/bin/stop_music_and_lights
 $SYNCHRONIZED_LIGHTS_HOME/bin/play_sms &
