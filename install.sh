@@ -45,7 +45,7 @@ if [ $? -eq 1 ]; then
 	#Nope, install git
 	apt-get install -y git
     if [ $? -ne 0 ]; then
-        error_hdlr($1)
+        error_hdlr($?)
     fi
 fi
 
@@ -65,7 +65,7 @@ if [ $? -eq 1 ]; then
 	./setup.py build
 	./setup.py install
     if [ $? -ne 0 ]; then
-        error_hdlr($1)
+        error_hdlr($?)
     fi
 fi
 cd $BUILD_DIR
@@ -75,7 +75,7 @@ git clone git://git.drogon.net/wiringPi
 cd wiringPi 
 sudo ./build
     if [ $? -ne 0 ]; then
-        error_hdlr($1)
+        error_hdlr($?)
     fi
 cd $BUILD_DIR
 
@@ -85,7 +85,7 @@ git clone https://github.com/Gadgetoid/WiringPi2-Python.git
 cd WiringPi2-Python
 python setup.py install
     if [ $? -ne 0 ]; then
-        error_hdlr($1)
+        error_hdlr($?)
     fi
 cd $BUILD_DIR
 
@@ -93,17 +93,17 @@ cd $BUILD_DIR
 # http://www.numpy.org/
   	apt-get install -y python-numpy
 if [ $? -ne 0 ]; then
-error_hdlr($1)
+error_hdlr($?)
 fi
 #install python-alsaaudio
 	sudo apt-get install -y python-alsaaudio
 if [ $? -ne 0 ]; then
-error_hdlr($1)
+error_hdlr($?)
 fi
 #install audio encoders
 	sudo apt-get update && sudo apt-get install -y lame flac ffmpeg faad vorbis-tools
 if [ $? -ne 0 ]; then
-error_hdlr($1)
+error_hdlr($?)
 fi
 
 #handle state.cfg file missing bug#11
@@ -118,11 +118,11 @@ echo "Defaults	env_keep="SYNCHRONIZED_LIGHTS_HOME"" >>  /etc/sudoers
 #Install googlevoice and sms depedencies
 sudo easy_install simplejson
 if [ $? -ne 0 ]; then
-error_hdlr($1)
+error_hdlr($?)
 fi
 sudo easy_install -U pygooglevoice
 if [ $? -ne 0 ]; then
-error_hdlr($1)
+error_hdlr($?)
 fi
 
 wget -O google_voice_authfix.zip https://bwpayne-pygooglevoice-auth-fix.googlecode.com/archive/56f4aaf3b1804977205076861e19ef79359bd7dd.zip
@@ -131,7 +131,7 @@ unzip google_voice_authfix.zip
 cd bwpayne-pygooglevoice-auth-fix-56f4aaf3b180
 sudo python setup.py install
 if [ $? -ne 0 ]; then
-error_hdlr($1)
+error_hdlr($?)
 fi
 
 #install beautiful soup
