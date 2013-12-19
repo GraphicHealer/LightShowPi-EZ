@@ -15,6 +15,8 @@ file contains tools to manage these configuration files.
 import ConfigParser
 import fcntl
 import os
+import datetime
+import ast
 
 # third party imports
 
@@ -67,7 +69,7 @@ def lightshow():
       except:
         l.log("Unable to parse preshow transition: " + transition.join(':'))
     _lightshow_config['preshow'] = preshow
-
+  
   return _lightshow_config
 
 # Retrieves and validates sms configuration
@@ -91,6 +93,7 @@ def sms():
 
     # Groups / Permissions
     _sms_config['groups'] = map(str.strip, _sms_config['groups'].split(','))
+    _sms_config['throttled_groups'] = dict()
     for group in _sms_config['groups']:
       try:
         _sms_config[group + '_users'] = map(str.strip, _sms_config[group + '_users'].split(','))
@@ -103,6 +106,23 @@ def sms():
       for cmd in _sms_config[group + '_commands']:
         for user in _sms_config[group + '_users']:
           _who_can[cmd].add(user)
+
+      # Throttle
+      try:
+        throttled_group_definitions = map(str.strip, _sms_config[group + '_throttle'].split(','))
+        throttled_group = dict()
+        for definition in throttled_group_definitions:
+          definition = definition.split(':')
+          if len(definition) != 2:
+            l.log(guest + "_throttle definitions should be in the form "
+              + "[command]:<limit> - " + definition.join(':'))
+            continue
+          throttle_command = definition[0]
+          throttle_limit = int(definition[1])
+          throttled_group[throttle_command] = throttle_limit
+        _sms_config['throttled_groups'][group] = throttled_group
+      except:
+        l.log("Throttle definition either does not exist or is configured incorrectly for group: " + group)
 
     # Blacklist
     _sms_config['blacklist'] = map(str.strip, _sms_config['blacklist'].split(','))
@@ -155,7 +175,7 @@ def get_state(name, default=''):
     return default
 
 # Update the application state (name / value pair)
-def update_state(name, value):
+def update_state(name, value, section=state_section):
   global state, state_section, config_dir
   value = str(value)
   l.log('Updating application state: {' + name + ', ' + value + '}', 2)
@@ -176,3 +196,85 @@ def hasPermission(user, cmd):
   return not blacklisted and (user in _who_can['all']
       or 'all' in _who_can[cmd]
       or user in _who_can[cmd])
+
+# Returns True if the throttle has been exceeded and False if it has not been exceeded or is not throttled
+def isThrottleExceeded(cmd, user):
+  # Load throttle state
+  load_state()
+  throttlestate = ast.literal_eval(get_state('throttle_settings','{}'))
+  processcommandflag = -1
+
+  # ANALYZE THROTTLE TIMING
+  currenttimestamp = datetime.datetime.now()
+  throttletimelimit = _sms_config['throttle_time_limit']
+  throttlestarttime = datetime.datetime.strptime(throttlestate['throttle_timestamp_start'],'%Y-%m-%d %H:%M:%S.%f') if "throttle_timestamp_start" in throttlestate else currenttimestamp
+  throttlestoptime = throttlestarttime + datetime.timedelta(seconds=int(throttletimelimit))
+
+  # compare times and see if we need to reset the throttle state
+  if ((currenttimestamp == throttlestarttime) or (throttlestoptime < currenttimestamp)):
+    # there is no time recorded or the time has expired reset the throttle state
+    throttlestate = {}
+    throttlestate['throttle_timestamp_start'] = str(currenttimestamp)
+    update_state('throttle_settings', throttlestate)
+
+  # ANALYZE THE THROTTLE COMMANDS AND LIMITS
+  allthrottlelimit = -1
+  cmdthrottlelimit = -1
+
+  # Check to see what group belongs to starting with the first group declared
+  for group in _sms_config['groups']:
+    userlist = _sms_config[group + "_users"]
+    if user in userlist:
+      # The user belongs to this group, check if there are any throttle definitions
+      if group in _sms_config['throttled_groups']:
+        # The group has throttle commands defined, now check if the command is defined
+        throttledcommands = _sms_config['throttled_groups'][group]
+         # Check if all command exists
+        if "all" in throttledcommands:
+          allthrottlelimit = int(throttledcommands['all']) 
+
+        # Check if the command passed is defined
+        if cmd in throttledcommands:
+          cmdthrottlelimit = int(throttledcommands[cmd])
+
+        # A throttle was found, we no longer want to check anymore groups
+        break
+
+  # PROCESS THE THROTTLE SETTINGS THAT WERE FOUND FOR THE GROUP
+  if allthrottlelimit == -1 and cmdthrottlelimit == -1:
+    # No throttle limits were found for the group
+    return False
+  else:
+    # Throttle limits were found, check them against throttle state limits
+    groupthrottlestate = throttlestate[group] if group in throttlestate else {}
+    groupthrottlecmdlimit = int(groupthrottlestate[cmd]) if cmd in groupthrottlestate else 0
+
+  # Check to see if we need to apply "all"
+  if allthrottlelimit != -1:
+    groupthrottlealllimit = int(groupthrottlestate['all']) if 'all' in groupthrottlestate else 0
+
+    # Check if "all" throttle limit has been reached
+    if groupthrottlealllimit < allthrottlelimit:
+      # Not Reached, bump throttle and record
+      groupthrottlealllimit = groupthrottlealllimit + 1
+      groupthrottlestate['all'] = groupthrottlealllimit
+      throttlestate[group] = groupthrottlestate
+      processcommandflag = False
+    else:
+      # "all" throttle has been reached we dont want to process anything else
+      return True
+
+  # Check to see if we need to apply "cmd"
+  if cmdthrottlelimit != -1:
+    if groupthrottlecmdlimit < cmdthrottlelimit:
+      # Not reached, bump throttle
+      groupthrottlecmdlimit = groupthrottlecmdlimit + 1
+      groupthrottlestate[cmd] = groupthrottlecmdlimit
+      throttlestate[group] = groupthrottlestate
+      processcommandflag = False
+
+  # Record the throttle state and return
+  update_state('throttle_settings', throttlestate)
+
+  return processcommandflag
+
