@@ -1,4 +1,8 @@
 # Install these commands in the root user's cronta (i.e. sudo crontab -e)
+# Make sure your system time zone is setup correctly. /var/log/syslog time stamps should match
+# date command, if not reconfigure system time and reboot.
+# sudo dpkg-reconfigure tzdata
+# reboot
 
 # Start playing back songs and checking sms message at 6:30pm
 30 18 * * * exec $SYNCHRONIZED_LIGHTS_HOME/bin/check_sms >> $SYNCHRONIZED_LIGHTS_HOME/logs/music_and_lights.check 2>&1 &
