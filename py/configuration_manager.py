@@ -114,7 +114,7 @@ def sms():
         for definition in throttled_group_definitions:
           definition = definition.split(':')
           if len(definition) != 2:
-            l.log(guest + "_throttle definitions should be in the form "
+            l.log(group + "_throttle definitions should be in the form "
               + "[command]:<limit> - " + definition.join(':'))
             continue
           throttle_command = definition[0]
@@ -175,7 +175,7 @@ def get_state(name, default=''):
     return default
 
 # Update the application state (name / value pair)
-def update_state(name, value, section=state_section):
+def update_state(name, value):
   global state, state_section, config_dir
   value = str(value)
   l.log('Updating application state: {' + name + ', ' + value + '}', 2)
@@ -206,7 +206,7 @@ def isThrottleExceeded(cmd, user):
 
   # ANALYZE THROTTLE TIMING
   currenttimestamp = datetime.datetime.now()
-  throttletimelimit = _sms_config['throttle_time_limit']
+  throttletimelimit = _sms_config['throttle_time_limit_seconds_seconds']
   throttlestarttime = datetime.datetime.strptime(throttlestate['throttle_timestamp_start'],'%Y-%m-%d %H:%M:%S.%f') if "throttle_timestamp_start" in throttlestate else currenttimestamp
   throttlestoptime = throttlestarttime + datetime.timedelta(seconds=int(throttletimelimit))
 
