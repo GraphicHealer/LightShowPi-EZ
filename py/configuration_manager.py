@@ -206,7 +206,7 @@ def isThrottleExceeded(cmd, user):
 
   # ANALYZE THROTTLE TIMING
   currenttimestamp = datetime.datetime.now()
-  throttletimelimit = _sms_config['throttle_time_limit_seconds_seconds']
+  throttletimelimit = _sms_config['throttle_time_limit_seconds']
   throttlestarttime = datetime.datetime.strptime(throttlestate['throttle_timestamp_start'],'%Y-%m-%d %H:%M:%S.%f') if "throttle_timestamp_start" in throttlestate else currenttimestamp
   throttlestoptime = throttlestarttime + datetime.timedelta(seconds=int(throttletimelimit))
 
