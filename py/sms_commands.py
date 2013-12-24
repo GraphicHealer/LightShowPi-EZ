@@ -96,6 +96,10 @@ def execute(command, user):
   if not cm.hasPermission(user, name):
     return config['unauthorized_response'].format(cmd=name, user=user)
 
+  # Check to see if the command issued should be throttled
+  if cm.isThrottleExceeded(name,user):
+    return config['throttle_limit_reached_response'].format(cmd=name, user=user)
+
   # Execute the command
   return SmsCommand.commands[name].execute(user, args.strip())
 
