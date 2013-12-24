@@ -133,9 +133,6 @@ if __name__=="__main__":
     if -1 in lights:
         lights = range(0, len(gpio))
 
-    print lights
-    print gpio
-
     if args.init:
         Initialize()
 
