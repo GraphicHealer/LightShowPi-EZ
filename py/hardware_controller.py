@@ -119,51 +119,49 @@ def Initialize():
 if __name__=="__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--state', choices=["off", "on", "flash", "cleanup", "initialize","sequencetest"], help='turn off, on, flash, cleanup, or initialize')
+    parser.add_argument('--init', action='store_true', default=False, help='initialize hardware pins before running other commands') 
+    parser.add_argument('--state', choices=["off", "on", "flash", "cleanup"], help='turn off, on, flash, or cleanup')
+    parser.add_argument('--light', default='-1', help='the lights to act on (comma delimited list), -1 for all lights')
+    parser.add_argument('--sleep', default=0.1, help='how long to sleep between flashes')
+    parser.add_argument('--flashes', default=2, help='the number of times to flash each light')
     args = parser.parse_args()
     state = args.state
+    sleep = float(args.sleep)
+    flashes = int(args.flashes)
+
+    lights = map(int, args.light.split(','))
+    if -1 in lights:
+        lights = range(0, len(gpio))
+
+    print lights
+    print gpio
+
+    if args.init:
+        Initialize()
 
     if state=="cleanup":
         CleanUp()
-    elif state=="initialize":
-        Initialize()
     elif state=="off":
-        TurnOffLights()
+        for light in lights:
+            TurnOffLight(light)
     elif state=="on":
-        TurnOnLights()
+        for light in lights:
+            TurnOnLight(light)
     elif state=="flash":
         while True:
             try:
-                TurnOnLights()
-                for i in range(0,len(gpio)):
-                    print "channel %s " % i
-                    TurnOffLight(i)
-                    time.sleep(.1)
-                    TurnOnLight(i)
-                    time.sleep(.1)
-                    TurnOffLight(i)
-                    time.sleep(.1)
-                    TurnOnLight(i)
-                    time.sleep(.01)
+                for light in lights:
+                    print "channel %s " % light
+                    for _ in range(flashes):
+                        TurnOnLight(light)
+                        time.sleep(sleep)
+                        TurnOffLight(light)
+                        time.sleep(sleep)
             except KeyboardInterrupt:
                 print "\nstopped"
-                TurnOffLights()
+                for light in lights:
+                    TurnOffLight(light)
                 break
             break
-    elif state=="sequencetest":
-        count = 0
-        iterations = 50
-        sleep = 0.09
-        sleepstep = sleep/iterations
-        sleepcount = sleep
-        light = 7
-        while count < iterations:
-            print "Iteration: " + str(count) + " sleepcount: " + str(sleepcount)
-            TurnOnLight(light)
-            time.sleep(float(sleepcount))
-            TurnOffLight(light)
-            time.sleep(float(sleepcount))
-            sleepcount = sleepcount + sleepstep
-            count = count + 1
     else:
-        print "invalid state, use on, off, or flash"
+        parser.print_help()
