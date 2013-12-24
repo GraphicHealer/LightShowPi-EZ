@@ -3,7 +3,7 @@ that you send any updates / improvements you may make to them back to me so
 that I can benefit from your improvements, and re-share them with others to
 also benefit!
 
-Join us on our ([Google+ community page](https://plus.google.com/communities/101789596301454731630)) 
+Join us on our [Google+ community page](https://plus.google.com/communities/101789596301454731630)
 as well to share your experiences using lightshowPi, as well as videos of your shows!
 
 Thanks, and enjoy ;)
@@ -27,9 +27,9 @@ Synchronized Lights
 Setup / Install
 -------------
 
-These instructions assume you already have a working ([raspberryPi](http://www.raspberrypi.org/)) installed with a recent
-version of ([raspbian](http://www.raspbian.org/)).  It also does not cover hardware configuration at all, other than we
-use ([wiringPi](http://wiringpi.com/)) to control turning lights on and off.
+These instructions assume you already have a working [raspberryPi](http://www.raspberrypi.org/) installed with a recent
+version of [raspbian](http://www.raspbian.org/).  It also does not cover hardware configuration at all, other than we
+use [wiringPi](http://wiringpi.com/) to control turning lights on and off.
 
 * Download the latest version of the repository using git:
     - `git clone https://togiles@bitbucket.org/togiles/lightshowpi.git`	
