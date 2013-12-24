@@ -2,5 +2,8 @@
 decoder.py
 fileinfo.py
 
+# Ignore install log file
+install.log
+
 # Ignore all compiled python files
 *.pyc
