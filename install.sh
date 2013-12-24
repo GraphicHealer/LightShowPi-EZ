@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 # Syncronized_lights installer
 # Author: Sean Millar sean.millar@gmail.com
 # Install assumes this is a Rasberry Pi 
@@ -10,6 +10,9 @@
 #clean this up so it looks pretty
 #
 
+PATH=$PATH
+export PATH
+exec > >(tee install.log)
 
 #Root check
 if [ `whoami` != 'root' ]; then
@@ -18,10 +21,10 @@ if [ `whoami` != 'root' ]; then
 fi
 
 
-function error_hdlr() {
+function errchk {
 # basic error reporting
     echo "Houston we have a problem....."
-    echo "Error: $1"
+    echo "$1 failed with exit code $2"
     exit 1
 }
 
@@ -29,23 +32,20 @@ function error_hdlr() {
 
 #default installation dir
 #change to whichever directory to install package to
-INSTALL_DIR=/home/pi/lights
+INSTALL_DIR=/tmp
 
 mkdir $INSTALL_DIR
-cd ${INSTALL_DIR}
-
-BUILD_DIR=${INSTALL_DIR/build_dir
+BUILD_DIR=${INSTALL_DIR}/build_dir
 mkdir $BUILD_DIR
-
 cd $BUILD_DIR
 
 #Check to see if we have git
-git -v > /dev/null
+git --version > /dev/null
 if [ $? -eq 1 ]; then
 	#Nope, install git
 	apt-get install -y git
     if [ $? -ne 0 ]; then
-        error_hdlr($?)
+        errchk "git" $?
     fi
 fi
 
@@ -53,7 +53,7 @@ fi
 #install decoder
 	wget http://www.brailleweb.com/downloads/decoder-1.5XB-Unix.zip
 	unzip decoder-1.5XB-Unix.zip
- 	cd decoder-1.5.XB-Unix
+ 	cd decoder-1.5XB-Unix
 	cp decoder.py codecs.pdc fileinfo.py /usr/lib/python2.7/.
 	
 #install mutegen
@@ -62,10 +62,10 @@ which mutagen-pony > /dev/null
 
 if [ $? -eq 1 ]; then 
 	cd mutagen-1.19
-	./setup.py build
-	./setup.py install
+	sudo python setup.py build
+	sudo python setup.py install
     if [ $? -ne 0 ]; then
-        error_hdlr($?)
+        errchk "mutagen" $?
     fi
 fi
 cd $BUILD_DIR
@@ -75,7 +75,7 @@ git clone git://git.drogon.net/wiringPi
 cd wiringPi 
 sudo ./build
     if [ $? -ne 0 ]; then
-        error_hdlr($?)
+        errchk "git" $?
     fi
 cd $BUILD_DIR
 
@@ -83,9 +83,9 @@ cd $BUILD_DIR
 apt-get install -y python-dev python-setuptools 
 git clone https://github.com/Gadgetoid/WiringPi2-Python.git
 cd WiringPi2-Python
-python setup.py install
+sudo python setup.py install
     if [ $? -ne 0 ]; then
-        error_hdlr($?)
+        errchk "wiringpi2" $?
     fi
 cd $BUILD_DIR
 
@@ -93,17 +93,17 @@ cd $BUILD_DIR
 # http://www.numpy.org/
   	apt-get install -y python-numpy
 if [ $? -ne 0 ]; then
-error_hdlr($?)
+errchk "numpy" $?
 fi
 #install python-alsaaudio
 	sudo apt-get install -y python-alsaaudio
 if [ $? -ne 0 ]; then
-error_hdlr($?)
+errchk "python-alsaaudio" $?
 fi
 #install audio encoders
 	sudo apt-get update && sudo apt-get install -y lame flac ffmpeg faad vorbis-tools
 if [ $? -ne 0 ]; then
-error_hdlr($?)
+errchk "audio-encoders" $?
 fi
 
 #handle state.cfg file missing bug#11
@@ -118,11 +118,11 @@ echo "Defaults	env_keep="SYNCHRONIZED_LIGHTS_HOME"" >>  /etc/sudoers
 #Install googlevoice and sms depedencies
 sudo easy_install simplejson
 if [ $? -ne 0 ]; then
-error_hdlr($?)
+errchk "google voice deps"  $?
 fi
 sudo easy_install -U pygooglevoice
 if [ $? -ne 0 ]; then
-error_hdlr($?)
+errchk "pygooglevoice" $?
 fi
 
 wget -O google_voice_authfix.zip https://bwpayne-pygooglevoice-auth-fix.googlecode.com/archive/56f4aaf3b1804977205076861e19ef79359bd7dd.zip
@@ -131,14 +131,14 @@ unzip google_voice_authfix.zip
 cd bwpayne-pygooglevoice-auth-fix-56f4aaf3b180
 sudo python setup.py install
 if [ $? -ne 0 ]; then
-error_hdlr($?)
+errchk "googlevoice auth fix" $?
 fi
 
 #install beautiful soup
 sudo  easy_install beautifulsoup4
 
 #Test to see if we are working
-echo "test installation by doing the following 
+echo "test installation by doing the following" 
 cd $INSTALL_DIR
 
 sudo py/hardware_controller.py --state flash
