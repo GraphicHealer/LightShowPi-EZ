@@ -143,6 +143,7 @@ if not play_now:
 file = args.file
 if args.playlist != None and args.file == None:
     most_votes = [None, None, []]
+    current_song = None
     with open(args.playlist, 'rb') as f:
         fcntl.lockf(f, fcntl.LOCK_SH)
         playlist = csv.reader(f, delimiter='\t')
@@ -162,7 +163,7 @@ if args.playlist != None and args.file == None:
 
     if most_votes[0] != None:
         l.log("Most Votes: " + str(most_votes))
-        file = most_votes[1]
+        current_song = most_votes
 
         # Update playlist with latest votes
         with open(args.playlist, 'wb') as f:
@@ -181,16 +182,20 @@ if args.playlist != None and args.file == None:
     else:
       # Get random song
       if randomizeplaylist:
-        file = songs[random.randint(0, len(songs)-1)][1]
+        current_song = songs[random.randint(0, len(songs)-1)]
       # Get a "play now" requested song
       elif play_now > 0 and play_now <= len(songs):
-        file = songs[play_now - 1][1]
+        current_song = songs[play_now - 1][1]
       # Play next song in the lineup
       else:
         songtoplay = songtoplay if (songtoplay <= len(songs) - 1) else 0
-        file = songs[songtoplay][1]
-        nextsong = (songtoplay + 1) if ((songtoplay + 1) <= len(songs)-1) else 0
-        cm.update_state('song_to_play', nextsong)
+        current_song = songs[songtoplay]
+        next_song = (songtoplay + 1) if ((songtoplay + 1) <= len(songs)-1) else 0
+        cm.update_state('song_to_play', next_song)
+
+    # Get filename to play and store the current song playing in state cfg
+    file = current_song[1]
+    cm.update_state('current_song', songs.index(current_song))
 
 file = file.replace("$SYNCHRONIZED_LIGHTS_HOME", cm.home_dir)
 
