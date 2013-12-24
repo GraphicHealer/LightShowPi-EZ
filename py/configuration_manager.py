@@ -12,11 +12,12 @@ file contains tools to manage these configuration files.
 """
 
 # standard python imports
+import ast
 import ConfigParser
+import datetime
 import fcntl
 import os
-import datetime
-import ast
+import sys
 
 # third party imports
 
@@ -25,6 +26,9 @@ import log as l
 
 # The home directory and configuration directory for the application.
 home_dir = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
+if not home_dir:
+  print "Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"
+  sys.exit()
 config_dir = home_dir + '/config'
 
 # Load configuration file, loads defaults from config directory, and then

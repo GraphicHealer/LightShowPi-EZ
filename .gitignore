@@ -2,7 +2,8 @@
 decoder.py
 fileinfo.py
 
-# Ignore install log file
+# Ignore install log file + build_dir
+build_dir
 install.log
 
 # Ignore all compiled python files
