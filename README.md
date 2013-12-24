@@ -33,14 +33,8 @@ use [wiringPi](http://wiringpi.com/) to control turning lights on and off.
 
 * Download the latest version of the repository using git:
     - `git clone https://togiles@bitbucket.org/togiles/lightshowpi.git`	
-* Run the install script to retrieve the various dependencies lightshowPi uses:
-    - `cd /home/pi/lightshow`
-	- `sudo ./install.sh`
-* Setup the environment:
-	- Create an enviroment variable to specify the programs home directory. Edit `/etc/environment` and add the following line to the file replacing `/home/pi/lightshowpi` with the location of the files downloaded.
-        - `SYNCHRONIZED_LIGHTS_HOME=/home/pi/lightshowpi`
-	- Modify `/etc/sudoers` file to allow the `SYNCHRONIZED_LIGHTS_HOME` variable to be preserved when using sudo. Add the following line to the file:
-        - `Defaults
-		env_keep="SYNCHRONIZED_LIGHTS_HOME"`
 * Modify the configuration files to fit your system.  The configuration files are located in the `config` directory:
 	- TODO(toddgiles): Add step-by-step instructions to what configurations MUST be modified to get things working in a new setup.
+* Run the install script to retrieve the various dependencies lightshowPi uses:
+    - `cd /home/pi/lightshow` (or to whatever directory you downloaded the repository to)
+	- `sudo ./install.sh`
