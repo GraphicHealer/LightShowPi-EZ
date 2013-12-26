@@ -6,7 +6,7 @@
 # Author: Todd Giles <todd.giles@gmail.com>
 #
 # This configuration should be used when linting all Python files in lightshowPi:
-#   pylint --rcfile=tools/.pylintrc -i y py/
+#   pylint --rcfile=tools/.pylintrc py/*
 
 [FORMAT]
 
