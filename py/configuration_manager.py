@@ -136,17 +136,17 @@ def sms():
     return _sms_config
 
 # Retrieve the songs
-_songs = []
+_song_list = []
 def songs():
-    global _songs
-    if len(_songs) == 0:
+    global _song_list
+    if len(_song_list) == 0:
         pass # TODO(toddgiles): Load playlist if not already loaded
-    return _songs
+    return _song_list
 
 # Sets the list of songs (if loaded elsewhere, as is done by check_sms)
-def set_songs(songs):
-    global _songs
-    _songs = songs
+def set_songs(song_list):
+    global _song_list
+    _song_list = song_list
 
 
 ##############################
@@ -164,7 +164,6 @@ if not os.path.isfile(state_file):
 
 # Force the state to be reloaded from disk
 def load_state():
-    global state
     with open(state_file) as f:
         fcntl.lockf(f, fcntl.LOCK_SH)
         state.readfp(f, state_file)
@@ -174,7 +173,6 @@ load_state() # Do an initial load
 # Get the value of a specific application state variable, or the specified
 # default it not able to load
 def get_state(name, default=''):
-    global state, state_section
     try:
         return state.get(state_section, name)
     except:
@@ -182,7 +180,6 @@ def get_state(name, default=''):
 
 # Update the application state (name / value pair)
 def update_state(name, value):
-    global state, state_section, config_dir
     value = str(value)
     logging.info('Updating application state {%s: %s}', name, value)
     try:
@@ -197,7 +194,6 @@ def update_state(name, value):
 
 # Returns True iff a user has permission to execute the given command
 def hasPermission(user, cmd):
-    global _who_can
     blacklisted = user in sms()['blacklist']
     return not blacklisted and (user in _who_can['all']
                                 or 'all' in _who_can[cmd]
