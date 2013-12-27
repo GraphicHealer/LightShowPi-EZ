@@ -180,7 +180,7 @@ def sms_vote(user, args):
         if user != 'Me' and song_num > 0 and song_num <= len(cm.songs()):
             song = cm.songs()[song_num - 1]
             song[2].add(user)
-            l.log('Song requested: ' + str(song))
+            logging.info('Song requested: ' + str(song))
             return 'Thank you for requesting "' + song[0] \
                 + '", we\'ll notify you when it starts!'
     else:
