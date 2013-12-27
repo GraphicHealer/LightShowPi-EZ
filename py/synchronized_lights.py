@@ -257,7 +257,7 @@ def main():
                 fcntl.lockf(playlist_fp, fcntl.LOCK_EX)
                 writer = csv.writer(playlist_fp, delimiter='\t')
                 for song in songs:
-                    if song_filename == song[1] and len(song) == 3:
+                    if current_song == song and len(song) == 3:
                         song.append("playing!")
                     if len(song[2]) > 0:
                         song[2] = ",".join(song[2])
