@@ -13,8 +13,10 @@
 Configuration files are all located in the <homedir>/config directory. This file contains tools to
 manage these configuration files.
 """
+# The home directory and configuration directory for the application.
 
 import ConfigParser
+import ast
 import datetime
 import fcntl
 import logging
@@ -23,7 +25,6 @@ import sys
 import warnings
 
 
-# The home directory and configuration directory for the application.
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 if not HOME_DIR:
     print("Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, "
@@ -210,7 +211,7 @@ def is_throttle_exceeded(cmd, user):
     '''Returns True if the throttle has been exeeded and False otherwise'''
     # Load throttle STATE
     load_state()
-    throttlestate = get_state('throttle', {})
+    throttlestate = ast.literal_eval(get_state('throttle', {}))
     processcommandflag = -1
 
     # Analyze throttle timing
