@@ -207,8 +207,9 @@ def main():
     args = parser.parse_args()
 
     # Log everything to our log file
+    # TODO(toddgiles): Add logging configuration options.
     logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.play.dbg',
-                        format='[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s'
+                        format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
                         ' - %(message)s',
                         level=logging.DEBUG)
 
