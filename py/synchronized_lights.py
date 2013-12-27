@@ -154,7 +154,7 @@ def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_map
             mapped_frequency_set_high = mapped_frequency_set[1]
             logging.debug("mapped channel: " + str(mapped_channel) + " will hold LOW: "
                           + str(mapped_frequency_set_low) + " HIGH: "
-                          + str(mapped_frequency_set_high), 2)
+                          + str(mapped_frequency_set_high))
             frequency_map.append(mapped_frequency_set)
         return frequency_map
     else:
