@@ -10,7 +10,7 @@
 #                  configuration, and potentially edit it.
 """Configuration management for the lightshow.
 
-Configuration files are all located in the <homedir>/CONFIG directory. This file contains tools to
+Configuration files are all located in the <homedir>/config directory. This file contains tools to
 manage these configuration files.
 """
 
@@ -29,9 +29,9 @@ if not HOME_DIR:
     print("Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, "
           "see readme")
     sys.exit()
-CONFIG_DIR = HOME_DIR + '/CONFIG'
+CONFIG_DIR = HOME_DIR + '/config'
 
-# Load configuration file, loads defaults from CONFIG directory, and then
+# Load configuration file, loads defaults from config directory, and then
 # overrides from the same directory cfg file, then from /home/pi/.lights.cfg
 # and then from ~/.lights.cfg (which will be the root's home).
 CONFIG = ConfigParser.RawConfigParser()
