@@ -30,6 +30,7 @@ if not HOME_DIR:
           "see readme")
     sys.exit()
 CONFIG_DIR = HOME_DIR + '/config'
+LOG_DIR = HOME_DIR + '/logs'
 
 # Load configuration file, loads defaults from config directory, and then
 # overrides from the same directory cfg file, then from /home/pi/.lights.cfg

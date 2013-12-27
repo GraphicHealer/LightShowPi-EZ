@@ -206,6 +206,9 @@ def main():
                         help='read light timing from cache if available. Default: true')
     args = parser.parse_args()
 
+    # Log everything to our log file
+    logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.play', level=logging.DEBUG)
+
     # Make sure one of --playlist or --file was specified
     if args.file == None and args.playlist == None:
         print "One of --playlist or --file must be specified"
