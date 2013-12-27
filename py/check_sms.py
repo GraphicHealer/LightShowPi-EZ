@@ -90,6 +90,9 @@ def main():
                              '<song name><tab><path to song>')
     args = parser.parse_args()
 
+    # Log everything to debug log file
+    logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.check.dbg', level=logging.DEBUG)
+
     # Load playlist from file, notifying users of any of their requests that have now played
     logging.info('loading playlist ' + args.playlist)
     with open(args.playlist, 'rb') as playlist_fp:
