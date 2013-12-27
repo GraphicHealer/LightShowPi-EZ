@@ -91,7 +91,10 @@ def main():
     args = parser.parse_args()
 
     # Log everything to debug log file
-    logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.check.dbg', level=logging.DEBUG)
+    logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.check.dbg',
+                        format='[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s'
+                        ' - %(message)s',
+                        level=logging.DEBUG)
 
     # Load playlist from file, notifying users of any of their requests that have now played
     logging.info('loading playlist ' + args.playlist)

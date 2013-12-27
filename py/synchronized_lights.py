@@ -207,7 +207,10 @@ def main():
     args = parser.parse_args()
 
     # Log everything to our log file
-    logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.play.dbg', level=logging.DEBUG)
+    logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.play.dbg',
+                        format='[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s'
+                        ' - %(message)s',
+                        level=logging.DEBUG)
 
     # Make sure one of --playlist or --file was specified
     if args.file == None and args.playlist == None:
