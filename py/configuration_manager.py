@@ -72,7 +72,7 @@ def lightshow():
                     logging.error("Preshow transition transition_type must either 'on'"
                           "or 'off': " + transition_type)
                     continue
-                transition_config['transition_type'] = transition_type
+                transition_config['type'] = transition_type
                 transition_config['duration'] = float(transition[1])
                 preshow['transitions'].append(transition_config)
             except:
