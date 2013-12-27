@@ -180,7 +180,7 @@ def calculate_levels(data, sample_rate, frequency_limits):
     # Find average 'amplitude' for specific frequency ranges in Hz
     power = np.abs(fourier)
 
-    matrix = []
+    matrix = [0 for i in range(hc.GPIOLEN)]
     for i in range(hc.GPIOLEN):
         matrix[i] = np.mean(power[piff(frequency_limits[i][0], sample_rate)
                                   :piff(frequency_limits[i][1], sample_rate):1])
