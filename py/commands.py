@@ -173,7 +173,7 @@ def cmd_volume(_user, args):
 Command('volume', cmd_volume)
 
 # Casts a vote for the next song to be played.
-def sms_vote(user, args):
+def cmd_vote(user, args):
     '''Casts a vote for the next song to be played'''
     if args.isdigit():
         song_num = int(args)
@@ -185,4 +185,4 @@ def sms_vote(user, args):
                 + '", we\'ll notify you when it starts!'
     else:
         return cm.sms()['unknown_command_response']
-Command('vote', sms_vote)
+Command('vote', cmd_vote)
