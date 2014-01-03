@@ -38,3 +38,4 @@ use [wiringPi](http://wiringpi.com/) to control turning lights on and off.
 * Run the install script to retrieve the various dependencies lightshowPi uses:
     - `cd /home/pi/lightshow` (or to whatever directory you downloaded the repository to)
 	- `sudo ./install.sh`
+* For SMS use, create a google voice account and run `gvoice` to generate a default ~/.gvoice file, then modify the file to ensure your email and password are included
