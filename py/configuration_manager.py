@@ -211,7 +211,7 @@ def is_throttle_exceeded(cmd, user):
     '''Returns True if the throttle has been exeeded and False otherwise'''
     # Load throttle STATE
     load_state()
-    throttlestate = ast.literal_eval(get_state('throttle', {}))
+    throttlestate = ast.literal_eval(get_state('throttle', '{}'))
     processcommandflag = -1
 
     # Analyze throttle timing
