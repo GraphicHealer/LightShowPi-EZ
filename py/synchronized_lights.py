@@ -34,8 +34,14 @@ playback of all audio song_filename types.
 
 Sample usage:
 
+To play the next file in the default playlist (as defined in your configuration files) - 
+sudo python synchronized_lights.py
+
+To play the next file in a specific playlist -
 sudo python synchronized_lights.py --playlist=/home/pi/music/.playlist
-sudo python synchronized_lights.py --song_filename=/home/pi/music/jingle_bells.mp3
+
+To play a specific song -
+sudo python synchronized_lights.py --file=/home/pi/music/jingle_bells.mp3
 
 Third party dependencies:
 
