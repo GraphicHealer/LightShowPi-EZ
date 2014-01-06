@@ -122,15 +122,8 @@ sudo easy_install simplejson
 if [ $? -ne 0 ]; then
 errchk "google voice deps"  $?
 fi
-# We have to install using the specific file, as the typical install has an error:
-# https://code.google.com/p/pygooglevoice/issues/detail?id=66
-# sudo easy_install -U pygooglevoice
-sudo easy_install https://pygooglevoice.googlecode.com/files/pygooglevoice-0.5.tar.gz
-if [ $? -ne 0 ]; then
-errchk "pygooglevoice" $?
-fi
 
-#Install fix for googlevoice
+#Install fixed version of googlevoice
 wget -O google_voice_authfix.zip https://bwpayne-pygooglevoice-auth-fix.googlecode.com/archive/56f4aaf3b1804977205076861e19ef79359bd7dd.zip
 
 unzip google_voice_authfix.zip

@@ -1,7 +1,6 @@
-All files here are free for you to use as you wish.  All I ask in return is
-that you send any updates / improvements you may make to them back to me so
-that I can benefit from your improvements, and re-share them with others to
-also benefit!
+All files here are free to use under the BSD License (see the LICENSE file for details).  All we
+ask in return is that you send any updates / improvements you may make to them back to us so 
+that we can all benefit from your improvements!
 
 Join us on our [Google+ community page](https://plus.google.com/communities/101789596301454731630)
 as well to share your experiences using lightshowPi, as well as videos of your shows!
@@ -10,19 +9,24 @@ Thanks, and enjoy ;)
 
 Todd Giles ([todd.giles@gmail.com](mailto:todd.giles@gmail.com))
 
-Projects:
-=========
+Installation / Getting Started
+===========================
 
-Synchronized Lights
--------------------
+Please visit the [Wiki](https://bitbucket.org/togiles/lightshowpi/wiki/Home) for details on getting
+started.  Or for those who want to just jump on in, feel free to run the install.sh script and go 
+for it :-)
+
+Directory Structure:
+==================
 
 * py/synchronized_lights.py - Play a single song while synchronizing lights to the music.
 * py/hardware_controller.py - Useful for verifying your hardware configuration (blink all lights, turn them on / off, etc...).
 * py/check_sms.py - Check sms messages from a google voice account to allow for voting for the next song!
 * config/* - Configuration files go here.
 * crontab/synchronized_lights - Add these via 'sudo crontab -e' to start / stop the lightshow automatically
-* logs/* - Log files go here.
+* logs/* - Log files will be output here.
 * bin/* - Various bash scripts / tools to aid in playing songs, controlling volume, etc...
+<<<<<<< HEAD
 
 Setup / Install
 -------------
@@ -39,3 +43,5 @@ use [wiringPi](http://wiringpi.com/) to control turning lights on and off.
     - `cd /home/pi/lightshow` (or to whatever directory you downloaded the repository to)
 	- `sudo ./install.sh`
 * For SMS use, create a google voice account and run `gvoice` to generate a default ~/.gvoice file, then modify the file to ensure your email and password are included
+=======
+>>>>>>> f636b6af59fd9133afd977147135fca043d7c4ff

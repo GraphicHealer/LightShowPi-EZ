@@ -6,9 +6,9 @@
 #
 # Modifications By: Chris Usey (chris.usey@gmail.com)
 # Modifications By: Ryan Jennings
-"""Play any audio song_filename and synchronize lights to the music
+"""Play any audio music file and synchronize lights to the music
 
-When executed, this script will play an audio song_filename, as well as turn on and off 8 channels
+When executed, this script will play an audio file, as well as turn on and off 8 channels
 of lights to the music (via the first 8 GPIO channels on the Rasberry Pi), based upon
 music it is playing. Many types of audio files are supported (see decoder.py below), but
 it has only been tested with wav and mp3 at the time of this writing.
@@ -27,14 +27,23 @@ during the song.
 FFT calculation is quite CPU intensive and can adversely affect playback of songs (especially if
 attempting to decode the song as well, as is the case for an mp3).  For this reason, the timing
 values of the lights turning on and off is cached after it is calculated upon the first time a
-new song is played.  The values are cached in a gzip'd text song_filename in the same location as
+new song is played.  The values are cached in a gzip'd text file in the same location as
 the song itself.  Subsequent requests to play the same song will use the cached information and not
 recompute the FFT, thus reducing CPU utilization dramatically and allowing for clear music
-playback of all audio song_filename types.
+playback of all audio file types.
 
 Sample usage:
 
+To play the next file in the default playlist (as defined in your configuration files) - 
+sudo python synchronized_lights.py
+
+To play the next file in a specific playlist -
 sudo python synchronized_lights.py --playlist=/home/pi/music/.playlist
+<<<<<<< HEAD
+=======
+
+To play a specific song -
+>>>>>>> f636b6af59fd9133afd977147135fca043d7c4ff
 sudo python synchronized_lights.py --file=/home/pi/music/jingle_bells.mp3
 
 Third party dependencies:

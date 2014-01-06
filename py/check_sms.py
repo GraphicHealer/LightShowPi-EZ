@@ -45,7 +45,8 @@ import configuration_manager as cm
 from googlevoice import Voice
 
 
-# Setup your username and password in ~/.gvoice file as follows:
+# Setup your username and password in ~/.gvoice (or /root/.gvoice when running as root)
+# file as follows to avoid being asked for your email and password each time:
 #
 # [auth]
 # email=<google voice email address>
