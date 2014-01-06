@@ -1,169 +1,190 @@
 #!/usr/bin/env python
 #
-# Author: Ryan Jennings & Chris Usey
-# Based on work from Todd Giles (todd.giles@gmail.com)
+# Author: Ryan Jennings
+# Author: Chris Usey
+#
+# Based on original work from Todd Giles (todd.giles@gmail.com)
+"""Control the raspberry pi hardware.
 
+The hardware controller handles all interaction with the raspberry pi hardware to turn the lights
+on and off.
 
-import os
-import sys
-import time
-import wiringpi2 as wiringpi
-import time
+Third party dependencies:
+
+wiringpi2: python wrapper around wiring pi - https://github.com/WiringPi/WiringPi2-Python
+"""
+
 import argparse
-import ConfigParser
 import ast
-import log as l
+import logging
+import time
+
 import configuration_manager as cm
+import wiringpi2 as wiringpi
+
 
 # Get Configurations - TODO(toddgiles): Move more of this into configuration manager
-config = cm.config
-gpio = map(int,config.get('hardware','gpio_pins').split(',')) # List of pins to use defined by 
-activelowmode = config.getboolean('hardware','active_low_mode')
-alwaysonchannels = map(int,config.get('lightshow','always_on_channels').split(','))
-alwaysoffchannels = map(int,config.get('lightshow','always_off_channels').split(','))
-invertedchannels = map(int,config.get('lightshow','invert_channels').split(','))
+_CONFIG = cm.CONFIG
+_GPIO_PINS = [int(pin) for pin in _CONFIG.get('hardware', 'gpio_pins').split(',')]
+_ACTIVE_LOW_MODE = _CONFIG.getboolean('hardware', 'active_low_mode')
+_LIGHTSHOW_CONFIG = cm.lightshow()
+_ALWAYS_ON_CHANNELS = [int(channel) for channel in
+                       _LIGHTSHOW_CONFIG['always_on_channels'].split(',')]
+_ALWAYS_OFF_CHANNELS = [int(channel) for channel in
+                        _LIGHTSHOW_CONFIG['always_off_channels'].split(',')]
+_INVERTED_CHANNELS = [int(channel) for channel in
+                      _LIGHTSHOW_CONFIG['invert_channels'].split(',')]
 try:
-  mcp23017 = ast.literal_eval(config.get('hardware','mcp23017'))
+    _MCP23017 = ast.literal_eval(_CONFIG.get('hardware', 'mcp23017'))
 except:
-  mcp23017 = 0
-
-
+    _MCP23017 = 0
 
 # Initialize GPIO
 GPIOASINPUT = 0
 GPIOASOUTPUT = 1
-GPIOLEN = len(gpio)
+GPIOLEN = len(_GPIO_PINS)
 wiringpi.wiringPiSetup()
 
-
-
 # Activate Port Expander If Defined
-if (mcp23017):
-  l.log("Initializing MCP23017 Port Expander", 2)
-  wiringpi.mcp23017Setup(mcp23017['pin_base'],mcp23017['i2c_addr'])   # set up the pins and i2c address
-
-
+if _MCP23017:
+    logging.info("Initializing MCP23017 Port Expander")
+    # set up the pins and i2c address
+    wiringpi.mcp23017Setup(_MCP23017['pin_base'], _MCP23017['i2c_addr'])
 
 # Check ActiveLowMode Configuration Setting
-if (activelowmode):
+if _ACTIVE_LOW_MODE:
     # Enabled
-    GPIOACTIVE=0
-    GPIOINACTIVE=1
+    GPIOACTIVE = 0
+    GPIOINACTIVE = 1
 else:
     # Disabled
-    GPIOACTIVE=1
-    GPIOINACTIVE=0
-
+    GPIOACTIVE = 1
+    GPIOINACTIVE = 0
 
 
 # Functions
-def SetPinsAsOutputs():
+def set_pins_as_outputs():
+    '''Set all the configured pins as outputs.'''
     for i in range(GPIOLEN):
-        SetPinAsOutput(i)
+        set_pin_as_output(i)
 
-def SetPinsAsInputs():
+def set_pins_as_inputs():
+    '''Set all the configured pins as inputs.'''
     for i in range(GPIOLEN):
-        SetPinAsInput(i)
+        set_pin_as_input(i)
 
-def SetPinAsOutput(i):
-    wiringpi.pinMode(gpio[i], GPIOASOUTPUT)
+def set_pin_as_output(i):
+    '''Set the specified pin as an output.'''
+    wiringpi.pinMode(_GPIO_PINS[i], GPIOASOUTPUT)
 
-def SetPinAsInput(i):
-    wiringpi.pinMode(gpio[i], GPIOASINPUT)
+def set_pin_as_input(i):
+    '''Set the specified pin as an input.'''
+    wiringpi.pinMode(_GPIO_PINS[i], GPIOASINPUT)
 
-def TurnOffLights(usealwaysonoff = 0):
-    for i in range(GPIOLEN):
-        if usealwaysonoff:
-            if i+1 not in alwaysonchannels:
-                wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
-        else:
-            wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
-
-def TurnOnLights(usealwaysonoff = 0):
+def turn_off_lights(usealwaysonoff=0):
+    '''Turn off all the lights, but leave on all lights designated to be always on if specified.'''
     for i in range(GPIOLEN):
         if usealwaysonoff:
-            if i+1 not in alwaysoffchannels:
-                wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
+            if i + 1 not in _ALWAYS_ON_CHANNELS:
+                wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
         else:
-            wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
+            wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
 
-def TurnOffLight(i, useoverrides = 0):
+def turn_on_lights(usealwaysonoff=0):
+    '''Turn on all the lights, but leave off all lights designated to be always off if specified.'''
+    for i in range(GPIOLEN):
+        if usealwaysonoff:
+            if i + 1 not in _ALWAYS_OFF_CHANNELS:
+                wiringpi.digitalWrite(_GPIO_PINS[i], GPIOACTIVE)
+        else:
+            wiringpi.digitalWrite(_GPIO_PINS[i], GPIOACTIVE)
+
+def turn_off_light(i, useoverrides=0):
+    '''Turn off the specified light, taking into account various overrides if specified.'''
     if useoverrides:
-        if i+1 not in alwaysonchannels:
-            if i+1 not in invertedchannels:
-                wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
+        if i + 1 not in _ALWAYS_ON_CHANNELS:
+            if i + 1 not in _INVERTED_CHANNELS:
+                wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
             else:
-                wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
+                wiringpi.digitalWrite(_GPIO_PINS[i], GPIOACTIVE)
     else:
-        wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)
+        wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
 
-def TurnOnLight(i, useoverrides = 0):
+def turn_on_light(i, useoverrides=0):
+    '''Turn on the specified light, taking into account various overrides if specified.'''
     if useoverrides:
-        if i+1 not in alwaysoffchannels:
-            if i+1 not in invertedchannels:
-                wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
+        if i + 1 not in _ALWAYS_OFF_CHANNELS:
+            if i + 1 not in _INVERTED_CHANNELS:
+                wiringpi.digitalWrite(_GPIO_PINS[i], GPIOACTIVE)
             else:
-                wiringpi.digitalWrite(gpio[i], GPIOINACTIVE)    
+                wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
     else:
-        wiringpi.digitalWrite(gpio[i], GPIOACTIVE)
+        wiringpi.digitalWrite(_GPIO_PINS[i], GPIOACTIVE)
 
-def CleanUp():
-    TurnOffLights()
-    SetPinsAsInputs()
+def clean_up():
+    '''Turn off all lights, and set the pins as inputs.'''
+    turn_off_lights()
+    set_pins_as_inputs()
 
-def Initialize():
-    SetPinsAsOutputs()
-    TurnOffLights()
+def initialize():
+    '''Set pins as outputs, and start all lights in the off state.'''
+    set_pins_as_outputs()
+    turn_off_lights()
 
-#__________________Main________________
-if __name__=="__main__":
+
+# __________________Main________________
+def main():
+    '''main'''
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--state', choices=["off", "on", "flash", "cleanup", "initialize","sequencetest"], help='turn off, on, flash, cleanup, or initialize')
+    parser.add_argument('--init', action='store_true', default=False,
+                        help='initialize hardware pins before running other commands')
+    parser.add_argument('--state', choices=["off", "on", "flash", "cleanup"],
+                        help='turn off, on, flash, or cleanup')
+    parser.add_argument('--light', default='-1',
+                        help='the lights to act on (comma delimited list), -1 for all lights')
+    parser.add_argument('--sleep', default=0.1,
+                        help='how long to sleep between flashes')
+    parser.add_argument('--flashes', default=2,
+                        help='the number of times to flash each light')
     args = parser.parse_args()
     state = args.state
+    sleep = float(args.sleep)
+    flashes = int(args.flashes)
 
-    if state=="cleanup":
-        CleanUp()
-    elif state=="initialize":
-        Initialize()
-    elif state=="off":
-        TurnOffLights()
-    elif state=="on":
-        TurnOnLights()
-    elif state=="flash":
+    lights = [int(light) for light in args.light.split(',')]
+    if -1 in lights:
+        lights = range(0, len(_GPIO_PINS))
+
+    if args.init:
+        initialize()
+
+    if state == "cleanup":
+        clean_up()
+    elif state == "off":
+        for light in lights:
+            turn_off_light(light)
+    elif state == "on":
+        for light in lights:
+            turn_on_light(light)
+    elif state == "flash":
         while True:
             try:
-                TurnOnLights()
-                for i in range(0,len(gpio)):
-                    print "channel %s " % i
-                    TurnOffLight(i)
-                    time.sleep(.1)
-                    TurnOnLight(i)
-                    time.sleep(.1)
-                    TurnOffLight(i)
-                    time.sleep(.1)
-                    TurnOnLight(i)
-                    time.sleep(.01)
+                for light in lights:
+                    print "channel %s " % light
+                    for _ in range(flashes):
+                        turn_on_light(light)
+                        time.sleep(sleep)
+                        turn_off_light(light)
+                        time.sleep(sleep)
             except KeyboardInterrupt:
                 print "\nstopped"
-                TurnOffLights()
+                for light in lights:
+                    turn_off_light(light)
                 break
             break
-    elif state=="sequencetest":
-        count = 0
-        iterations = 50
-        sleep = 0.09
-        sleepstep = sleep/iterations
-        sleepcount = sleep
-        light = 7
-        while count < iterations:
-            print "Iteration: " + str(count) + " sleepcount: " + str(sleepcount)
-            TurnOnLight(light)
-            time.sleep(float(sleepcount))
-            TurnOffLight(light)
-            time.sleep(float(sleepcount))
-            sleepcount = sleepcount + sleepstep
-            count = count + 1
     else:
-        print "invalid state, use on, off, or flash"
+        parser.print_help()
+
+if __name__ == "__main__":
+    main()
