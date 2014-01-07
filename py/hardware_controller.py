@@ -94,6 +94,11 @@ def set_pin_as_input(i):
 def turn_off_lights(usealwaysonoff=0):
     '''Turn off all the lights, but leave on all lights designated to be always on if specified.'''
     for i in range(GPIOLEN):
+        if is_pin_pwm(i):
+            # No overrides avaialble for pwm mode pins
+            wiringpi.softPwmWrite(i, 0)
+            return
+
         if usealwaysonoff:
             if i + 1 not in _ALWAYS_ON_CHANNELS:
                 wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
@@ -103,6 +108,11 @@ def turn_off_lights(usealwaysonoff=0):
 def turn_on_lights(usealwaysonoff=0):
     '''Turn on all the lights, but leave off all lights designated to be always off if specified.'''
     for i in range(GPIOLEN):
+        if is_pin_pwm(i):
+            # No overrides avaialble for pwm mode pins
+            wiringpi.softPwmWrite(i, 60)
+            return
+
         if usealwaysonoff:
             if i + 1 not in _ALWAYS_OFF_CHANNELS:
                 wiringpi.digitalWrite(_GPIO_PINS[i], GPIOACTIVE)
