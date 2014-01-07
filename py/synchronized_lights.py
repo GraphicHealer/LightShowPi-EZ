@@ -380,7 +380,7 @@ def main():
                 else:
                     limit[i] = limit[i] * _LIMIT_THRESHOLD_DECREASE
                     brightness = limit[i]
-                hc.turn_on_light(i, True, brightness * 60.0)
+                hc.turn_on_light(i, True, int(brightness * 60))
             else:
                 if limit[i] < matrix[i] * _LIMIT_THRESHOLD:
                     limit[i] = limit[i] * _LIMIT_THRESHOLD_INCREASE
