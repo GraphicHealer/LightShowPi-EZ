@@ -85,7 +85,7 @@ def set_pin_as_output(i):
     '''Set the specified pin as an output.'''
     wiringpi.pinMode(_GPIO_PINS[i], GPIOASOUTPUT)
     if is_pin_pwm(i):
-        wiringpi.softPwmCreate(i, 0, 100)
+        wiringpi.softPwmCreate(i, 0, 60)
 
 def set_pin_as_input(i):
     '''Set the specified pin as an input.'''
@@ -125,10 +125,13 @@ def turn_off_light(i, useoverrides=0):
     else:
         wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
 
-def turn_on_light(i, useoverrides=0, brightness=100):
+def turn_on_light(i, useoverrides=0, brightness=60):
     '''Turn on the specified light, taking into account various overrides if specified.'''
     if is_pin_pwm(i):
-        # No overrides avaialble for pwm mode pins
+        if brightness < 0:
+            brightness = 0
+        if brightness > 60:
+            brightness = 60
         wiringpi.softPwmWrite(i, brightness)
         return
 
@@ -194,14 +197,14 @@ def main():
                 for light in lights:
                     if is_pin_pwm(light):
                         for _ in range(flashes):
-                            for brightness in range(0, 101, 10):
+                            for brightness in range(0, 60):
                                 # fade in
                                 turn_on_light(light, 0, brightness)
-                                time.sleep(sleep / 11)
-                            for brightness in range(100, -1, -10):
+                                time.sleep(sleep / 60)
+                            for brightness in range(59, -1, -1):
                                 # fade out
                                 turn_on_light(light, 0, brightness)
-                                time.sleep(sleep / 11)
+                                time.sleep(sleep / 60)
             except KeyboardInterrupt:
                 print "\nstopped"
                 for light in lights:
