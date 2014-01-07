@@ -194,11 +194,11 @@ def main():
                 for light in lights:
                     if is_pin_pwm(light):
                         for _ in range(flashes):
-                            for brightness in range(0, 100, 10):
+                            for brightness in range(0, 101, 10):
                                 # fade in
                                 turn_on_light(light, 0, brightness)
                                 time.sleep(sleep / 11)
-                            for brightness in range(100, 0, -10):
+                            for brightness in range(100, -1, -10):
                                 # fade out
                                 turn_on_light(light, 0, brightness)
                                 time.sleep(sleep / 11)
