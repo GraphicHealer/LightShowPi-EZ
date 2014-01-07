@@ -332,7 +332,7 @@ def main():
     cache_filename = os.path.dirname(song_filename) + "/." + os.path.basename(song_filename) \
         + ".sync.gz"
     if args.readcache:
-        # Read in cached light control signals
+        # Read in cached fft
         try:
             with gzip.open(cache_filename, 'rb') as playlist_fp:
                 cachefile = csv.reader(playlist_fp, delimiter=',')
