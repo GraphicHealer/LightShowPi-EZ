@@ -1,178 +1,298 @@
 #!/usr/bin/env python
 #
+# Licensed under the BSD license.  See full license in LICENSE file.
+#
 # Author: Todd Giles (todd.giles@gmail.com)
 #
-# Feel free to use as you'd like, but I'd love to hear back from you on any
-# improvements, changes, etc...
-
+# TODO(toddgiles): Refactor the configuration manager into a configuration manager class (to remove
+#                  the extensive use of globals currently used).
+# TODO(toddgiles): Add a main and allow running configuration manager alone to view the current
+#                  configuration, and potentially edit it.
 """Configuration management for the lightshow.
 
-Configuration files are all located in the <homedir>/config directory.  This
-file contains tools to manage these configuration files.
+Configuration files are all located in the <homedir>/config directory. This file contains tools to
+manage these configuration files.
 """
-
-# standard python imports
-import ConfigParser
-import fcntl
-import os
-
-# third party imports
-
-# local imports
-import log as l
-
 # The home directory and configuration directory for the application.
-home_dir = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
-config_dir = home_dir + '/config'
+
+import ConfigParser
+import ast
+import datetime
+import fcntl
+import logging
+import os
+import sys
+import warnings
+
+
+HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
+if not HOME_DIR:
+    print("Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, "
+          "see readme")
+    sys.exit()
+CONFIG_DIR = HOME_DIR + '/config'
+LOG_DIR = HOME_DIR + '/logs'
 
 # Load configuration file, loads defaults from config directory, and then
 # overrides from the same directory cfg file, then from /home/pi/.lights.cfg
 # and then from ~/.lights.cfg (which will be the root's home).
-config = ConfigParser.RawConfigParser()
-config.readfp(open(config_dir + '/defaults.cfg'))
-config.read([config_dir + '/overrides.cfg',
-    'home/pi/.lights.cfg',
-     os.path.expanduser('~/.lights.cfg')])
+CONFIG = ConfigParser.RawConfigParser()
+CONFIG.readfp(open(CONFIG_DIR + '/defaults.cfg'))
+CONFIG.read([CONFIG_DIR + '/overrides.cfg', 'home/pi/.lights.cfg',
+             os.path.expanduser('~/.lights.cfg')])
 
-# Load configuration section as dictionary
 def _as_dict(section):
-  return dict(x for x in config.items(section))
+    '''Return a dictionary from a configuration section.'''
+    return dict(x for x in CONFIG.items(section))
+
+def _as_list(list_str, delimiter=','):
+    '''Return a list of items from a delimited string (after stripping whitespace).'''
+    return [str.strip(item) for item in list_str.split(delimiter)]
 
 # Retrieve light show configuration
-_lightshow_config = {}
+_LIGHTSHOW_CONFIG = {}
 def lightshow():
-  global _lightshow_config
-  if len(_lightshow_config) == 0:
-    _lightshow_config = _as_dict('lightshow')
-    
-    # Parse out the preshow and replace it with the preshow config
-    # consiting of transitions to on or off for various durations.
-    preshow = dict()
-    preshow['transitions'] = []
-    for transition in _lightshow_config['preshow'].split(','):
-      try:
-        transition = transition.split(':')
-        if len(transition) != 2:
-          l.log("Preshow transition definition should be in the form " 
-              + "[on|off]:<duration> - " + transition.join(':'))
-          continue
-        transition_config = dict()
-        type = str(transition[0]).lower()
-        if not type in ['on', 'off']:
-          l.log("Preshow transition type must either 'on' or 'off': " + type)
-          continue
-        transition_config['type'] = type
-        transition_config['duration'] = float(transition[1])
-        preshow['transitions'].append(transition_config)
-      except:
-        l.log("Unable to parse preshow transition: " + transition.join(':'))
-    _lightshow_config['preshow'] = preshow
+    '''Retrieves the lightshow configuration, loading and parsing it from a file if necessary.'''
+    global _LIGHTSHOW_CONFIG
+    if len(_LIGHTSHOW_CONFIG) == 0:
+        _LIGHTSHOW_CONFIG = _as_dict('lightshow')
 
-  return _lightshow_config
+        # Parse out the preshow and replace it with the preshow CONFIG
+        # consiting of transitions to on or off for various durations.
+        preshow = dict()
+        preshow['transitions'] = []
+        for transition in _as_list(_LIGHTSHOW_CONFIG['preshow']):
+            try:
+                transition = transition.split(':')
+                if len(transition) != 2:
+                    logging.error("Preshow transition definition should be in the form"
+                                  " [on|off]:<duration> - " + transition.join(':'))
+                    continue
+                transition_config = dict()
+                transition_type = str(transition[0]).lower()
+                if not transition_type in ['on', 'off']:
+                    logging.error("Preshow transition transition_type must either 'on'"
+                          "or 'off': " + transition_type)
+                    continue
+                transition_config['type'] = transition_type
+                transition_config['duration'] = float(transition[1])
+                preshow['transitions'].append(transition_config)
+            except:
+                logging.error("Invalid preshow transition definition: " + transition.join(':'),)
+        _LIGHTSHOW_CONFIG['preshow'] = preshow
 
-# Retrieves and validates sms configuration
-_sms_config = {}
-_who_can = {}
+    return _LIGHTSHOW_CONFIG
+
+_SMS_CONFIG = {}
+_WHO_CAN = {}
 def sms():
-  global _sms_config, _who_can
-  if len(_sms_config) == 0:
-    _sms_config = _as_dict('sms')
-    _who_can = dict()
-    _who_can['all'] = set()
+    '''Retrieves and validates sms configuration'''
+    global _SMS_CONFIG, _WHO_CAN
+    if len(_SMS_CONFIG) == 0:
+        _SMS_CONFIG = _as_dict('sms')
+        _WHO_CAN = dict()
+        _WHO_CAN['all'] = set()
 
-    # Commands
-    _sms_config['commands'] = map(str.strip, _sms_config['commands'].split(','))
-    for cmd in _sms_config['commands']:
-      try:
-        _sms_config[cmd + '_aliases'] = map(str.strip, _sms_config[cmd + '_aliases'].split(','))
-      except:
-        _sms_config[cmd + '_aliases'] = []
-      _who_can[cmd] = set()
+        # Commands
+        _SMS_CONFIG['commands'] = _as_list(_SMS_CONFIG['commands'])
+        for cmd in _SMS_CONFIG['commands']:
+            try:
+                _SMS_CONFIG[cmd + '_aliases'] = _as_list(_SMS_CONFIG[cmd + '_aliases'])
+            except:
+                _SMS_CONFIG[cmd + '_aliases'] = []
+            _WHO_CAN[cmd] = set()
 
-    # Groups / Permissions
-    _sms_config['groups'] = map(str.strip, _sms_config['groups'].split(','))
-    for group in _sms_config['groups']:
-      try:
-        _sms_config[group + '_users'] = map(str.strip, _sms_config[group + '_users'].split(','))
-      except:
-        _sms_config[group + '_users'] = []
-      try:
-        _sms_config[group + '_commands'] = map(str.strip, _sms_config[group + '_commands'].split(','))
-      except:
-        _sms_config[group + '_commands'] = []
-      for cmd in _sms_config[group + '_commands']:
-        for user in _sms_config[group + '_users']:
-          _who_can[cmd].add(user)
+        # Groups / Permissions
+        _SMS_CONFIG['groups'] = _as_list(_SMS_CONFIG['groups'])
+        _SMS_CONFIG['throttled_groups'] = dict()
+        for group in _SMS_CONFIG['groups']:
+            try:
+                _SMS_CONFIG[group + '_users'] = _as_list(_SMS_CONFIG[group + '_users'])
+            except:
+                _SMS_CONFIG[group + '_users'] = []
+            try:
+                _SMS_CONFIG[group + '_commands'] = _as_list(_SMS_CONFIG[group + '_commands'])
+            except:
+                _SMS_CONFIG[group + '_commands'] = []
+            for cmd in _SMS_CONFIG[group + '_commands']:
+                for user in _SMS_CONFIG[group + '_users']:
+                    _WHO_CAN[cmd].add(user)
 
-    # Blacklist
-    _sms_config['blacklist'] = map(str.strip, _sms_config['blacklist'].split(','))
+            # Throttle
+            try:
+                throttled_group_definitions = _as_list(_SMS_CONFIG[group + '_throttle'])
+                throttled_group = dict()
+                for definition in throttled_group_definitions:
+                    definition = definition.split(':')
+                    if len(definition) != 2:
+                        warnings.warn(group + "_throttle definitions should be in the form "
+                          + "[command]:<limit> - " + definition.join(':'))
+                        continue
+                    throttle_command = definition[0]
+                    throttle_limit = int(definition[1])
+                    throttled_group[throttle_command] = throttle_limit
+                _SMS_CONFIG['throttled_groups'][group] = throttled_group
+            except:
+                warnings.warn("Throttle definition either does not exist or is configured "
+                             "incorrectly for group: " + group)
 
-  return _sms_config
+        # Blacklist
+        _SMS_CONFIG['blacklist'] = _as_list(_SMS_CONFIG['blacklist'])
 
-# Retrieves the songs
-_songs = []
+    return _SMS_CONFIG
+
+_SONG_LIST = []
 def songs():
-  global _songs
-  if len(_songs) == 0:
-    pass # TODO(toddgiles): Load playlist
-  return _songs
+    '''Retrieve the song list'''
+    if len(_SONG_LIST) == 0:
+        pass  # TODO(toddgiles): Load playlist if not already loaded, also refactor the code
+              #                  that loads the playlist in check_sms and synchronzied_lights such
+              #                  that we don't duplicate it there.
+    return _SONG_LIST
 
 # Sets the list of songs (if loaded elsewhere, as is done by check_sms)
-def set_songs(songs):
-  global _songs
-  _songs = songs
+def set_songs(song_list):
+    '''Sets the list of songs (if loaded elsewhere, as is done by check_sms for example)'''
+    global _SONG_LIST
+    _SONG_LIST = song_list
 
 
 ##############################
 # Application State Utilities
 ##############################
 
-# Load application state configuration file from config directory.
-state = ConfigParser.RawConfigParser()
-state_section = 'do_not_modify'
-state_file = config_dir + '/state.cfg'
+# Load application state configuration file from CONFIG directory.
+STATE = ConfigParser.RawConfigParser()
+STATE_SECTION = 'do_not_modify'
+STATE_FILENAME = CONFIG_DIR + '/state.cfg'
 
 # Ensure state file has been created
-if not os.path.isfile(state_file):
-  open(state_file, 'a').close()
+if not os.path.isfile(STATE_FILENAME):
+    open(STATE_FILENAME, 'a').close()
 
-# Force the state to be reloaded from disk
 def load_state():
-  global state
-  with open(state_file) as f:
-    fcntl.lockf(f, fcntl.LOCK_SH)
-    state.readfp(f, state_file)
-    fcntl.lockf(f, fcntl.LOCK_UN)
-load_state() # Do an initial load
+    '''Force the state to be reloaded form disk.'''
+    with open(STATE_FILENAME) as state_fp:
+        fcntl.lockf(state_fp, fcntl.LOCK_SH)
+        STATE.readfp(state_fp, STATE_FILENAME)
+        fcntl.lockf(state_fp, fcntl.LOCK_UN)
+load_state()  # Do an initial load
 
-# Get the value of a specific application state variable, or the specified
-# default it not able to load
 def get_state(name, default=''):
-  global state, state_section
-  try:
-    return state.get(state_section, name)
-  except:
-    return default
+    '''Return the value of a specific application state variable, or the specified default
+    if not able to load it from the state file'''
+    try:
+        return STATE.get(STATE_SECTION, name)
+    except:
+        return default
 
-# Update the application state (name / value pair)
 def update_state(name, value):
-  global state, state_section, config_dir
-  value = str(value)
-  l.log('Updating application state: {' + name + ', ' + value + '}', 2)
-  try:
-    state.add_section(state_section)
-  except ConfigParser.DuplicateSectionError:
-    pass # Ok, it's already there
-  state.set(state_section, name, value)
-  with open(state_file, 'wb') as f:
-    fcntl.lockf(f, fcntl.LOCK_EX)
-    state.write(f)
-    fcntl.lockf(f, fcntl.LOCK_UN)
+    '''Update the application state (name / value pair)'''
+    value = str(value)
+    logging.info('Updating application state {%s: %s}', name, value)
+    try:
+        STATE.add_section(STATE_SECTION)
+    except ConfigParser.DuplicateSectionError:
+        pass  # Ok, it's already there
+    STATE.set(STATE_SECTION, name, value)
+    with open(STATE_FILENAME, 'wb') as state_fp:
+        fcntl.lockf(state_fp, fcntl.LOCK_EX)
+        STATE.write(state_fp)
+        fcntl.lockf(state_fp, fcntl.LOCK_UN)
 
-# Returns True iff a user has permission to execute the given command
-def hasPermission(user, cmd):
-  global _who_can
-  blacklisted = user in sms()['blacklist']
-  return not blacklisted and (user in _who_can['all']
-      or 'all' in _who_can[cmd]
-      or user in _who_can[cmd])
+def has_permission(user, cmd):
+    '''Returns True iff a user has permissio to execute the given command'''
+    blacklisted = user in sms()['blacklist']
+    return not blacklisted and (user in _WHO_CAN['all']
+                                or 'all' in _WHO_CAN[cmd]
+                                or user in _WHO_CAN[cmd])
+
+def is_throttle_exceeded(cmd, user):
+    '''Returns True if the throttle has been exeeded and False otherwise'''
+    # Load throttle STATE
+    load_state()
+    throttlestate = ast.literal_eval(get_state('throttle', '{}'))
+    processcommandflag = -1
+
+    # Analyze throttle timing
+    currenttimestamp = datetime.datetime.now()
+    throttletimelimit = _SMS_CONFIG['throttle_time_limit_seconds']
+    throttlestarttime = datetime.datetime.strptime(
+        throttlestate['throttle_timestamp_start'], '%Y-%m-%d %H:%M:%S.%f') \
+        if "throttle_timestamp_start" in throttlestate else currenttimestamp
+    throttlestoptime = throttlestarttime + datetime.timedelta(seconds=int(throttletimelimit))
+
+    # Compare times and see if we need to reset the throttle STATE
+    if (currenttimestamp == throttlestarttime) or (throttlestoptime < currenttimestamp):
+        # There is no time recorded or the time has expired reset the throttle STATE
+        throttlestate = {}
+        throttlestate['throttle_timestamp_start'] = str(currenttimestamp)
+        update_state('throttle', throttlestate)
+
+    # ANALYZE THE THROTTLE COMMANDS AND LIMITS
+    allthrottlelimit = -1
+    cmdthrottlelimit = -1
+
+    # Check to see what group belongs to starting with the first group declared
+    throttled_group = None
+    for group in _SMS_CONFIG['groups']:
+        userlist = _SMS_CONFIG[group + "_users"]
+        if user in userlist:
+            # The user belongs to this group, check if there are any throttle definitions
+            if group in _SMS_CONFIG['throttled_groups']:
+                # The group has throttle commands defined, now check if the command is defined
+                throttledcommands = _SMS_CONFIG['throttled_groups'][group]
+
+                # Check if all command exists
+                if "all" in throttledcommands:
+                    allthrottlelimit = int(throttledcommands['all'])
+
+                # Check if the command passed is defined
+                if cmd in throttledcommands:
+                    cmdthrottlelimit = int(throttledcommands[cmd])
+
+                # A throttle definition was found, we no longer need to check anymore groups
+                if allthrottlelimit != -1 or cmdthrottlelimit != -1:
+                    throttled_group = group
+                    break
+
+    # Process the throttle settings that were found for the throttled group
+    if not throttled_group:
+        # No throttle limits were found for any group
+        return False
+    else:
+        # Throttle limits were found, check them against throttle STATE limits
+        groupthrottlestate = \
+          throttlestate[throttled_group] if throttled_group in throttlestate else {}
+        groupthrottlecmdlimit = \
+          int(groupthrottlestate[cmd]) if cmd in groupthrottlestate else 0
+
+    # Check to see if we need to apply "all"
+    if allthrottlelimit != -1:
+        groupthrottlealllimit = \
+          int(groupthrottlestate['all']) if 'all' in groupthrottlestate else 0
+
+        # Check if "all" throttle limit has been reached
+        if groupthrottlealllimit < allthrottlelimit:
+            # Not Reached, bump throttle and record
+            groupthrottlealllimit = groupthrottlealllimit + 1
+            groupthrottlestate['all'] = groupthrottlealllimit
+            throttlestate[throttled_group] = groupthrottlestate
+            processcommandflag = False
+        else:
+            # "all" throttle has been reached we dont want to process anything else
+            return True
+
+    # Check to see if we need to apply "cmd"
+    if cmdthrottlelimit != -1:
+        if groupthrottlecmdlimit < cmdthrottlelimit:
+            # Not reached, bump throttle
+            groupthrottlecmdlimit = groupthrottlecmdlimit + 1
+            groupthrottlestate[cmd] = groupthrottlecmdlimit
+            throttlestate[throttled_group] = groupthrottlestate
+            processcommandflag = False
+
+    # Record the updatedthrottle STATE and return
+    update_state('throttle', throttlestate)
+
+    return processcommandflag
