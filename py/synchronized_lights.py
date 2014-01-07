@@ -350,6 +350,7 @@ def main():
                                                    _MAX_FREQUENCY,
                                                    _CUSTOM_CHANNEL_MAPPING,
                                                    _CUSTOM_CHANNEL_FREQUENCIES)
+
     while data != '' and not play_now:
         output.write(data)
 
@@ -368,20 +369,33 @@ def main():
             cache.append(matrix)
 
         for i in range(0, hc.GPIOLEN):
-            if limit[i] < matrix[i] * _LIMIT_THRESHOLD:
-                limit[i] = limit[i] * _LIMIT_THRESHOLD_INCREASE
-                logging.debug("++++ channel: {0}; limit: {1:.3f}".format(i, limit[i]))
-            # Amplitude has reached threshold
-            if matrix[i] > limit[i]:
-                hc.turn_on_light(i, True)
-                offct[i] = 0
-            else:  # Amplitude did not reach threshold
-                offct[i] = offct[i] + 1
-                if offct[i] > _MAX_OFF_CYCLES:
+            if hc.is_pin_pwm(i):
+                # Output based on current level which is ~ 9 to 15ish
+                brightness = matrix[i] - 9
+                brightness = brightness / 5
+                if brightness > 1.0:
+                    brightness = 1.0
+                if brightness > limit[i]:
+                    limit[i] = brightness
+                else:
+                    limit[i] = limit[i] * _LIMIT_THRESHOLD_DECREASE
+                    brightness = limit[i]
+                hc.turn_on_light(i, True, brightness * 60.0)
+            else:
+                if limit[i] < matrix[i] * _LIMIT_THRESHOLD:
+                    limit[i] = limit[i] * _LIMIT_THRESHOLD_INCREASE
+                    logging.debug("++++ channel: {0}; limit: {1:.3f}".format(i, limit[i]))
+                # Amplitude has reached threshold
+                if matrix[i] > limit[i]:
+                    hc.turn_on_light(i, True)
                     offct[i] = 0
-                    limit[i] = limit[i] * _LIMIT_THRESHOLD_DECREASE  # old value 0.8
-                logging.debug("---- channel: {0}; limit: {1:.3f}".format(i, limit[i]))
-                hc.turn_off_light(i, True)
+                else:  # Amplitude did not reach threshold
+                    offct[i] = offct[i] + 1
+                    if offct[i] > _MAX_OFF_CYCLES:
+                        offct[i] = 0
+                        limit[i] = limit[i] * _LIMIT_THRESHOLD_DECREASE  # old value 0.8
+                    logging.debug("---- channel: {0}; limit: {1:.3f}".format(i, limit[i]))
+                    hc.turn_off_light(i, True)
 
         # Read next chunk of data from music song_filename
         data = musicfile.readframes(CHUNK_SIZE)
