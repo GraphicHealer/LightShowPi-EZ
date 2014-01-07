@@ -32,7 +32,8 @@ Contributors
 
 A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 
-Todd Giles
-Chris Usey
-Ryan Jennings
-Sean Millar
+* Todd Giles
+* Chris Usey
+* Ryan Jennings
+* Sean Millar
+* Scott Driscoll
