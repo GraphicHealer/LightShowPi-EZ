@@ -337,7 +337,7 @@ def main():
             with gzip.open(cache_filename, 'rb') as playlist_fp:
                 cachefile = csv.reader(playlist_fp, delimiter=',')
                 for row in cachefile:
-                    cache.append(row)
+                    cache.append([float(item) for item in row])
                 cache_found = True
         except IOError:
             logging.warn("Cached sync data song_filename not found: '" + cache_filename
@@ -359,9 +359,11 @@ def main():
             if row < len(cache):
                 matrix = cache[row]
             else:
-                logging.debug("!!!! Ran out of cached timing values !!!!")
-        else:
-            # No cache - Compute FFT from this CHUNK_SIZE, and cache results
+                logging.warning("Ran out of cached FFT values, will update the cache.")
+                cache_found = False
+
+        if matrix == None:
+            # No cache - Compute FFT in this chunk, and cache results
             matrix = calculate_levels(data, sample_rate, frequency_limits)
             cache.append(matrix)
 
@@ -381,7 +383,7 @@ def main():
                 logging.debug("---- channel: {0}; limit: {1:.3f}".format(i, limit[i]))
                 hc.turn_off_light(i, True)
 
-        # Read next CHUNK_SIZE of data from music song_filename
+        # Read next chunk of data from music song_filename
         data = musicfile.readframes(CHUNK_SIZE)
         row = row + 1
 
