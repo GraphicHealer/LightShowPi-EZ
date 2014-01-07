@@ -10,14 +10,14 @@ Thanks, and enjoy ;)
 Todd Giles ([todd.giles@gmail.com](mailto:todd.giles@gmail.com))
 
 Installation / Getting Started
-===========================
+==============================
 
 Please visit the [Wiki](https://bitbucket.org/togiles/lightshowpi/wiki/Home) for details on getting
 started.  Or for those who want to just jump on in, feel free to run the install.sh script and go 
 for it :-)
 
-Directory Structure:
-==================
+Directory Structure
+===================
 
 * py/synchronized_lights.py - Play a single song while synchronizing lights to the music.
 * py/hardware_controller.py - Useful for verifying your hardware configuration (blink all lights, turn them on / off, etc...).
@@ -26,3 +26,13 @@ Directory Structure:
 * crontab/synchronized_lights - Add these via 'sudo crontab -e' to start / stop the lightshow automatically
 * logs/* - Log files will be output here.
 * bin/* - Various bash scripts / tools to aid in playing songs, controlling volume, etc...
+
+Contributors
+============
+
+A huge thanks to all those that have contributed to the Lightshow Pi codebase:
+
+Todd Giles
+Chris Usey
+Ryan Jennings
+Sean Millar
