@@ -97,7 +97,7 @@ def turn_off_lights(usealwaysonoff=0):
         if is_pin_pwm(i):
             # No overrides avaialble for pwm mode pins
             wiringpi.softPwmWrite(i, 0)
-            return
+            continue
 
         if usealwaysonoff:
             if i + 1 not in _ALWAYS_ON_CHANNELS:
@@ -111,7 +111,7 @@ def turn_on_lights(usealwaysonoff=0):
         if is_pin_pwm(i):
             # No overrides avaialble for pwm mode pins
             wiringpi.softPwmWrite(i, 60)
-            return
+            continue
 
         if usealwaysonoff:
             if i + 1 not in _ALWAYS_OFF_CHANNELS:
