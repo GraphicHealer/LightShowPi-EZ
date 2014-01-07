@@ -331,14 +331,24 @@ def main():
     cache_found = False
     cache_filename = os.path.dirname(song_filename) + "/." + os.path.basename(song_filename) \
         + ".sync.gz"
+    # The values 12 and 1.5 are good estimates for first time playing back (i.e. before we have
+    # the actual mean and standard deviations calculated for each channel).
+    mean = [12.0 for _ in range(hc.GPIOLEN)]
+    std = [1.5 for _ in range(hc.GPIOLEN)]
     if args.readcache:
         # Read in cached fft
         try:
             with gzip.open(cache_filename, 'rb') as playlist_fp:
                 cachefile = csv.reader(playlist_fp, delimiter=',')
                 for row in cachefile:
-                    cache.append([float(item) for item in row])
+                    cache.append([0.0 if np.isinf(float(item)) else float(item) for item in row])
                 cache_found = True
+                # TODO(toddgiles): Optimize this and / or cache it to avoid delay here
+                cache_matrix = np.array(cache)
+                for i in range(0, hc.GPIOLEN):
+                    std[i] = np.std([item for item in cache_matrix[:, i] if item > 0])
+                    mean[i] = np.mean([item for item in cache_matrix[:, i] if item > 0])
+                logging.debug("std: " + str(std) + ", mean: " + str(mean))
         except IOError:
             logging.warn("Cached sync data song_filename not found: '" + cache_filename
                          + ".  One will be generated.")
@@ -370,16 +380,14 @@ def main():
 
         for i in range(0, hc.GPIOLEN):
             if hc.is_pin_pwm(i):
-                # Output based on current level which is ~ 9 to 15ish
-                brightness = matrix[i] - 9
-                brightness = brightness / 5
+                # Output pwm, where off is at 0.5 std below the mean
+                # and full on is at 0.75 std above the mean.
+                brightness = matrix[i] - mean[i] + 0.5 * std[i]
+                brightness = brightness / (1.25 * std[i])
                 if brightness > 1.0:
                     brightness = 1.0
-                if brightness > limit[i]:
-                    limit[i] = brightness
-                else:
-                    limit[i] = limit[i] * _LIMIT_THRESHOLD_DECREASE
-                    brightness = limit[i]
+                if brightness < 0:
+                    brightness = 0
                 hc.turn_on_light(i, True, int(brightness * 60))
             else:
                 if limit[i] < matrix[i] * _LIMIT_THRESHOLD:
