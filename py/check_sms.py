@@ -153,7 +153,7 @@ def main():
             logging.info('Response: "' + str(response) + '"')
         else:
             logging.info('Unknown request: "' + msg['text'] + '" from ' + msg['from'])
-            VOICE.send_sms(msg['from'], cm.sms()['unknown_command_response'])
+            VOICE.send_sms(msg['from'], _CONFIG['unknown_command_response'])
 
     # Update playlist with latest votes
     with open(args.playlist, 'wb') as playlist_fp:
