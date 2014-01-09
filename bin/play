@@ -17,16 +17,8 @@ if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
     exit 1
 fi 
 
-$SYNCHRONIZED_LIGHTS_HOME/bin/midi_off
-
 for f in $@
 do
   filename=$(basename "$f")
-  extension="${f##*.}"
-  if [ "$extension" = "mid" ]
-  then
-    play_midi "$f"
-  else
-    sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py --file="$f"
-  fi
+  sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py --file="$f"
 done

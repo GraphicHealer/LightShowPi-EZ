@@ -15,8 +15,6 @@ if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
     exit 1
 fi 
 
-$SYNCHRONIZED_LIGHTS_HOME/bin/midi_off
-
 while true; do
   sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py
 done
