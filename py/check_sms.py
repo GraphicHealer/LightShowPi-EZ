@@ -44,6 +44,12 @@ from bs4 import BeautifulSoup
 import configuration_manager as cm
 from googlevoice import Voice
 
+# SMS Configurations
+_CONFIG = cm.sms()
+
+# First check to make sure SMS is enabled
+if _CONFIG['enable'].lower() != 'true':
+    sys.exit()
 
 # Setup your username and password in ~/.gvoice (or /root/.gvoice when running as root)
 # file as follows to avoid being asked for your email and password each time:
@@ -52,6 +58,7 @@ from googlevoice import Voice
 # email=<google voice email address>
 # password=<google voice password>
 #
+
 VOICE = Voice()
 VOICE.login()
 
