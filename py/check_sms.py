@@ -44,6 +44,12 @@ from bs4 import BeautifulSoup
 import configuration_manager as cm
 from googlevoice import Voice
 
+# SMS Configurations
+_CONFIG = cm.sms()
+
+# First check to make sure SMS is enabled
+if _CONFIG['enable'].lower() != 'true':
+    sys.exit()
 
 # Setup your username and password in ~/.gvoice (or /root/.gvoice when running as root)
 # file as follows to avoid being asked for your email and password each time:
@@ -52,6 +58,7 @@ from googlevoice import Voice
 # email=<google voice email address>
 # password=<google voice password>
 #
+
 VOICE = Voice()
 VOICE.login()
 
@@ -146,7 +153,7 @@ def main():
             logging.info('Response: "' + str(response) + '"')
         else:
             logging.info('Unknown request: "' + msg['text'] + '" from ' + msg['from'])
-            VOICE.send_sms(msg['from'], cm.sms()['unknown_command_response'])
+            VOICE.send_sms(msg['from'], _CONFIG['unknown_command_response'])
 
     # Update playlist with latest votes
     with open(args.playlist, 'wb') as playlist_fp:
