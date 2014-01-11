@@ -35,7 +35,7 @@ playback of all audio song_filename types.
 Sample usage:
 
 sudo python synchronized_lights.py --playlist=/home/pi/music/.playlist
-sudo python synchronized_lights.py --song_filename=/home/pi/music/jingle_bells.mp3
+sudo python synchronized_lights.py --file=/home/pi/music/jingle_bells.mp3
 
 Third party dependencies:
 
