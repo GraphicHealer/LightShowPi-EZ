@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 #
-# Author: Todd Giles (todd.giles@gmail.com)
+# Licensed under the BSD license.  See full license in LICENSE file.
+# http://www.lightshowpi.com/
 #
-# Feel free to use as you'd like, but I'd love to hear back from you on any
-# improvements, changes, etc...
+# Author: Todd Giles (todd@lightshowpi.com)
 #
 # Modifications by: Chris Usey (chris.usey@gmail.com)
 """Check SMS messages from a Google Voice account to control the lightshow
@@ -16,7 +16,7 @@ When a song is voted for, the playlist file will be updated with the sender's ce
 indicate it has received a vote from that caller.  This also enforces only a single vote per phone
 number per s (until that song is played).
 
-See the commands.py file for other commands that are also supported (as well asinstructions on
+See the commands.py file for other commands that are also supported (as well as instructions on
 adding new own commands).
 
 Sample usage:
@@ -28,7 +28,7 @@ Third party dependencies:
 pygooglevoice: http://sphinxdoc.github.io/pygooglevoice/
 Beautiful Soup: http://www.crummy.com/software/BeautifulSoup/
 
-Note, I also had to use the following version of pygooglevoice w/auth fix:
+Note, I had to use the following version of pygooglevoice w/auth fix:
 https://code.google.com/r/bwpayne-pygooglevoice-auth-fix/
 """
 
@@ -99,7 +99,7 @@ def main():
     args = parser.parse_args()
 
     # Log everything to debug log file
-    # TODO(toddgiles): Add logging configuration options.
+    # TODO(todd): Add logging configuration options.
     logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.check.dbg',
                         format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
                         ' - %(message)s',

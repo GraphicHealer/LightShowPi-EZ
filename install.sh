@@ -1,14 +1,17 @@
 #!/bin/bash
-# Syncronized_lights installer
-# Author: Sean Millar sean.millar@gmail.com
-# Install assumes this is a Rasberry Pi
-# and python 2.7 is to be used.
-
-
-#Todo's
-#better error hanlding
-#clean this up so it looks pretty
 #
+# Licensed under the BSD license.  See full license in LICENSE file.
+# http://www.lightshowpi.com/
+#
+# Syncronized_lights installer
+#
+# Author: Sean Millar sean.millar@gmail.com
+#
+# Install assumes this is a Rasberry Pi and python 2.7 is used.
+
+
+#TODO(sean): Better Error Handling
+#TODO(sean): Clean this up so it looks pretty
 
 PATH=$PATH
 export PATH

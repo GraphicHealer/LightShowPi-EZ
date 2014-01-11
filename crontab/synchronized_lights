@@ -1,6 +1,10 @@
-# Install these commands in the root user's cronta (i.e. sudo crontab -e)
-# Make sure your system time zone is setup correctly. /var/log/syslog time stamps should match
-# date command, if not reconfigure system time and reboot.
+# Licensed under the BSD license.  See full license in LICENSE file.
+# http://www.lightshowpi.com/
+#
+# Install these commands in the root user's crontab (i.e. sudo crontab -e)
+#
+# Make sure your system time zone is setup correctly. /var/log/syslog time
+# stamps should match date command, if not reconfigure system time and reboot:
 # sudo dpkg-reconfigure tzdata
 # reboot
 

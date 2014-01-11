@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 #
-# Author: Todd Giles (todd.giles@gmail.com)
+# Licensed under the BSD license.  See full license in LICENSE file.
+# http://www.lightshowpi.com/
 #
-# Feel free to use, just send any enhancements back my way ;)
-#
-# Modifications By: Chris Usey (chris.usey@gmail.com)
-# Modifications By: Ryan Jennings
-"""Play any audio song_filename and synchronize lights to the music
+# Author: Todd Giles (todd@lightshowpi.com)
+# Author: Chris Usey (chris.usey@gmail.com)
+# Author: Ryan Jennings
+"""Play any audio file and synchronize lights to the music
 
-When executed, this script will play an audio song_filename, as well as turn on and off 8 channels
+When executed, this script will play an audio file, as well as turn on and off 8 channels
 of lights to the music (via the first 8 GPIO channels on the Rasberry Pi), based upon
 music it is playing. Many types of audio files are supported (see decoder.py below), but
 it has only been tested with wav and mp3 at the time of this writing.
@@ -27,10 +27,10 @@ during the song.
 FFT calculation is quite CPU intensive and can adversely affect playback of songs (especially if
 attempting to decode the song as well, as is the case for an mp3).  For this reason, the timing
 values of the lights turning on and off is cached after it is calculated upon the first time a
-new song is played.  The values are cached in a gzip'd text song_filename in the same location as
+new song is played.  The values are cached in a gzip'd text file in the same location as
 the song itself.  Subsequent requests to play the same song will use the cached information and not
 recompute the FFT, thus reducing CPU utilization dramatically and allowing for clear music
-playback of all audio song_filename types.
+playback of all audio file types.
 
 Sample usage:
 
@@ -63,7 +63,7 @@ import hardware_controller as hc
 import numpy as np
 
 
-# Configurations - TODO(toddgiles): Move more of this into configuration manager
+# Configurations - TODO(todd): Move more of this into configuration manager
 _CONFIG = cm.CONFIG
 _LIMIT_LIST = [int(lim) for lim in _CONFIG.get('auto_tuning', 'limit_list').split(',')]
 _LIMIT_THRESHOLD = _CONFIG.getfloat('auto_tuning', 'limit_threshold')
@@ -103,7 +103,7 @@ def execute_preshow(config):
         logging.debug('Transition to ' + transition['type'] + ' for '
             + str(transition['duration']) + ' seconds')
         while transition['duration'] > (time.time() - start):
-            cm.load_state()  # Force a refresh of state from song_filename
+            cm.load_state()  # Force a refresh of state from file
             play_now = int(cm.get_state('play_now', 0))
             if play_now:
                 return  # Skip out on the rest of the preshow
@@ -164,9 +164,16 @@ def piff(val, sample_rate):
     '''Return the power array index corresponding to a particular frequency.'''
     return int(CHUNK_SIZE * val / sample_rate)
 
-# TODO(toddgiles): Move FFT related code into separate file as a library
+# TODO(todd): Move FFT related code into separate file as a library
 def calculate_levels(data, sample_rate, frequency_limits):
-    '''Calculate frequency response for each channel'''
+    '''Calculate frequency response for each channel
+    
+    Initial FFT code inspired from the code posted here:
+    http://www.raspberrypi.org/phpBB3/viewtopic.php?t=35838&p=454041
+    
+    Optimizations from work by Scott Driscoll:
+    http://www.instructables.com/id/Raspberry-Pi-Spectrum-Analyzer-with-RGB-LED-Strip-/
+    '''
 
     # create a numpy array. This won't work with a mono file, stereo only.
     data_stereo = np.frombuffer(data, dtype=np.int16)
@@ -196,7 +203,7 @@ def calculate_levels(data, sample_rate, frequency_limits):
 
     return matrix
 
-# TODO(toddgiles): Refactor this to make it more readable / modular.
+# TODO(todd): Refactor this to make it more readable / modular.
 def main():
     '''main'''
     song_to_play = int(cm.get_state('song_to_play', 0))
@@ -214,7 +221,7 @@ def main():
     args = parser.parse_args()
 
     # Log everything to our log file
-    # TODO(toddgiles): Add logging configuration options.
+    # TODO(todd): Add logging configuration options.
     logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.play.dbg',
                         format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
                         ' - %(message)s',
@@ -343,7 +350,7 @@ def main():
                 for row in cachefile:
                     cache.append([0.0 if np.isinf(float(item)) else float(item) for item in row])
                 cache_found = True
-                # TODO(toddgiles): Optimize this and / or cache it to avoid delay here
+                # TODO(todd): Optimize this and / or cache it to avoid delay here
                 cache_matrix = np.array(cache)
                 for i in range(0, hc.GPIOLEN):
                     std[i] = np.std([item for item in cache_matrix[:, i] if item > 0])
