@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 #
+# Licensed under the BSD license.  See full license in LICENSE file.
+# http://www.lightshowpi.com/
+#
 # Author: Ryan Jennings
 # Author: Chris Usey
-#
-# Based on original work from Todd Giles (todd.giles@gmail.com)
+# Author: Todd Giles (todd@lightshowpi.com)
 """Control the raspberry pi hardware.
 
 The hardware controller handles all interaction with the raspberry pi hardware to turn the lights
@@ -23,7 +25,7 @@ import configuration_manager as cm
 import wiringpi2 as wiringpi
 
 
-# Get Configurations - TODO(toddgiles): Move more of this into configuration manager
+# Get Configurations - TODO(todd): Move more of this into configuration manager
 _CONFIG = cm.CONFIG
 _GPIO_PINS = [int(pin) for pin in _CONFIG.get('hardware', 'gpio_pins').split(',')]
 PIN_MODES = _CONFIG.get('hardware', 'pin_modes').split(',')
