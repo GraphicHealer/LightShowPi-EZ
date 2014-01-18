@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 #
-# Author: Todd Giles (todd.giles@gmail.com)
+# Licensed under the BSD license.  See full license in LICENSE file.
+# http://www.lightshowpi.com/
+#
+# Author: Todd Giles (todd@lightshowpi.com)
 #
 # Initial commands implemented by Chris Usey (chris.usey@gmail.com)
-#
-# Feel free to use, just send any enhancements back our way ;)
 """Commmand definition file.
 
 Enabled commands must be defined in the configuration file. Each command must also have a
@@ -116,7 +117,7 @@ def cmd_help(user, _args):
     return help_msg
 Command('help', cmd_help)
 
-# TODO(toddgiles): Add paging support for large playlist (Issue #22)
+# TODO(todd): Add paging support for large playlist (Issue #22)
 def cmd_list(_user, _args):
     '''Lists all the songs from the current playlist.'''
 

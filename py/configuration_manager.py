@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
+# http://www.lightshowpi.com/
 #
-# Author: Todd Giles (todd.giles@gmail.com)
+# Author: Todd Giles (todd@lightshowpi.com)
 #
-# TODO(toddgiles): Refactor the configuration manager into a configuration manager class (to remove
+# TODO(todd): Refactor the configuration manager into a configuration manager class (to remove
 #                  the extensive use of globals currently used).
-# TODO(toddgiles): Add a main and allow running configuration manager alone to view the current
+# TODO(todd): Add a main and allow running configuration manager alone to view the current
 #                  configuration, and potentially edit it.
 """Configuration management for the lightshow.
 
@@ -145,9 +146,9 @@ _SONG_LIST = []
 def songs():
     '''Retrieve the song list'''
     if len(_SONG_LIST) == 0:
-        pass  # TODO(toddgiles): Load playlist if not already loaded, also refactor the code
-              #                  that loads the playlist in check_sms and synchronzied_lights such
-              #                  that we don't duplicate it there.
+        pass  # TODO(todd): Load playlist if not already loaded, also refactor the code
+              #             that loads the playlist in check_sms and synchronzied_lights such
+              #             that we don't duplicate it there.
     return _SONG_LIST
 
 # Sets the list of songs (if loaded elsewhere, as is done by check_sms)

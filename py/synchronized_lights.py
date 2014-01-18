@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 #
-# Author: Todd Giles (todd.giles@gmail.com)
+# Licensed under the BSD license.  See full license in LICENSE file.
+# http://www.lightshowpi.com/
 #
-# Feel free to use, just send any enhancements back my way ;)
-#
-# Modifications By: Chris Usey (chris.usey@gmail.com)
-# Modifications By: Ryan Jennings
-"""Play any audio music file and synchronize lights to the music
+# Author: Todd Giles (todd@lightshowpi.com)
+# Author: Chris Usey (chris.usey@gmail.com)
+# Author: Ryan Jennings
+"""Play any audio file and synchronize lights to the music
 
 When executed, this script will play an audio file, as well as turn on and off 8 channels
 of lights to the music (via the first 8 GPIO channels on the Rasberry Pi), based upon
@@ -34,13 +34,7 @@ playback of all audio file types.
 
 Sample usage:
 
-To play the next file in the default playlist (as defined in your configuration files) - 
-sudo python synchronized_lights.py
-
-To play the next file in a specific playlist -
 sudo python synchronized_lights.py --playlist=/home/pi/music/.playlist
-
-To play a specific song -
 sudo python synchronized_lights.py --file=/home/pi/music/jingle_bells.mp3
 
 Third party dependencies:
@@ -69,7 +63,7 @@ import hardware_controller as hc
 import numpy as np
 
 
-# Configurations - TODO(toddgiles): Move more of this into configuration manager
+# Configurations - TODO(todd): Move more of this into configuration manager
 _CONFIG = cm.CONFIG
 _LIMIT_LIST = [int(lim) for lim in _CONFIG.get('auto_tuning', 'limit_list').split(',')]
 _LIMIT_THRESHOLD = _CONFIG.getfloat('auto_tuning', 'limit_threshold')
@@ -95,7 +89,7 @@ try:
                                                                        cm.HOME_DIR)
 except:
     _PLAYLIST_PATH = "/home/pi/music/.playlist"
-CHUNK_SIZE = 4096  # Use a multiple of 8
+CHUNK_SIZE = 2048  # Use a multiple of 8
 
 
 def execute_preshow(config):
@@ -109,7 +103,7 @@ def execute_preshow(config):
         logging.debug('Transition to ' + transition['type'] + ' for '
             + str(transition['duration']) + ' seconds')
         while transition['duration'] > (time.time() - start):
-            cm.load_state()  # Force a refresh of state from song_filename
+            cm.load_state()  # Force a refresh of state from file
             play_now = int(cm.get_state('play_now', 0))
             if play_now:
                 return  # Skip out on the rest of the preshow
@@ -168,14 +162,29 @@ def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_map
 
 def piff(val, sample_rate):
     '''Return the power array index corresponding to a particular frequency.'''
-    return int(2 * CHUNK_SIZE * val / sample_rate)
+    return int(CHUNK_SIZE * val / sample_rate)
 
+# TODO(todd): Move FFT related code into separate file as a library
 def calculate_levels(data, sample_rate, frequency_limits):
-    '''Calculate frequency response for each channel'''
+    '''Calculate frequency response for each channel
+    
+    Initial FFT code inspired from the code posted here:
+    http://www.raspberrypi.org/phpBB3/viewtopic.php?t=35838&p=454041
+    
+    Optimizations from work by Scott Driscoll:
+    http://www.instructables.com/id/Raspberry-Pi-Spectrum-Analyzer-with-RGB-LED-Strip-/
+    '''
 
-    # Convert raw data (ASCII string) to numpy array
-    data = unpack("%dh" % (len(data) / 2), data)
-    data = np.array(data, dtype='h')
+    # create a numpy array. This won't work with a mono file, stereo only.
+    data_stereo = np.frombuffer(data, dtype=np.int16)
+    data = np.empty(len(data) / 4)  # data has two channels and 2 bytes per channel
+    data[:] = data_stereo[::2]  # pull out the even values, just using left channel
+
+    # if you take an FFT of a chunk of audio, the edges will look like
+    # super high frequency cutoffs. Applying a window tapers the edges
+    # of each end of the chunk down to zero.
+    window = np.hanning(len(data))
+    data = data * window
 
     # Apply FFT - real data
     fourier = np.fft.rfft(data)
@@ -183,19 +192,18 @@ def calculate_levels(data, sample_rate, frequency_limits):
     # Remove last element in array to make it the same size as CHUNK_SIZE
     fourier = np.delete(fourier, len(fourier) - 1)
 
-    # Find average 'amplitude' for specific frequency ranges in Hz
-    power = np.abs(fourier)
+    # Calculate the power spectrum
+    power = np.abs(fourier) ** 2
 
     matrix = [0 for i in range(hc.GPIOLEN)]
     for i in range(hc.GPIOLEN):
-        matrix[i] = np.mean(power[piff(frequency_limits[i][0], sample_rate)
-                                  :piff(frequency_limits[i][1], sample_rate):1])
+        # take the log10 of the resulting sum to approximate how human ears perceive sound levels
+        matrix[i] = np.log10(np.sum(power[piff(frequency_limits[i][0], sample_rate)
+                                          :piff(frequency_limits[i][1], sample_rate):1]))
 
-    # Tidy up column values for output to lights
-    matrix = np.divide(matrix, 100000)
     return matrix
 
-# TODO(toddgiles): Refactor this to make it more readable / modular.
+# TODO(todd): Refactor this to make it more readable / modular.
 def main():
     '''main'''
     song_to_play = int(cm.get_state('song_to_play', 0))
@@ -213,7 +221,7 @@ def main():
     args = parser.parse_args()
 
     # Log everything to our log file
-    # TODO(toddgiles): Add logging configuration options.
+    # TODO(todd): Add logging configuration options.
     logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.play.dbg',
                         format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
                         ' - %(message)s',
@@ -330,14 +338,24 @@ def main():
     cache_found = False
     cache_filename = os.path.dirname(song_filename) + "/." + os.path.basename(song_filename) \
         + ".sync.gz"
+    # The values 12 and 1.5 are good estimates for first time playing back (i.e. before we have
+    # the actual mean and standard deviations calculated for each channel).
+    mean = [12.0 for _ in range(hc.GPIOLEN)]
+    std = [1.5 for _ in range(hc.GPIOLEN)]
     if args.readcache:
-        # Read in cached light control signals
+        # Read in cached fft
         try:
             with gzip.open(cache_filename, 'rb') as playlist_fp:
                 cachefile = csv.reader(playlist_fp, delimiter=',')
                 for row in cachefile:
-                    cache.append(row)
+                    cache.append([0.0 if np.isinf(float(item)) else float(item) for item in row])
                 cache_found = True
+                # TODO(todd): Optimize this and / or cache it to avoid delay here
+                cache_matrix = np.array(cache)
+                for i in range(0, hc.GPIOLEN):
+                    std[i] = np.std([item for item in cache_matrix[:, i] if item > 0])
+                    mean[i] = np.mean([item for item in cache_matrix[:, i] if item > 0])
+                logging.debug("std: " + str(std) + ", mean: " + str(mean))
         except IOError:
             logging.warn("Cached sync data song_filename not found: '" + cache_filename
                          + ".  One will be generated.")
@@ -349,26 +367,36 @@ def main():
                                                    _MAX_FREQUENCY,
                                                    _CUSTOM_CHANNEL_MAPPING,
                                                    _CUSTOM_CHANNEL_FREQUENCIES)
+
     while data != '' and not play_now:
         output.write(data)
 
         # Control lights with cached timing values if they exist
+        matrix = None
         if cache_found and args.readcache:
             if row < len(cache):
-                entry = cache[row]
-                for i in range(0, hc.GPIOLEN):
-                    if int(entry[i]):  # # MAKE CHANGE HERE TO KEEP ON ALL THE TIME
-                        hc.turn_on_light(i, True)
-                    else:
-                        hc.turn_off_light(i, True)
+                matrix = cache[row]
             else:
-                logging.debug("!!!! Ran out of cached timing values !!!!")
+                logging.warning("Ran out of cached FFT values, will update the cache.")
+                cache_found = False
 
-        # No cache - Compute FFT from this CHUNK_SIZE, and cache results
-        else:
-            entry = []
+        if matrix == None:
+            # No cache - Compute FFT in this chunk, and cache results
             matrix = calculate_levels(data, sample_rate, frequency_limits)
-            for i in range(0, hc.GPIOLEN):
+            cache.append(matrix)
+
+        for i in range(0, hc.GPIOLEN):
+            if hc.is_pin_pwm(i):
+                # Output pwm, where off is at 0.5 std below the mean
+                # and full on is at 0.75 std above the mean.
+                brightness = matrix[i] - mean[i] + 0.5 * std[i]
+                brightness = brightness / (1.25 * std[i])
+                if brightness > 1.0:
+                    brightness = 1.0
+                if brightness < 0:
+                    brightness = 0
+                hc.turn_on_light(i, True, int(brightness * 60))
+            else:
                 if limit[i] < matrix[i] * _LIMIT_THRESHOLD:
                     limit[i] = limit[i] * _LIMIT_THRESHOLD_INCREASE
                     logging.debug("++++ channel: {0}; limit: {1:.3f}".format(i, limit[i]))
@@ -376,7 +404,6 @@ def main():
                 if matrix[i] > limit[i]:
                     hc.turn_on_light(i, True)
                     offct[i] = 0
-                    entry.append('1')
                 else:  # Amplitude did not reach threshold
                     offct[i] = offct[i] + 1
                     if offct[i] > _MAX_OFF_CYCLES:
@@ -384,10 +411,8 @@ def main():
                         limit[i] = limit[i] * _LIMIT_THRESHOLD_DECREASE  # old value 0.8
                     logging.debug("---- channel: {0}; limit: {1:.3f}".format(i, limit[i]))
                     hc.turn_off_light(i, True)
-                    entry.append('0')
-            cache.append(entry)
 
-        # Read next CHUNK_SIZE of data from music song_filename
+        # Read next chunk of data from music song_filename
         data = musicfile.readframes(CHUNK_SIZE)
         row = row + 1
 
