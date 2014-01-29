@@ -108,9 +108,9 @@ fi
 
 #Setup environment variables
 ENV_VARIABLE="SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}"
-exists=`grep "$ENV_VARIABLE" /etc/environment`
+exists=`grep "$ENV_VARIABLE" /etc/profile`
 if [ -z "$exists" ]; then
-  echo "$ENV_VARIABLE" >> /etc/environment
+  echo "$ENV_VARIABLE" >> /etc/profile
   # Force set this envirnment variable in this shell (as above doesn't take until reboot)
   export $ENV_VARIABLE
 fi
