@@ -43,8 +43,8 @@ except:
     _MCP23017 = 0
 
 # Initialize GPIO
-GPIOASINPUT = 0
-GPIOASOUTPUT = 1
+_GPIOASINPUT = 0
+_GPIOASOUTPUT = 1
 GPIOLEN = len(_GPIO_PINS)
 wiringpi.wiringPiSetup()
 
@@ -92,20 +92,20 @@ def set_pins_as_inputs():
 
 def set_pin_as_output(i):
     '''Set the specified pin as an output.'''
-    wiringpi.pinMode(_GPIO_PINS[i], GPIOASOUTPUT)
+    wiringpi.pinMode(_GPIO_PINS[i], _GPIOASOUTPUT)
     if is_pin_pwm(i):
         wiringpi.softPwmCreate(i, 0, _PWM_MAX)
 
 def set_pin_as_input(i):
     '''Set the specified pin as an input.'''
-    wiringpi.pinMode(_GPIO_PINS[i], GPIOASINPUT)
+    wiringpi.pinMode(_GPIO_PINS[i], _GPIOASINPUT)
 
 def turn_off_lights(usealwaysonoff=0):
     '''Turn off all the lights, but leave on all lights designated to be always on if specified.'''
     for i in range(GPIOLEN):
         if is_pin_pwm(i):
             # No overrides available for pwm mode pins
-            wiringpi.softPwmWrite(i, _PWM_MAX)
+            wiringpi.softPwmWrite(i, _PWM_OFF)
             continue
 
         if usealwaysonoff:
@@ -144,7 +144,7 @@ def turn_off_light(i, useoverrides=0):
     else:
         wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOINACTIVE)
 
-def turn_on_light(i, useoverrides=0, brightness=_PWM_ON):
+def turn_on_light(i, useoverrides=0, brightness=_PWM_MAX):
     '''Turn on the specified light, taking into account various overrides if specified.'''
     if is_pin_pwm(i):
         if _ACTIVE_LOW_MODE:
