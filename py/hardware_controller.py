@@ -64,16 +64,16 @@ _PWM_MAX = 60
 # Check ActiveLowMode Configuration Setting
 if _ACTIVE_LOW_MODE:
     # Enabled
-    GPIOACTIVE = 0
-    PWM_ON = 0
-    GPIOINACTIVE = 1
-    PWM_OFF = _PWM_MAX
+    _GPIOACTIVE = 0
+    _PWM_ON = 0
+    _GPIOINACTIVE = 1
+    _PWM_OFF = _PWM_MAX
 else:
     # Disabled
-    GPIOACTIVE = 1
-    PWM_ON = _PWM_MAX
-    GPIOINACTIVE = 0
-    PWM_OFF = 0
+    _GPIOACTIVE = 1
+    _PWM_ON = _PWM_MAX
+    _GPIOINACTIVE = 0
+    _PWM_OFF = 0
 
 
 # Functions
@@ -105,46 +105,46 @@ def turn_off_lights(usealwaysonoff=0):
     for i in range(GPIOLEN):
         if is_pin_pwm(i):
             # No overrides available for pwm mode pins
-            wiringpi.softPwmWrite(i, PWM_OFF)
+            wiringpi.softPwmWrite(i, _PWM_MAX)
             continue
 
         if usealwaysonoff:
             if i + 1 not in _ALWAYS_ON_CHANNELS:
-                wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
+                wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOINACTIVE)
         else:
-            wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
+            wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOINACTIVE)
 
 def turn_on_lights(usealwaysonoff=0):
     '''Turn on all the lights, but leave off all lights designated to be always off if specified.'''
     for i in range(GPIOLEN):
         if is_pin_pwm(i):
             # No overrides avaialble for pwm mode pins
-            wiringpi.softPwmWrite(i, PWM_ON)
+            wiringpi.softPwmWrite(i, _PWM_ON)
             continue
 
         if usealwaysonoff:
             if i + 1 not in _ALWAYS_OFF_CHANNELS:
-                wiringpi.digitalWrite(_GPIO_PINS[i], GPIOACTIVE)
+                wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOACTIVE)
         else:
-            wiringpi.digitalWrite(_GPIO_PINS[i], GPIOACTIVE)
+            wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOACTIVE)
 
 def turn_off_light(i, useoverrides=0):
     '''Turn off the specified light, taking into account various overrides if specified.'''
     if is_pin_pwm(i):
         # No overrides avaialble for pwm mode pins
-        wiringpi.softPwmWrite(i, PWM_OFF)
+        wiringpi.softPwmWrite(i, _PWM_OFF)
         return
 
     if useoverrides:
         if i + 1 not in _ALWAYS_ON_CHANNELS:
             if i + 1 not in _INVERTED_CHANNELS:
-                wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
+                wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOINACTIVE)
             else:
-                wiringpi.digitalWrite(_GPIO_PINS[i], GPIOACTIVE)
+                wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOACTIVE)
     else:
-        wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
+        wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOINACTIVE)
 
-def turn_on_light(i, useoverrides=0, brightness=PWM_ON):
+def turn_on_light(i, useoverrides=0, brightness=_PWM_ON):
     '''Turn on the specified light, taking into account various overrides if specified.'''
     if is_pin_pwm(i):
         if _ACTIVE_LOW_MODE:
@@ -159,11 +159,11 @@ def turn_on_light(i, useoverrides=0, brightness=PWM_ON):
     if useoverrides:
         if i + 1 not in _ALWAYS_OFF_CHANNELS:
             if i + 1 not in _INVERTED_CHANNELS:
-                wiringpi.digitalWrite(_GPIO_PINS[i], GPIOACTIVE)
+                wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOACTIVE)
             else:
-                wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
+                wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOINACTIVE)
     else:
-        wiringpi.digitalWrite(_GPIO_PINS[i], GPIOACTIVE)
+        wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOACTIVE)
 
 def clean_up():
     '''Turn off all lights, and set the pins as inputs.'''
