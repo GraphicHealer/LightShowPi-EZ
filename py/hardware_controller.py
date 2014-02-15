@@ -58,15 +58,22 @@ if _MCP23017:
     # set up the pins and i2c address
     wiringpi.mcp23017Setup(_MCP23017['pin_base'], _MCP23017['i2c_addr'])
 
+# PWM defaults
+_PWM_MAX = 60
+
 # Check ActiveLowMode Configuration Setting
 if _ACTIVE_LOW_MODE:
     # Enabled
     GPIOACTIVE = 0
+    PWM_ON = 0
     GPIOINACTIVE = 1
+    PWM_OFF = _PWM_MAX
 else:
     # Disabled
     GPIOACTIVE = 1
+    PWM_ON = _PWM_MAX
     GPIOINACTIVE = 0
+    PWM_OFF = 0
 
 
 # Functions
@@ -87,7 +94,7 @@ def set_pin_as_output(i):
     '''Set the specified pin as an output.'''
     wiringpi.pinMode(_GPIO_PINS[i], GPIOASOUTPUT)
     if is_pin_pwm(i):
-        wiringpi.softPwmCreate(i, 0, 60)
+        wiringpi.softPwmCreate(i, 0, _PWM_MAX)
 
 def set_pin_as_input(i):
     '''Set the specified pin as an input.'''
@@ -97,8 +104,8 @@ def turn_off_lights(usealwaysonoff=0):
     '''Turn off all the lights, but leave on all lights designated to be always on if specified.'''
     for i in range(GPIOLEN):
         if is_pin_pwm(i):
-            # No overrides avaialble for pwm mode pins
-            wiringpi.softPwmWrite(i, 0)
+            # No overrides available for pwm mode pins
+            wiringpi.softPwmWrite(i, PWM_OFF)
             continue
 
         if usealwaysonoff:
@@ -112,7 +119,7 @@ def turn_on_lights(usealwaysonoff=0):
     for i in range(GPIOLEN):
         if is_pin_pwm(i):
             # No overrides avaialble for pwm mode pins
-            wiringpi.softPwmWrite(i, 60)
+            wiringpi.softPwmWrite(i, PWM_ON)
             continue
 
         if usealwaysonoff:
@@ -125,7 +132,7 @@ def turn_off_light(i, useoverrides=0):
     '''Turn off the specified light, taking into account various overrides if specified.'''
     if is_pin_pwm(i):
         # No overrides avaialble for pwm mode pins
-        wiringpi.softPwmWrite(i, 0)
+        wiringpi.softPwmWrite(i, PWM_OFF)
         return
 
     if useoverrides:
@@ -137,13 +144,15 @@ def turn_off_light(i, useoverrides=0):
     else:
         wiringpi.digitalWrite(_GPIO_PINS[i], GPIOINACTIVE)
 
-def turn_on_light(i, useoverrides=0, brightness=60):
+def turn_on_light(i, useoverrides=0, brightness=PWM_ON):
     '''Turn on the specified light, taking into account various overrides if specified.'''
     if is_pin_pwm(i):
+        if _ACTIVE_LOW_MODE:
+            brightness = _PWM_MAX - brightness
         if brightness < 0:
             brightness = 0
-        if brightness > 60:
-            brightness = 60
+        if brightness > _PWM_MAX:
+            brightness = _PWM_MAX
         wiringpi.softPwmWrite(i, brightness)
         return
 
