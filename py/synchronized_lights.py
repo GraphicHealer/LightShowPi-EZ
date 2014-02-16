@@ -62,11 +62,6 @@ import numpy as np
 
 # Configurations - TODO(todd): Move more of this into configuration manager
 _CONFIG = cm.CONFIG
-_LIMIT_LIST = [int(lim) for lim in _CONFIG.get('auto_tuning', 'limit_list').split(',')]
-_LIMIT_THRESHOLD = _CONFIG.getfloat('auto_tuning', 'limit_threshold')
-_LIMIT_THRESHOLD_INCREASE = _CONFIG.getfloat('auto_tuning', 'limit_threshold_increase')
-_LIMIT_THRESHOLD_DECREASE = _CONFIG.getfloat('auto_tuning', 'limit_threshold_decrease')
-_MAX_OFF_CYCLES = _CONFIG.getfloat('auto_tuning', 'max_off_cycles')
 _MIN_FREQUENCY = _CONFIG.getfloat('audio_processing', 'min_frequency')
 _MAX_FREQUENCY = _CONFIG.getfloat('audio_processing', 'max_frequency')
 _RANDOMIZE_PLAYLIST = _CONFIG.getboolean('lightshow', 'randomize_playlist')
