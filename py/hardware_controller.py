@@ -220,7 +220,7 @@ def main():
                                 # fade in
                                 turn_on_light(light, 0, float(brightness) / _PWM_MAX)
                                 time.sleep(sleep / _PWM_MAX)
-                            for brightness in range(59, -1, -1):
+                            for brightness in range(_PWM_MAX - 1, -1, -1):
                                 # fade out
                                 turn_on_light(light, 0, float(brightness) / _PWM_MAX)
                                 time.sleep(sleep / _PWM_MAX)
