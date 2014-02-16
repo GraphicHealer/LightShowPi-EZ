@@ -11,7 +11,7 @@
 
 # Check that the home environment variable is set
 if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
-    echo "Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"
+    cat env_error_msg
     exit 1
 fi 
 
