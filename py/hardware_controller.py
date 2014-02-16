@@ -29,6 +29,7 @@ import wiringpi2 as wiringpi
 _CONFIG = cm.CONFIG
 _GPIO_PINS = [int(pin) for pin in _CONFIG.get('hardware', 'gpio_pins').split(',')]
 PIN_MODES = _CONFIG.get('hardware', 'pin_modes').split(',')
+_PWM_MAX = _CONFIG.get('hardware', 'pwm_range')
 _ACTIVE_LOW_MODE = _CONFIG.getboolean('hardware', 'active_low_mode')
 _LIGHTSHOW_CONFIG = cm.lightshow()
 _ALWAYS_ON_CHANNELS = [int(channel) for channel in
@@ -57,9 +58,6 @@ if _MCP23017:
     logging.info("Initializing MCP23017 Port Expander")
     # set up the pins and i2c address
     wiringpi.mcp23017Setup(_MCP23017['pin_base'], _MCP23017['i2c_addr'])
-
-# PWM defaults
-_PWM_MAX = 60
 
 # Check ActiveLowMode Configuration Setting
 if _ACTIVE_LOW_MODE:
