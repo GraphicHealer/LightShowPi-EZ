@@ -140,7 +140,7 @@ fi
 sudo easy_install beautifulsoup4
 
 #Test to see if we are working
-echo "test installation by attempting to blink all lights"
+echo "test installation by attempting to blink all lights (press <CTRL>-C to stop the test)"
 cd $INSTALL_DIR
 
 sudo py/hardware_controller.py --state flash
