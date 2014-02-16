@@ -51,7 +51,6 @@ import gzip
 import logging
 import os
 import random
-from struct import unpack
 import sys
 import time
 import wave
@@ -167,10 +166,10 @@ def piff(val, sample_rate):
 # TODO(todd): Move FFT related code into separate file as a library
 def calculate_levels(data, sample_rate, frequency_limits):
     '''Calculate frequency response for each channel
-    
+
     Initial FFT code inspired from the code posted here:
     http://www.raspberrypi.org/phpBB3/viewtopic.php?t=35838&p=454041
-    
+
     Optimizations from work by Scott Driscoll:
     http://www.instructables.com/id/Raspberry-Pi-Spectrum-Analyzer-with-RGB-LED-Strip-/
     '''
@@ -307,13 +306,6 @@ def main():
 
     # Initialize FFT stats
     matrix = [0 for _ in range(hc.GPIOLEN)]
-    offct = [0 for _ in range(hc.GPIOLEN)]
-
-    # Build the limit list
-    if len(_LIMIT_LIST) == 1:
-        limit = [_LIMIT_LIST[0] for _ in range(hc.GPIOLEN)]
-    else:
-        limit = _LIMIT_LIST
 
     # Set up audio
     if song_filename.endswith('.wav'):
@@ -329,7 +321,7 @@ def main():
     output.setformat(aa.PCM_FORMAT_S16_LE)
     output.setperiodsize(CHUNK_SIZE)
 
-    # Output a bit about what we're about to play
+    # Output a bit about what we're about to play to the logs
     song_filename = os.path.abspath(song_filename)
     logging.info("Playing: " + song_filename + " (" + str(musicfile.getnframes() / sample_rate)
                  + " sec)")
@@ -386,31 +378,22 @@ def main():
             cache.append(matrix)
 
         for i in range(0, hc.GPIOLEN):
-            if hc.is_pin_pwm(i):
-                # Output pwm, where off is at 0.5 std below the mean
-                # and full on is at 0.75 std above the mean.
-                brightness = matrix[i] - mean[i] + 0.5 * std[i]
-                brightness = brightness / (1.25 * std[i])
-                if brightness > 1.0:
-                    brightness = 1.0
-                if brightness < 0:
-                    brightness = 0
-                hc.turn_on_light(i, True, int(brightness * 60))
-            else:
-                if limit[i] < matrix[i] * _LIMIT_THRESHOLD:
-                    limit[i] = limit[i] * _LIMIT_THRESHOLD_INCREASE
-                    logging.debug("++++ channel: {0}; limit: {1:.3f}".format(i, limit[i]))
-                # Amplitude has reached threshold
-                if matrix[i] > limit[i]:
+            # Calculate output pwm, where off is at 0.5 std below the mean
+            # and full on is at 0.75 std above the mean.
+            brightness = matrix[i] - mean[i] + 0.5 * std[i]
+            brightness = brightness / (1.25 * std[i])
+            if brightness > 1.0:
+                brightness = 1.0
+            if brightness < 0:
+                brightness = 0
+            if not hc.is_pin_pwm(i):
+                # If pin is on / off mode we'll turn on at 1/2 brightness
+                if (brightness > 0.5):
                     hc.turn_on_light(i, True)
-                    offct[i] = 0
-                else:  # Amplitude did not reach threshold
-                    offct[i] = offct[i] + 1
-                    if offct[i] > _MAX_OFF_CYCLES:
-                        offct[i] = 0
-                        limit[i] = limit[i] * _LIMIT_THRESHOLD_DECREASE  # old value 0.8
-                    logging.debug("---- channel: {0}; limit: {1:.3f}".format(i, limit[i]))
+                else:
                     hc.turn_off_light(i, True)
+            else:
+                hc.turn_on_light(i, True, brightness)
 
         # Read next chunk of data from music song_filename
         data = musicfile.readframes(CHUNK_SIZE)
@@ -427,7 +410,7 @@ def main():
             logging.info("Cached sync data written to '." + cache_filename
                          + "' [" + str(len(cache)) + " rows]")
 
-    # We're done, turn it all off ;)
+    # We're done, turn it all off and clean up things ;)
     hc.clean_up()
 
 if __name__ == "__main__":
