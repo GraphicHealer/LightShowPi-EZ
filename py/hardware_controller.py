@@ -218,11 +218,11 @@ def main():
                         for _ in range(flashes):
                             for brightness in range(0, _PWM_MAX):
                                 # fade in
-                                turn_on_light(light, 0, brightness / _PWM_MAX)
+                                turn_on_light(light, 0, float(brightness) / _PWM_MAX)
                                 time.sleep(sleep / _PWM_MAX)
                             for brightness in range(59, -1, -1):
                                 # fade out
-                                turn_on_light(light, 0, brightness / _PWM_MAX)
+                                turn_on_light(light, 0, float(brightness) / _PWM_MAX)
                                 time.sleep(sleep / _PWM_MAX)
             except KeyboardInterrupt:
                 print "\nstopped"
