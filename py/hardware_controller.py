@@ -210,6 +210,7 @@ def main():
             turn_on_light(light)
     elif state == "fade":
         # Test fading in and out for each light configured in pwm mode
+        print "Press <CTRL>-C to stop"
         while True:
             try:
                 for light in lights:
@@ -229,6 +230,7 @@ def main():
                     turn_off_light(light)
                 break
     elif state == "flash":
+        print "Press <CTRL>-C to stop"
         while True:
             try:
                 for light in lights:
