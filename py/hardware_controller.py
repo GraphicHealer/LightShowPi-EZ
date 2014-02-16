@@ -181,8 +181,6 @@ def main():
     '''main'''
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--init', action='store_true', default=False,
-                        help='initialize hardware pins before running other commands')
     parser.add_argument('--state', choices=["off", "on", "flash", "fade", "cleanup"],
                         help='turn off, on, flash, or cleanup')
     parser.add_argument('--light', default='-1',
@@ -200,8 +198,7 @@ def main():
     if -1 in lights:
         lights = range(0, len(_GPIO_PINS))
 
-    if args.init:
-        initialize()
+    initialize()
 
     if state == "cleanup":
         clean_up()
@@ -218,14 +215,14 @@ def main():
                 for light in lights:
                     if is_pin_pwm(light):
                         for _ in range(flashes):
-                            for brightness in range(0, 60):
+                            for brightness in range(0, _PWM_MAX):
                                 # fade in
                                 turn_on_light(light, 0, brightness)
-                                time.sleep(sleep / 60)
+                                time.sleep(sleep / _PWM_MAX)
                             for brightness in range(59, -1, -1):
                                 # fade out
                                 turn_on_light(light, 0, brightness)
-                                time.sleep(sleep / 60)
+                                time.sleep(sleep / _PWM_MAX)
             except KeyboardInterrupt:
                 print "\nstopped"
                 for light in lights:
@@ -246,7 +243,6 @@ def main():
                 for light in lights:
                     turn_off_light(light)
                 break
-            break
     else:
         parser.print_help()
 
