@@ -144,16 +144,16 @@ def turn_off_light(i, useoverrides=0):
     else:
         wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOINACTIVE)
 
-def turn_on_light(i, useoverrides=0, brightness=_PWM_MAX):
+def turn_on_light(i, useoverrides=0, brightness=1.0):
     '''Turn on the specified light, taking into account various overrides if specified.'''
     if is_pin_pwm(i):
         if _ACTIVE_LOW_MODE:
-            brightness = _PWM_MAX - brightness
-        if brightness < 0:
-            brightness = 0
-        if brightness > _PWM_MAX:
-            brightness = _PWM_MAX
-        wiringpi.softPwmWrite(i, brightness)
+            brightness = 1.0 - brightness
+        if brightness < 0.0:
+            brightness = 0.0
+        if brightness > 1.0:
+            brightness = 1.0
+        wiringpi.softPwmWrite(i, int(brightness * _PWM_MAX))
         return
 
     if useoverrides:
@@ -218,11 +218,11 @@ def main():
                         for _ in range(flashes):
                             for brightness in range(0, _PWM_MAX):
                                 # fade in
-                                turn_on_light(light, 0, brightness)
+                                turn_on_light(light, 0, brightness / _PWM_MAX)
                                 time.sleep(sleep / _PWM_MAX)
                             for brightness in range(59, -1, -1):
                                 # fade out
-                                turn_on_light(light, 0, brightness)
+                                turn_on_light(light, 0, brightness / _PWM_MAX)
                                 time.sleep(sleep / _PWM_MAX)
             except KeyboardInterrupt:
                 print "\nstopped"
