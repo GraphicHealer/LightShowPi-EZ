@@ -29,7 +29,7 @@ import wiringpi2 as wiringpi
 _CONFIG = cm.CONFIG
 _GPIO_PINS = [int(pin) for pin in _CONFIG.get('hardware', 'gpio_pins').split(',')]
 PIN_MODES = _CONFIG.get('hardware', 'pin_modes').split(',')
-_PWM_MAX = _CONFIG.get('hardware', 'pwm_range')
+_PWM_MAX = int(_CONFIG.get('hardware', 'pwm_range'))
 _ACTIVE_LOW_MODE = _CONFIG.getboolean('hardware', 'active_low_mode')
 _LIGHTSHOW_CONFIG = cm.lightshow()
 _ALWAYS_ON_CHANNELS = [int(channel) for channel in
