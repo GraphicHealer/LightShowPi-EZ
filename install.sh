@@ -110,8 +110,11 @@ fi
 ENV_VARIABLE="SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}"
 exists=`grep "$ENV_VARIABLE" /etc/profile`
 if [ -z "$exists" ]; then
+  echo "" >> /etc/profile
+  echo "# Lightshow Pi Home" >> /etc/profile
   echo "$ENV_VARIABLE" >> /etc/profile
-  # Force set this envirnment variable in this shell (as above doesn't take until reboot)
+  echo "export SYNCHRONIZED_LIGHTS_HOME" >> /etc/profile
+  # Force set this environment variable in this shell (as above doesn't take until reboot)
   export $ENV_VARIABLE
 fi
 KEEP_EN="Defaults	env_keep="SYNCHRONIZED_LIGHTS_HOME""
