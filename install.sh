@@ -115,7 +115,7 @@ if [ -z "$exists" ]; then
   echo "export SYNCHRONIZED_LIGHTS_HOME" >> /etc/profile.d/lightshowpi.sh
   echo "" >> /etc/profile.d/lightshowpi.sh
   echo "# Add Lightshow Pi bin directory to path" >> /etc/profile.d/lightshowpi.sh
-  echo "PATH=$PATH:${INSTALL_DIR}/bin" >> /etc/profile.d/lightshowpi.sh
+  echo "PATH=\$PATH:${INSTALL_DIR}/bin" >> /etc/profile.d/lightshowpi.sh
   echo "export PATH" >> /etc/profile.d/lightshowpi.sh
 
   # Force set this environment variable in this shell (as above doesn't take until reboot)
