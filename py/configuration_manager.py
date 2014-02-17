@@ -39,7 +39,7 @@ LOG_DIR = HOME_DIR + '/logs'
 # and then from ~/.lights.cfg (which will be the root's home).
 CONFIG = ConfigParser.RawConfigParser()
 CONFIG.readfp(open(CONFIG_DIR + '/defaults.cfg'))
-CONFIG.read([CONFIG_DIR + '/overrides.cfg', 'home/pi/.lights.cfg',
+CONFIG.read([CONFIG_DIR + '/overrides.cfg', '/home/pi/.lights.cfg',
              os.path.expanduser('~/.lights.cfg')])
 
 def _as_dict(section):
