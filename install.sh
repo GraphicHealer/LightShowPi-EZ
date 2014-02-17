@@ -108,12 +108,14 @@ fi
 
 #Setup environment variables
 ENV_VARIABLE="SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}"
-exists=`grep "$ENV_VARIABLE" /etc/profile`
+exists=`grep -r "$ENV_VARIABLE" /etc/profile*`
 if [ -z "$exists" ]; then
-  echo "" >> /etc/profile
-  echo "# Lightshow Pi Home" >> /etc/profile
+  echo "# Lightshow Pi Home" > /etc/profile.d/lightshowpi.sh
   echo "$ENV_VARIABLE" >> /etc/profile
   echo "export SYNCHRONIZED_LIGHTS_HOME" >> /etc/profile
+  echo ""
+  echo "# Add Lightshow Pi bin directory to path
+  echo "PATH=$PATH:${INSTALL_DIR}/bin"
   # Force set this environment variable in this shell (as above doesn't take until reboot)
   export $ENV_VARIABLE
 fi
@@ -149,3 +151,4 @@ cd $INSTALL_DIR
 sudo py/hardware_controller.py --state flash
 
 echo "If your lights blinked then this must have worked!"
+echo "
