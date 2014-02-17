@@ -21,13 +21,13 @@ for it :-)
 Directory Structure
 ===================
 
-* py/synchronized_lights.py - Play a single song while synchronizing lights to the music.
-* py/hardware_controller.py - Useful for verifying your hardware configuration (blink all lights, turn them on / off, etc...).
-* py/check_sms.py - Check sms messages from a google voice account to allow for voting for the next song!
-* config/* - Configuration files go here.
+* bin/* - Various bash scripts / tools to aid in playing songs, controlling volume, etc...
+* config/* - Configuration files.
 * crontab/synchronized_lights - Add these via 'sudo crontab -e' to start / stop the lightshow automatically
 * logs/* - Log files will be output here.
-* bin/* - Various bash scripts / tools to aid in playing songs, controlling volume, etc...
+* music/* - Music files go here (includes some samples).
+* py/* - All the python code.
+* tools/* - Tools helpful for those developing / debugging lightshowPi.
 
 Contributors
 ============
@@ -39,3 +39,9 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 * Ryan Jennings
 * Sean Millar
 * Scott Driscoll
+
+Release Notes
+============
+
+2014/02/16 :: Version 1
+- First "stable" release
