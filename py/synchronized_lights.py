@@ -8,29 +8,27 @@
 # Author: Ryan Jennings
 """Play any audio file and synchronize lights to the music
 
-When executed, this script will play an audio file, as well as turn on and off 8 channels
-of lights to the music (via the first 8 GPIO channels on the Rasberry Pi), based upon
+When executed, this script will play an audio file, as well as turn on and off N channels
+of lights to the music (by default the first 8 GPIO channels on the Rasberry Pi), based upon
 music it is playing. Many types of audio files are supported (see decoder.py below), but
 it has only been tested with wav and mp3 at the time of this writing.
 
-The timing of the lights turning on and off are controlled based upon the frequency response
-of the music being played.  A short segment of the music is analyzed via FFT to get the
-frequency response across 8 channels in the audio range.  Each light channel is then turned
-on or off based upon whether the amplitude of the frequency response in the corresponding
-channel has crossed a dynamic threshold.
+The timing of the lights turning on and off is based upon the frequency response of the music
+being played.  A short segment of the music is analyzed via FFT to get the frequency response
+across each defined channel in the audio range.  Each light channel is then faded in and out based
+upon the amplitude of the frequency response in the corresponding audio channel.  Fading is 
+accomplished with a software PWM output.  Each channel can also be configured to simply turn on
+and off as the frequency response in the corresponding channel crosses a threshold.
 
-The threshold for each channel is "dynamic" in that it is adjusted upwards and downwards
-during the song play back based upon the frequency response amplitude of the song. This ensures
-that soft songs, or even soft portions of songs will still turn all 8 channels on and off
-during the song.
+FFT calculation can be CPU intensive and in some cases can adversely affect playback of songs
+(especially if attempting to decode the song as well, as is the case for an mp3).  For this reason,
+the FFT cacluations are cached after the first time a new song is played.  The values are cached
+in a gzip'd text file in the same location as the song itself.  Subsequent requests to play the
+same song will use the cached information and not recompute the FFT, thus reducing CPU utilization
+dramatically and allowing for clear music playback of all audio file types.
 
-FFT calculation is quite CPU intensive and can adversely affect playback of songs (especially if
-attempting to decode the song as well, as is the case for an mp3).  For this reason, the timing
-values of the lights turning on and off is cached after it is calculated upon the first time a
-new song is played.  The values are cached in a gzip'd text file in the same location as
-the song itself.  Subsequent requests to play the same song will use the cached information and not
-recompute the FFT, thus reducing CPU utilization dramatically and allowing for clear music
-playback of all audio file types.
+Recent optimizations have improved this dramatically and most users are no longer reporting
+adverse playback of songs even on the first playback.
 
 Sample usage:
 
@@ -59,7 +57,6 @@ import gzip
 import logging
 import os
 import random
-from struct import unpack
 import sys
 import time
 import wave
@@ -73,11 +70,6 @@ import numpy as np
 
 # Configurations - TODO(todd): Move more of this into configuration manager
 _CONFIG = cm.CONFIG
-_LIMIT_LIST = [int(lim) for lim in _CONFIG.get('auto_tuning', 'limit_list').split(',')]
-_LIMIT_THRESHOLD = _CONFIG.getfloat('auto_tuning', 'limit_threshold')
-_LIMIT_THRESHOLD_INCREASE = _CONFIG.getfloat('auto_tuning', 'limit_threshold_increase')
-_LIMIT_THRESHOLD_DECREASE = _CONFIG.getfloat('auto_tuning', 'limit_threshold_decrease')
-_MAX_OFF_CYCLES = _CONFIG.getfloat('auto_tuning', 'max_off_cycles')
 _MIN_FREQUENCY = _CONFIG.getfloat('audio_processing', 'min_frequency')
 _MAX_FREQUENCY = _CONFIG.getfloat('audio_processing', 'max_frequency')
 _RANDOMIZE_PLAYLIST = _CONFIG.getboolean('lightshow', 'randomize_playlist')
@@ -175,10 +167,10 @@ def piff(val, sample_rate):
 # TODO(todd): Move FFT related code into separate file as a library
 def calculate_levels(data, sample_rate, frequency_limits):
     '''Calculate frequency response for each channel
-    
+
     Initial FFT code inspired from the code posted here:
     http://www.raspberrypi.org/phpBB3/viewtopic.php?t=35838&p=454041
-    
+
     Optimizations from work by Scott Driscoll:
     http://www.instructables.com/id/Raspberry-Pi-Spectrum-Analyzer-with-RGB-LED-Strip-/
     '''
@@ -315,13 +307,6 @@ def main():
 
     # Initialize FFT stats
     matrix = [0 for _ in range(hc.GPIOLEN)]
-    offct = [0 for _ in range(hc.GPIOLEN)]
-
-    # Build the limit list
-    if len(_LIMIT_LIST) == 1:
-        limit = [_LIMIT_LIST[0] for _ in range(hc.GPIOLEN)]
-    else:
-        limit = _LIMIT_LIST
 
     # Set up audio
     if song_filename.endswith('.wav'):
@@ -337,7 +322,7 @@ def main():
     output.setformat(aa.PCM_FORMAT_S16_LE)
     output.setperiodsize(CHUNK_SIZE)
 
-    # Output a bit about what we're about to play
+    # Output a bit about what we're about to play to the logs
     song_filename = os.path.abspath(song_filename)
     logging.info("Playing: " + song_filename + " (" + str(musicfile.getnframes() / sample_rate)
                  + " sec)")
@@ -394,31 +379,22 @@ def main():
             cache.append(matrix)
 
         for i in range(0, hc.GPIOLEN):
-            if hc.is_pin_pwm(i):
-                # Output pwm, where off is at 0.5 std below the mean
-                # and full on is at 0.75 std above the mean.
-                brightness = matrix[i] - mean[i] + 0.5 * std[i]
-                brightness = brightness / (1.25 * std[i])
-                if brightness > 1.0:
-                    brightness = 1.0
-                if brightness < 0:
-                    brightness = 0
-                hc.turn_on_light(i, True, int(brightness * 60))
-            else:
-                if limit[i] < matrix[i] * _LIMIT_THRESHOLD:
-                    limit[i] = limit[i] * _LIMIT_THRESHOLD_INCREASE
-                    logging.debug("++++ channel: {0}; limit: {1:.3f}".format(i, limit[i]))
-                # Amplitude has reached threshold
-                if matrix[i] > limit[i]:
+            # Calculate output pwm, where off is at 0.5 std below the mean
+            # and full on is at 0.75 std above the mean.
+            brightness = matrix[i] - mean[i] + 0.5 * std[i]
+            brightness = brightness / (1.25 * std[i])
+            if brightness > 1.0:
+                brightness = 1.0
+            if brightness < 0:
+                brightness = 0
+            if not hc.is_pin_pwm(i):
+                # If pin is on / off mode we'll turn on at 1/2 brightness
+                if (brightness > 0.5):
                     hc.turn_on_light(i, True)
-                    offct[i] = 0
-                else:  # Amplitude did not reach threshold
-                    offct[i] = offct[i] + 1
-                    if offct[i] > _MAX_OFF_CYCLES:
-                        offct[i] = 0
-                        limit[i] = limit[i] * _LIMIT_THRESHOLD_DECREASE  # old value 0.8
-                    logging.debug("---- channel: {0}; limit: {1:.3f}".format(i, limit[i]))
+                else:
                     hc.turn_off_light(i, True)
+            else:
+                hc.turn_on_light(i, True, brightness)
 
         # Read next chunk of data from music song_filename
         data = musicfile.readframes(CHUNK_SIZE)
@@ -435,7 +411,7 @@ def main():
             logging.info("Cached sync data written to '." + cache_filename
                          + "' [" + str(len(cache)) + " rows]")
 
-    # We're done, turn it all off ;)
+    # We're done, turn it all off and clean up things ;)
     hc.clean_up()
 
 if __name__ == "__main__":

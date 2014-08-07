@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Play audio files with synchronized lights.  Supports
-# midi, mp3, wav, ogg, wma, etc...
+# mp3, wav, ogg, wma, etc...
 #
 # Sample Usage:
 #
@@ -11,22 +11,16 @@
 # Author: Todd Giles (todd.giles@gmail.com)
 # Modifications: Chris Usey (chris.usey@gmail.com), Sean Millar (sean.millar@gmail.com)
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Check that the home environment variable is set
 if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
-    echo "Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme"
+    cat $DIR/env_error_msg
     exit 1
 fi 
-
-$SYNCHRONIZED_LIGHTS_HOME/bin/midi_off
 
 for f in $@
 do
   filename=$(basename "$f")
-  extension="${f##*.}"
-  if [ "$extension" = "mid" ]
-  then
-    play_midi "$f"
-  else
-    sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py --file="$f"
-  fi
+  sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py --file="$f"
 done

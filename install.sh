@@ -108,10 +108,17 @@ fi
 
 #Setup environment variables
 ENV_VARIABLE="SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}"
-exists=`grep "$ENV_VARIABLE" /etc/environment`
+exists=`grep -r "$ENV_VARIABLE" /etc/profile*`
 if [ -z "$exists" ]; then
-  echo "$ENV_VARIABLE" >> /etc/environment
-  # Force set this envirnment variable in this shell (as above doesn't take until reboot)
+  echo "# Lightshow Pi Home" > /etc/profile.d/lightshowpi.sh
+  echo "$ENV_VARIABLE" >> /etc/profile.d/lightshowpi.sh
+  echo "export SYNCHRONIZED_LIGHTS_HOME" >> /etc/profile.d/lightshowpi.sh
+  echo "" >> /etc/profile.d/lightshowpi.sh
+  echo "# Add Lightshow Pi bin directory to path" >> /etc/profile.d/lightshowpi.sh
+  echo "PATH=\$PATH:${INSTALL_DIR}/bin" >> /etc/profile.d/lightshowpi.sh
+  echo "export PATH" >> /etc/profile.d/lightshowpi.sh
+
+  # Force set this environment variable in this shell (as above doesn't take until reboot)
   export $ENV_VARIABLE
 fi
 KEEP_EN="Defaults	env_keep="SYNCHRONIZED_LIGHTS_HOME""
@@ -140,9 +147,11 @@ fi
 sudo easy_install beautifulsoup4
 
 #Test to see if we are working
-echo "test installation by attempting to blink all lights"
+echo "test installation by attempting to blink all lights (press <CTRL>-C to stop the test)"
 cd $INSTALL_DIR
 
-sudo py/hardware_controller.py --init --state flash
+sudo py/hardware_controller.py --state flash
 
 echo "If your lights blinked then this must have worked!"
+echo
+echo "Reboot your Raspberry Pi before running lightshowPi (sudo reboot)"
