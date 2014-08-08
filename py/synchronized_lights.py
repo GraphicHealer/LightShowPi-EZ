@@ -31,8 +31,10 @@ Recent optimizations have improved this dramatically and most users are no longe
 adverse playback of songs even on the first playback.
 
 Sample usage:
-
+To play an entire list -
 sudo python synchronized_lights.py --playlist=/home/pi/music/.playlist
+
+To play a specific song -
 sudo python synchronized_lights.py --file=/home/pi/music/jingle_bells.mp3
 
 Third party dependencies:
