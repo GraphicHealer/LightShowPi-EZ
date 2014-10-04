@@ -43,7 +43,7 @@ cd $BUILD_DIR
 git --version > /dev/null
 if [ $? -eq 1 ]; then
 	#Nope, install git
-	apt-get install -y git
+	sudo apt-get install -y git
     if [ $? -ne 0 ]; then
         errchk "git" $?
     fi
@@ -80,7 +80,7 @@ sudo ./build
 cd $BUILD_DIR
 
 #install wiringpi2-Python
-apt-get install -y python-dev python-setuptools
+sudo apt-get install -y python-dev python-setuptools
 git clone https://github.com/Gadgetoid/WiringPi2-Python.git
 cd WiringPi2-Python
 sudo python setup.py install
