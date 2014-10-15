@@ -92,7 +92,7 @@ def set_pin_as_output(i):
     '''Set the specified pin as an output.'''
     wiringpi.pinMode(_GPIO_PINS[i], _GPIOASOUTPUT)
     if is_pin_pwm(i):
-        wiringpi.softPwmCreate(i, 0, _PWM_MAX)
+        wiringpi.softPwmCreate(_GPIO_PINS[i], 0, _PWM_MAX)
 
 def set_pin_as_input(i):
     '''Set the specified pin as an input.'''
@@ -103,7 +103,7 @@ def turn_off_lights(usealwaysonoff=0):
     for i in range(GPIOLEN):
         if is_pin_pwm(i):
             # No overrides available for pwm mode pins
-            wiringpi.softPwmWrite(i, _PWM_OFF)
+            wiringpi.softPwmWrite(_GPIO_PINS[i], _PWM_OFF)
             continue
 
         if usealwaysonoff:
@@ -117,7 +117,7 @@ def turn_on_lights(usealwaysonoff=0):
     for i in range(GPIOLEN):
         if is_pin_pwm(i):
             # No overrides avaialble for pwm mode pins
-            wiringpi.softPwmWrite(i, _PWM_ON)
+            wiringpi.softPwmWrite(_GPIO_PINS[i], _PWM_ON)
             continue
 
         if usealwaysonoff:
@@ -130,7 +130,7 @@ def turn_off_light(i, useoverrides=0):
     '''Turn off the specified light, taking into account various overrides if specified.'''
     if is_pin_pwm(i):
         # No overrides avaialble for pwm mode pins
-        wiringpi.softPwmWrite(i, _PWM_OFF)
+        wiringpi.softPwmWrite(_GPIO_PINS[i], _PWM_OFF)
         return
 
     if useoverrides:
@@ -151,7 +151,7 @@ def turn_on_light(i, useoverrides=0, brightness=1.0):
             brightness = 0.0
         if brightness > 1.0:
             brightness = 1.0
-        wiringpi.softPwmWrite(i, int(brightness * _PWM_MAX))
+        wiringpi.softPwmWrite(_GPIO_PINS[i], int(brightness * _PWM_MAX))
         return
 
     if useoverrides:

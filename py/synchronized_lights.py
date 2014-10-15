@@ -31,8 +31,10 @@ Recent optimizations have improved this dramatically and most users are no longe
 adverse playback of songs even on the first playback.
 
 Sample usage:
-
+To play an entire list -
 sudo python synchronized_lights.py --playlist=/home/pi/music/.playlist
+
+To play a specific song -
 sudo python synchronized_lights.py --file=/home/pi/music/jingle_bells.mp3
 
 Third party dependencies:
@@ -273,12 +275,12 @@ def main():
                 fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
 
         else:
-            # Get random song
-            if _RANDOMIZE_PLAYLIST:
-                current_song = songs[random.randint(0, len(songs) - 1)]
             # Get a "play now" requested song
-            elif play_now > 0 and play_now <= len(songs):
+            if play_now > 0 and play_now <= len(songs):
                 current_song = songs[play_now - 1]
+            # Get random song
+            elif _RANDOMIZE_PLAYLIST:
+                current_song = songs[random.randint(0, len(songs) - 1)]
             # Play next song in the lineup
             else:
                 song_to_play = song_to_play if (song_to_play <= len(songs) - 1) else 0
