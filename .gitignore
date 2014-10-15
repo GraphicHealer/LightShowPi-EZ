@@ -8,3 +8,6 @@ install.log
 
 # Ignore all compiled python files
 *.pyc
+
+# Ignore Other Dev Files
+sftp-config.json
