@@ -43,6 +43,11 @@ try:
 except:
     _MCP23017 = 0
 
+try:
+    _MCP23S17 = ast.literal_eval(_CONFIG.get('hardware', 'mcp23S17'))
+except:
+    _MCP23S17 = 0
+
 # Initialize GPIO
 _GPIOASINPUT = 0
 _GPIOASOUTPUT = 1
@@ -53,11 +58,17 @@ wiringpi.wiringPiSetup()
 if len(PIN_MODES) == 1:
     PIN_MODES = [PIN_MODES[0] for _ in range(GPIOLEN)]
 
-# Activate Port Expander If Defined
+# Activate MCP23017 Port Expander If Defined
 if _MCP23017:
     logging.info("Initializing MCP23017 Port Expander")
     # set up the pins and i2c address
     wiringpi.mcp23017Setup(_MCP23017['pin_base'], _MCP23017['i2c_addr'])
+
+# Activate MCP23S17 Port Expander If Defined
+if _MCP23S17:
+    logging.info("Initializing MCP23S17 Port Expander")
+    # set up the pins and spi address
+    wiringpi.mcp23s17Setup(_MCP23S17['pin_base'], _MCP23S17['spi_port'], _MCP23S17['dev_id'])
 
 # Check ActiveLowMode Configuration Setting
 if _ACTIVE_LOW_MODE:
