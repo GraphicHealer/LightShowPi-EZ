@@ -19,6 +19,7 @@ if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
     exit 1
 fi 
 
+IFS=$(echo -en "\n\b")
 for f in $@
 do
   filename=$(basename "$f")
