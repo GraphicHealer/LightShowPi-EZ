@@ -65,9 +65,11 @@ def lightshow():
         for transition in _as_list(_LIGHTSHOW_CONFIG['preshow']):
             try:
                 transition = transition.split(':')
+		if len(transition) == 0 or (len(transition) == 1 and len(transition[0]) == 0):
+                    continue
                 if len(transition) != 2:
                     logging.error("Preshow transition definition should be in the form"
-                                  " [on|off]:<duration> - " + transition.join(':'))
+                                  " [on|off]:<duration> - " + ':'.join(transition))
                     continue
                 transition_config = dict()
                 transition_type = str(transition[0]).lower()
@@ -78,8 +80,9 @@ def lightshow():
                 transition_config['type'] = transition_type
                 transition_config['duration'] = float(transition[1])
                 preshow['transitions'].append(transition_config)
-            except:
-                logging.error("Invalid preshow transition definition: " + transition.join(':'),)
+            except Exception as e:
+                logging.error("Invalid preshow transition definition: " + ':'.join(transition))
+		logging.error(e)
         _LIGHTSHOW_CONFIG['preshow'] = preshow
 
     return _LIGHTSHOW_CONFIG
