@@ -146,12 +146,10 @@ fi
 #install beautiful soup
 sudo easy_install beautifulsoup4
 
-#Test to see if we are working
-echo "test installation by attempting to blink all lights (press <CTRL>-C to stop the test)"
-cd $INSTALL_DIR
-
-sudo py/hardware_controller.py --state flash
-
-echo "If your lights blinked then this must have worked!"
+# Explain to installer how they can test to see if we are working
 echo
-echo "Reboot your Raspberry Pi before running lightshowPi (sudo reboot)"
+echo "You may need to reboot your Raspberry Pi before running lightshowPi (sudo reboot)."
+echo "Run the following command to test your installation and hardware setup (press CTRL-C to stop the test):"
+echo
+echo "sudo $INSTALL_DIR/py/hardware_controller.py --state flash"
+echo
