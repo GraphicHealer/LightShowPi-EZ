@@ -94,16 +94,16 @@ def execute_preshow(config,channel_on_control,channel_off_control):
             hc.turn_on_lights(True)
             for channel_config in channel_on_control['channel_configs']:
                 if channel_config['state'].lower() == 'on':
-                    hc.turn_on_light(int(channel_config['channel']) - 1,1)
+                    hc.turn_on_light(int(channel_config['channel']) - 1)
                 else:
-                    hc.turn_off_light(int(channel_config['channel']) -1,1)
+                    hc.turn_off_light(int(channel_config['channel']) -1)
         else:
             hc.turn_off_lights(True)
             for channel_config in channel_off_control['channel_configs']:
                 if channel_config['state'].lower() == 'on':
-                    hc.turn_on_light(int(channel_config['channel']) -1,1)
+                    hc.turn_on_light(int(channel_config['channel']) -1)
                 else:
-                    hc.turn_off_light(int(channel_config['channel']) -1,1)
+                    hc.turn_off_light(int(channel_config['channel']) -1)
         logging.debug('Transition to ' + transition['type'] + ' for '
             + str(transition['duration']) + ' seconds')
         while transition['duration'] > (time.time() - start):
