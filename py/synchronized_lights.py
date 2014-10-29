@@ -86,24 +86,14 @@ except:
 CHUNK_SIZE = 2048  # Use a multiple of 8
 
 
-def execute_preshow(config,channel_on_control,channel_off_control):
+def execute_preshow(config):
     '''Execute the "Preshow" for the given preshow configuration'''
     for transition in config['transitions']:
         start = time.time()
         if transition['type'].lower() == 'on':
             hc.turn_on_lights(True)
-            for channel_config in channel_on_control['channel_configs']:
-                if channel_config['state'].lower() == 'on':
-                    hc.turn_on_light(int(channel_config['channel']) - 1)
-                else:
-                    hc.turn_off_light(int(channel_config['channel']) -1)
         else:
             hc.turn_off_lights(True)
-            for channel_config in channel_off_control['channel_configs']:
-                if channel_config['state'].lower() == 'on':
-                    hc.turn_on_light(int(channel_config['channel']) -1)
-                else:
-                    hc.turn_off_light(int(channel_config['channel']) -1)
         logging.debug('Transition to ' + transition['type'] + ' for '
             + str(transition['duration']) + ' seconds')
         while transition['duration'] > (time.time() - start):
@@ -241,7 +231,7 @@ def main():
 
     # Only execute preshow if no specific song has been requested to be played right now
     if not play_now:
-        execute_preshow(cm.lightshow()['preshow'],cm.lightshow()['preshow_on_channel_control'],cm.lightshow()['preshow_off_channel_control'])
+        execute_preshow(cm.lightshow()['preshow'])
 
     # Determine the next file to play
     song_filename = args.file

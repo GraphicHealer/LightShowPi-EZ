@@ -85,60 +85,6 @@ def lightshow():
                 logging.error(e)
         _LIGHTSHOW_CONFIG['preshow'] = preshow
 
-        # Parse out the preshow_on_channel_control and replace it with the preshow_on_channel_config
-        # consiting of channels and there on or off state
-        preshow_on_channel_control = dict()
-        preshow_on_channel_control['channel_configs'] = []
-        for channel_config in _as_list(_LIGHTSHOW_CONFIG['preshow_on_channel_control']):
-            try:
-                channel_config = channel_config.split(':')
-                if len(channel_config) == 0 or (len(channel_config) == 1 and len(channel_config[0]) == 0):
-                    continue
-                if len(channel_config) != 2:
-                    logging.error("preshow_on_channel_control channel_config channel should be in the form"
-                                  " [on|off]:<channel #> - " + ':'.join(channel_config))
-                    continue
-                channel_config_config = dict()
-                channel_config_state = str(channel_config[0]).lower()
-                if not channel_config_state in ['on', 'off']:
-                    logging.error("preshow_on_channel_control channel_config_state must either 'on'"
-                          "or 'off': " + channel_config_state)
-                    continue
-                channel_config_config['state'] = channel_config_state
-                channel_config_config['channel'] = int(channel_config[1])
-                preshow_on_channel_control['channel_configs'].append(channel_config_config)
-            except Exception as e:
-                logging.error("Invalid preshow_on_channel_control channel_config definition: " + ':'.join(channel_config))
-                logging.error(e)
-        _LIGHTSHOW_CONFIG['preshow_on_channel_control'] = preshow_on_channel_control
-
-        # Parse out the preshow_off_channel_control and replace it with the preshow_off_channel_config
-        # consiting of channels and there on or off state
-        preshow_off_channel_control = dict()
-        preshow_off_channel_control['channel_configs'] = []
-        for channel_config in _as_list(_LIGHTSHOW_CONFIG['preshow_off_channel_control']):
-            try:
-                channel_config = channel_config.split(':')
-                if len(channel_config) == 0 or (len(channel_config) == 1 and len(channel_config[0]) == 0):
-                    continue
-                if len(channel_config) != 2:
-                    logging.error("preshow_off_channel_control channel_config channel should be in the form"
-                                  " [on|off]:<channel #> - " + ':'.join(channel_config))
-                    continue
-                channel_config_config = dict()
-                channel_config_state = str(channel_config[0]).lower()
-                if not channel_config_state in ['on', 'off']:
-                    logging.error("preshow_off_channel_control channel_config channel_config_state must either 'on'"
-                          "or 'off': " + channel_config_state)
-                    continue
-                channel_config_config['state'] = channel_config_state
-                channel_config_config['channel'] = int(channel_config[1])
-                preshow_off_channel_control['channel_configs'].append(channel_config_config)
-            except Exception as e:
-                logging.error("Invalid preshow_off_channel_control channel_config definition: " + ':'.join(channel_config))
-                logging.error(e)
-        _LIGHTSHOW_CONFIG['preshow_off_channel_control'] = preshow_off_channel_control
-
     return _LIGHTSHOW_CONFIG
 
 _SMS_CONFIG = {}
