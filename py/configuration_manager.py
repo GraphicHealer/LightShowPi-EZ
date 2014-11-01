@@ -62,9 +62,9 @@ def lightshow():
         preshow = dict()
         preshow['transitions'] = []
 
-        ''' Check to see if we are using the depreciated preshow setting first, if not, use the new preshow_configuration setting'''
+        ''' Check to see if we are using the DEPRECATED preshow setting first, if not, use the new preshow_configuration setting'''
         if 'preshow' in _LIGHTSHOW_CONFIG:
-            logging.error("[DEPRECIATED: preshow] the preshow option has been depreciated in favor of preshow_configuration, please update accordingly")
+            logging.error("[DEPRECATED: preshow] the preshow option has been DEPRECATED in favor of preshow_configuration, please update accordingly")
             # Parse out the preshow and replace it with the preshow CONFIG
             # consiting of transitions to on or off for various durations.
             for transition in _as_list(_LIGHTSHOW_CONFIG['preshow']):
@@ -73,20 +73,20 @@ def lightshow():
                     if len(transition) == 0 or (len(transition) == 1 and len(transition[0]) == 0):
                         continue
                     if len(transition) != 2:
-                        logging.error("[DEPRECIATED: preshow] Preshow transition definition should be in the form"
+                        logging.error("[DEPRECATED: preshow] Preshow transition definition should be in the form"
                                       " [on|off]:<duration> - " + ':'.join(transition))
                         continue
                     transition_config = dict()
                     transition_type = str(transition[0]).lower()
                     if not transition_type in ['on', 'off']:
-                        logging.error("[DEPRECIATED: preshow] Preshow transition transition_type must either 'on'"
+                        logging.error("[DEPRECATED: preshow] Preshow transition transition_type must either 'on'"
                               "or 'off': " + transition_type)
                         continue
                     transition_config['type'] = transition_type
                     transition_config['duration'] = float(transition[1])
                     preshow['transitions'].append(transition_config)
                 except Exception as e:
-                    logging.error("[DEPRECIATED: preshow] Invalid preshow transition definition: " + ':'.join(transition))
+                    logging.error("[DEPRECATED: preshow] Invalid preshow transition definition: " + ':'.join(transition))
                     logging.error(e)
         elif 'preshow_configuration' in _LIGHTSHOW_CONFIG:
             try:

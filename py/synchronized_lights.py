@@ -243,13 +243,7 @@ def main():
     # Initialize Lights
     hc.initialize()
 
-    # Only execute preshow if no specific song has been requested to be played right now
-    if not play_now:
-        # the preshow config option has been depreciated in favor of preshow_configuration
-        # check to see if preshow_configuration is set, if not we want to load the depreciated
-        # config.
-        
-       
+    if not play_now:        
         execute_preshow(cm.lightshow()['preshow'])
 
     # Determine the next file to play
