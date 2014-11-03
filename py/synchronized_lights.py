@@ -54,6 +54,7 @@ import random
 import sys
 import time
 import wave
+import json
 
 import alsaaudio as aa
 import configuration_manager as cm
@@ -81,10 +82,9 @@ except:
 try:
     _PLAYLIST_PATH = _CONFIG.get('lightshow', 'playlist_path').replace('$SYNCHRONIZED_LIGHTS_HOME',
                                                                        cm.HOME_DIR)
-except:
+except: 
     _PLAYLIST_PATH = "/home/pi/music/.playlist"
 CHUNK_SIZE = 2048  # Use a multiple of 8
-
 
 def execute_preshow(config):
     '''Execute the "Preshow" for the given preshow configuration'''
@@ -96,6 +96,20 @@ def execute_preshow(config):
             hc.turn_off_lights(True)
         logging.debug('Transition to ' + transition['type'] + ' for '
             + str(transition['duration']) + ' seconds')
+
+        if 'channel_control' in transition:
+            channel_control = transition['channel_control']
+            for key in channel_control.keys():
+                mode = key
+                channels = channel_control[key]
+                for channel in channels:
+                    if mode == 'on':
+                        hc.turn_on_light(int(channel) - 1,1)
+                    elif mode == 'off':
+                        hc.turn_off_light(int(channel) - 1,1)
+                    else:
+                        logging.error("Unrecognized channel_control mode defined in preshow_configuration " + str(mode))
+
         while transition['duration'] > (time.time() - start):
             cm.load_state()  # Force a refresh of state from file
             play_now = int(cm.get_state('play_now', 0))
@@ -229,8 +243,7 @@ def main():
     # Initialize Lights
     hc.initialize()
 
-    # Only execute preshow if no specific song has been requested to be played right now
-    if not play_now:
+    if not play_now:        
         execute_preshow(cm.lightshow()['preshow'])
 
     # Determine the next file to play
