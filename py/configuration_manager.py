@@ -51,6 +51,28 @@ def _as_list(list_str, delimiter=','):
     '''Return a list of items from a delimited string (after stripping whitespace).'''
     return [str.strip(item) for item in list_str.split(delimiter)]
 
+# Retrieve hardware configuration
+_HARDWARE_CONFIG = {}
+def hardware():
+    '''Retrieves the hardware configuration, loading and parsing it from a file if necessary.'''
+    global _HARDWARE_CONFIG
+    if len(_HARDWARE_CONFIG) == 0:
+        _HARDWARE_CONFIG = _as_dict('hardware')
+
+        '''Devices'''
+        devices = dict()
+
+        try:
+            devices = json.loads(_HARDWARE_CONFIG['devices'])
+        except Exception as e:
+            logging.error("devices not defined or not in JSON format." + str(e))
+
+        _HARDWARE_CONFIG["devices"] = devices
+
+    return _HARDWARE_CONFIG
+
+
+
 # Retrieve light show configuration
 _LIGHTSHOW_CONFIG = {}
 def lightshow():
