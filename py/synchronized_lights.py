@@ -54,13 +54,18 @@ import random
 import sys
 import time
 import wave
-import json
+import subprocess
 
 import alsaaudio as aa
 import configuration_manager as cm
 import decoder
 import hardware_controller as hc
 import numpy as np
+
+#on_off = ["off", "on"]
+#shuffle = False
+#repeat_all = False
+#merge_audio_in = False
 
 
 # Configurations - TODO(todd): Move more of this into configuration manager
@@ -82,10 +87,18 @@ except:
 try:
     _PLAYLIST_PATH = _CONFIG.get('lightshow', 'playlist_path').replace('$SYNCHRONIZED_LIGHTS_HOME',
                                                                        cm.HOME_DIR)
-except: 
+except:
     _PLAYLIST_PATH = "/home/pi/music/.playlist"
 CHUNK_SIZE = 2048  # Use a multiple of 8
 
+try:
+    _usefm=_CONFIG.get('audio_processing','fm');
+    frequency =_CONFIG.get('audio_processing','frequency');
+    play_stereo = True
+    music_pipe_r,music_pipe_w = os.pipe()	
+except:
+	_usefm='false'
+	
 def execute_preshow(config):
     '''Execute the "Preshow" for the given preshow configuration'''
     for transition in config['transitions']:
@@ -96,20 +109,6 @@ def execute_preshow(config):
             hc.turn_off_lights(True)
         logging.debug('Transition to ' + transition['type'] + ' for '
             + str(transition['duration']) + ' seconds')
-
-        if 'channel_control' in transition:
-            channel_control = transition['channel_control']
-            for key in channel_control.keys():
-                mode = key
-                channels = channel_control[key]
-                for channel in channels:
-                    if mode == 'on':
-                        hc.turn_on_light(int(channel) - 1,1)
-                    elif mode == 'off':
-                        hc.turn_off_light(int(channel) - 1,1)
-                    else:
-                        logging.error("Unrecognized channel_control mode defined in preshow_configuration " + str(mode))
-
         while transition['duration'] > (time.time() - start):
             cm.load_state()  # Force a refresh of state from file
             play_now = int(cm.get_state('play_now', 0))
@@ -118,7 +117,7 @@ def execute_preshow(config):
 
             # Check once every ~ .1 seconds to break out
             time.sleep(0.1)
-
+			
 def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_mapping,
                                 custom_channel_frequencies):
     '''Calculate frequency values for each channel, taking into account custom settings.'''
@@ -243,7 +242,8 @@ def main():
     # Initialize Lights
     hc.initialize()
 
-    if not play_now:        
+    # Only execute preshow if no specific song has been requested to be played right now
+    if not play_now:
         execute_preshow(cm.lightshow()['preshow'])
 
     # Determine the next file to play
@@ -306,7 +306,9 @@ def main():
         cm.update_state('current_song', songs.index(current_song))
 
     song_filename = song_filename.replace("$SYNCHRONIZED_LIGHTS_HOME", cm.HOME_DIR)
-
+    #hc.initialize()
+    #self.fpid=os.fork()
+    
     # Ensure play_now is reset before beginning playback
     if play_now:
         cm.update_state('play_now', 0)
@@ -321,18 +323,22 @@ def main():
     else:
         musicfile = decoder.open(song_filename)
 
-    sample_rate = musicfile.getframerate()
-    num_channels = musicfile.getnchannels()
-    output = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL)
-    output.setchannels(num_channels)
-    output.setrate(sample_rate)
-    output.setformat(aa.PCM_FORMAT_S16_LE)
-    output.setperiodsize(CHUNK_SIZE)
-
+    if _usefm=='true':
+        with open(os.devnull, "w") as dev_null:
+            fm_process = subprocess.Popen(["./pifm","-",str(frequency),"44100", "stereo" if play_stereo else "mono"], stdin=music_pipe_r, stdout=dev_null)
+    else:
+        sample_rate = musicfile.getframerate()
+        num_channels = musicfile.getnchannels()
+        output = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL)
+        output.setchannels(num_channels)
+        output.setrate(sample_rate)
+        output.setformat(aa.PCM_FORMAT_S16_LE)
+        output.setperiodsize(CHUNK_SIZE)
+        logging.info("Playing: " + song_filename + " (" + str(musicfile.getnframes() / sample_rate)
+                 + " sec)")
     # Output a bit about what we're about to play to the logs
     song_filename = os.path.abspath(song_filename)
-    logging.info("Playing: " + song_filename + " (" + str(musicfile.getnframes() / sample_rate)
-                 + " sec)")
+    
 
     cache = []
     cache_found = False
@@ -369,7 +375,10 @@ def main():
                                                    _CUSTOM_CHANNEL_FREQUENCIES)
 
     while data != '' and not play_now:
-        output.write(data)
+        if _usefm=='true':
+            os.write(music_pipe_w, data)
+        else:
+		    output.write(data)
 
         # Control lights with cached timing values if they exist
         matrix = None
@@ -419,6 +428,8 @@ def main():
                          + "' [" + str(len(cache)) + " rows]")
 
     # We're done, turn it all off and clean up things ;)
+    if _usefm=='true':
+	    fm_process.kill()
     hc.clean_up()
 
 if __name__ == "__main__":
