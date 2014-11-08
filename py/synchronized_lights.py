@@ -235,7 +235,7 @@ def extern_show():
         print frequency_limits
         while True:
             
-            data = stream.read(chunk)
+            data = stream.read()
             matrix = calculate_levels(data, sample_rate, frequency_limits)
 
             for i in range(0, hc.GPIOLEN):
