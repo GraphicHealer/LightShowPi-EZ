@@ -6,6 +6,7 @@
 # Author: Todd Giles (todd@lightshowpi.com)
 # Author: Chris Usey (chris.usey@gmail.com)
 # Author: Ryan Jennings
+# Author: Paul Dunn (dunnsept@gmail.com)
 """Play any audio file and synchronize lights to the music
 
 When executed, this script will play an audio file, as well as turn on and off N channels
@@ -42,6 +43,7 @@ Third party dependencies:
 alsaaudio: for audio output - http://pyalsaaudio.sourceforge.net/
 decoder.py: decoding mp3, ogg, wma, ... - https://pypi.python.org/pypi/decoder.py/1.5XB
 numpy: for FFT calcuation - http://www.numpy.org/
+pyaudio: used for audio input - http://people.csail.mit.edu/hubert/pyaudio/
 """
 
 import argparse
@@ -50,6 +52,7 @@ import fcntl
 import gzip
 import logging
 import os
+import pyaudio
 import random
 import sys
 import time
@@ -210,6 +213,70 @@ def calculate_levels(data, sample_rate, frequency_limits):
                                           :piff(frequency_limits[i][1], sample_rate):1]))
 
     return matrix
+
+def extern_show():
+    chunk = 2048 
+    sample_rate = 48000   #<----- you might need to change this one
+    min_frequency = 20
+    max_frequency = 15000
+    _CUSTOM_CHANNEL_FREQUENCIES = 0
+    _CUSTOM_CHANNEL_MAPPING = 0
+    matrix    = [0,0,0,0,0,0,0,0]
+#CHANGE THIS TO CORRECT INPUT DEVICE
+# Enable stereo mixing in your sound card
+# to make you sound output an input
+# Use list_devices() to list all your input devices
+    device = 0
+    p = pyaudio.PyAudio()
+    pyaudio.paDirectSound = 1
+    stream = p.open(format = pyaudio.paInt16,
+    channels = 1,
+    rate = sample_rate,                   
+    input = True,
+    frames_per_buffer = chunk,
+    input_device_index = device)
+
+ 
+    mean = [12.0 for _ in range(hc.GPIOLEN)]
+    std = [1.5 for _ in range(hc.GPIOLEN)]
+    print "Starting, use Ctrl+C to stop"
+    try:
+        hc.initialize()
+        #data = stream.read(chunk)
+        frequency_limits = calculate_channel_frequency(min_frequency, max_frequency,0,0)
+        print frequency_limits
+        while True:
+            
+            data = stream.read(chunk)
+            matrix = calculate_levels(data, sample_rate, frequency_limits)
+
+            for i in range(0, hc.GPIOLEN):
+            # Calculate output pwm, where off is at 0.5 std below the mean
+            # and full on is at 0.75 std above the mean.
+                brightness = matrix[i] - mean[i] + 0.5 * std[i]
+                #brightness = brightness / (1.25 * std[i])
+                brightness = brightness / (2.2 * std[i])
+                if brightness > 1.0:
+                    brightness = 1.0
+                if brightness < 0:
+                    brightness = 0
+                if not hc.is_pin_pwm(i):
+                # If pin is on / off mode we'll turn on at 1/2 brightness
+                    if (brightness > 0.5):
+                        hc.turn_on_light(i, True)
+                    else:
+                        hc.turn_off_light(i, True)
+                else:
+                    hc.turn_on_light(i, True, brightness)
+
+               
+                #print data    #<---- comment out to not see calculated values
+ 
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print "\nStopping"
+        hc.clean_up()
 
 # TODO(todd): Refactor this to make it more readable / modular.
 def main():
@@ -422,4 +489,5 @@ def main():
     hc.clean_up()
 
 if __name__ == "__main__":
-    main()
+#    main()
+    extern_show()
