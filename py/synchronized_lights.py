@@ -40,10 +40,9 @@ sudo python synchronized_lights.py --file=/home/pi/music/jingle_bells.mp3
 
 Third party dependencies:
 
-alsaaudio: for audio output - http://pyalsaaudio.sourceforge.net/
+alsaaudio: for audio input/output - http://pyalsaaudio.sourceforge.net/
 decoder.py: decoding mp3, ogg, wma, ... - https://pypi.python.org/pypi/decoder.py/1.5XB
 numpy: for FFT calcuation - http://www.numpy.org/
-pyaudio: used for audio input - http://people.csail.mit.edu/hubert/pyaudio/
 """
 
 import argparse
@@ -52,12 +51,10 @@ import fcntl
 import gzip
 import logging
 import os
-import pyaudio
 import random
 import sys
 import time
 import wave
-import json
 
 import alsaaudio as aa
 import configuration_manager as cm
@@ -222,20 +219,11 @@ def extern_show():
     _CUSTOM_CHANNEL_FREQUENCIES = 0
     _CUSTOM_CHANNEL_MAPPING = 0
     matrix    = [0,0,0,0,0,0,0,0]
-#CHANGE THIS TO CORRECT INPUT DEVICE
-# Enable stereo mixing in your sound card
-# to make you sound output an input
-# Use list_devices() to list all your input devices
-    device = 0
-    p = pyaudio.PyAudio()
-    pyaudio.paDirectSound = 1
-    stream = p.open(format = pyaudio.paInt16,
-    channels = 1,
-    rate = sample_rate,                   
-    input = True,
-    frames_per_buffer = chunk,
-    input_device_index = device)
 
+    stream = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NONBLOCK)
+    stream.setchannels(1)
+    stream.setrate(sample_rate)
+    stream.setperiodsize(chunk)
  
     mean = [12.0 for _ in range(hc.GPIOLEN)]
     std = [1.5 for _ in range(hc.GPIOLEN)]
