@@ -92,7 +92,7 @@ try:
     play_stereo = True
     music_pipe_r,music_pipe_w = os.pipe()	
 except:
-	_usefm='false'
+    _usefm='false'
 	
 def execute_preshow(config):
     '''Execute the "Preshow" for the given preshow configuration'''
@@ -329,18 +329,21 @@ def main():
     else:
         musicfile = decoder.open(song_filename)
 
+    sample_rate = musicfile.getframerate()
+    num_channels = musicfile.getnchannels()
+
     if _usefm=='true':
+        logging.info("Sending output as fm transmission")
         with open(os.devnull, "w") as dev_null:
-            fm_process = subprocess.Popen(["./pifm","-",str(frequency),"44100", "stereo" if play_stereo else "mono"], stdin=music_pipe_r, stdout=dev_null)
+            fm_process = subprocess.Popen(["../bin/pifm","-",str(frequency),"44100", "stereo" if play_stereo else "mono"], stdin=music_pipe_r, stdout=dev_null)
     else:
-        sample_rate = musicfile.getframerate()
-        num_channels = musicfile.getnchannels()
         output = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL)
         output.setchannels(num_channels)
         output.setrate(sample_rate)
         output.setformat(aa.PCM_FORMAT_S16_LE)
         output.setperiodsize(CHUNK_SIZE)
-        logging.info("Playing: " + song_filename + " (" + str(musicfile.getnframes() / sample_rate)
+    
+	logging.info("Playing: " + song_filename + " (" + str(musicfile.getnframes() / sample_rate)
                  + " sec)")
     # Output a bit about what we're about to play to the logs
     song_filename = os.path.abspath(song_filename)
@@ -384,7 +387,7 @@ def main():
         if _usefm=='true':
             os.write(music_pipe_w, data)
         else:
-		    output.write(data)
+            output.write(data)
 
         # Control lights with cached timing values if they exist
         matrix = None
