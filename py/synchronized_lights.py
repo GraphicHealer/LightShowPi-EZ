@@ -160,7 +160,6 @@ def update_lights(matrix, mean, std):
 
 def audio_in():
     '''Control the lightshow from audio coming in from a USB audio card'''
-    matrix = [0,0,0,0,0,0,0,0]
     sample_rate = cm.lightshow()['audio_in_sample_rate']
 
     # Open the input stream from default input device
@@ -169,12 +168,7 @@ def audio_in():
     stream.setformat(aa.PCM_FORMAT_S16_LE) # Expose in config if needed
     stream.setrate(sample_rate)
     stream.setperiodsize(CHUNK_SIZE)
- 
-    # TODO(todd): Use a moving std / mean taking in the last N samples
-    mean = [12.0 for _ in range(hc.GPIOLEN)]
-    std = [1.5 for _ in range(hc.GPIOLEN)]
-
-        
+         
     logging.debug("Running in audio-in mode - will run until Ctrl+C is pressed")
     print "Running in audio-in mode, use Ctrl+C to stop"
     try:
@@ -184,6 +178,13 @@ def audio_in():
                                                        _CUSTOM_CHANNEL_MAPPING,
                                                        _CUSTOM_CHANNEL_FREQUENCIES)
 
+        # Start with these as our initial guesses - will calculate a rolling mean / std 
+        # as we get input data.
+        mean = [12.0 for _ in range(hc.GPIOLEN)]
+        std = [0.5 for _ in range(hc.GPIOLEN)]
+        recent_samples = np.empty((250, hc.GPIOLEN))
+        num_samples = 0
+    
         # Listen on the audio input device until CTRL-C is pressed
         while True:            
             l, data = stream.read()
@@ -191,6 +192,27 @@ def audio_in():
             if l:
                 matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits)
                 update_lights(matrix, mean, std)
+                num_samples += 1
+
+                # Keep track of the last N samples to compute a running std / mean
+                #
+                # TODO(todd): Look into using this algorithm to compute this on a per sample basis:
+                # http://www.johndcook.com/blog/standard_deviation/                
+                if num_samples > 250:
+                    for i in range(0, hc.GPIOLEN):
+                        std[i] = np.std([item for item in recent_samples[:, i] if item > 0])
+                        mean[i] = np.mean([item for item in recent_samples[:, i] if item > 0])
+                        
+                        # Do not let mean drop below 9, as we're in the noise at that point
+                        if mean[i] < 9.0:
+                            mean[i] = 9.0
+                            
+                        logging.debug("std: " + str(std) + ", mean: " + str(mean))
+                            
+                    num_samples = 0
+                else:
+                    for i in range(0, hc.GPIOLEN):
+                        recent_samples[num_samples][i] = matrix[i]
  
     except KeyboardInterrupt:
         pass

@@ -165,7 +165,7 @@ def turn_on_lights(usealwaysonoff=0):
     '''Turn on all the lights, but leave off all lights designated to be always off if specified.'''
     for i in range(GPIOLEN):
         if is_pin_pwm(i):
-            # No overrides avaialble for pwm mode pins
+            # No overrides available for pwm mode pins
             wiringpi.softPwmWrite(_GPIO_PINS[i], _PWM_ON)
             continue
 
@@ -178,7 +178,7 @@ def turn_on_lights(usealwaysonoff=0):
 def turn_off_light(i, useoverrides=0):
     '''Turn off the specified light, taking into account various overrides if specified.'''
     if is_pin_pwm(i):
-        # No overrides avaialble for pwm mode pins
+        # No overrides available for pwm mode pins
         wiringpi.softPwmWrite(_GPIO_PINS[i], _PWM_OFF)
         return
 
