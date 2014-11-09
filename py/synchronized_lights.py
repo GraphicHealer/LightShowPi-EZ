@@ -192,7 +192,6 @@ def audio_in():
             if l:
                 matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits)
                 update_lights(matrix, mean, std)
-                num_samples += 1
 
                 # Keep track of the last N samples to compute a running std / mean
                 #
@@ -200,8 +199,8 @@ def audio_in():
                 # http://www.johndcook.com/blog/standard_deviation/                
                 if num_samples > 250:
                     for i in range(0, hc.GPIOLEN):
-                        std[i] = np.std([item for item in recent_samples[:, i] if item > 0])
                         mean[i] = np.mean([item for item in recent_samples[:, i] if item > 0])
+                        std[i] = np.std([item for item in recent_samples[:, i] if item > 0])
                         
                         # Do not let mean drop below 9, as we're in the noise at that point
                         if mean[i] < 9.0:
@@ -213,6 +212,7 @@ def audio_in():
                 else:
                     for i in range(0, hc.GPIOLEN):
                         recent_samples[num_samples][i] = matrix[i]
+                    num_samples += 1
  
     except KeyboardInterrupt:
         pass
