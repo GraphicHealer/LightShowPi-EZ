@@ -14,7 +14,6 @@ numpy: for FFT calculation - http://www.numpy.org/
 """
 
 import hardware_controller as hc
-import logging
 import numpy as np
 
 
