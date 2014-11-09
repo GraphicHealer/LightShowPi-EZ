@@ -14,6 +14,7 @@ numpy: for FFT calculation - http://www.numpy.org/
 """
 
 import hardware_controller as hc
+import logging
 import numpy as np
 
 
@@ -21,7 +22,7 @@ def piff(val, chunk_size, sample_rate):
     '''Return the power array index corresponding to a particular frequency.'''
     return int(chunk_size * val / sample_rate)
 
-def calculate_levels(data, chunk_size, sample_rate, frequency_limits):
+def calculate_levels(data, chunk_size, sample_rate, frequency_limits, channels=2):
     '''Calculate frequency response for each channel defined in frequency_limits
 
     Initial FFT code inspired from the code posted here:
@@ -33,8 +34,11 @@ def calculate_levels(data, chunk_size, sample_rate, frequency_limits):
 
     # create a numpy array. This won't work with a mono file, stereo only.
     data_stereo = np.frombuffer(data, dtype=np.int16)
-    data = np.empty(len(data) / 4)  # data has two channels and 2 bytes per channel
-    data[:] = data_stereo[::2]  # pull out the even values, just using left channel
+    if channels > 1:
+        data = np.empty(len(data) / (2 * channels))  # data has 2 bytes per channel
+        data[:] = data_stereo[::2]  # pull out the even values, just using left channel
+    else:
+        data = data_stereo
 
     # if you take an FFT of a chunk of audio, the edges will look like
     # super high frequency cutoffs. Applying a window tapers the edges
@@ -45,13 +49,13 @@ def calculate_levels(data, chunk_size, sample_rate, frequency_limits):
     # Apply FFT - real data
     fourier = np.fft.rfft(data)
 
-    # Remove last element in array to make it the same size as CHUNK_SIZE
+    # Remove last element in array to make it the same size as chunk_size
     fourier = np.delete(fourier, len(fourier) - 1)
 
     # Calculate the power spectrum
     power = np.abs(fourier) ** 2
 
-    matrix = [0 for i in range(hc.GPIOLEN)]
+    matrix = np.zeros(hc.GPIOLEN)
     for i in range(hc.GPIOLEN):
         # take the log10 of the resulting sum to approximate how human ears perceive sound levels
         matrix[i] = np.log10(np.sum(power[piff(frequency_limits[i][0], chunk_size, sample_rate)

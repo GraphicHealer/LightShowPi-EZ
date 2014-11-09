@@ -161,10 +161,11 @@ def update_lights(matrix, mean, std):
 def audio_in():
     '''Control the lightshow from audio coming in from a USB audio card'''
     sample_rate = cm.lightshow()['audio_in_sample_rate']
+    input_channels = cm.lightshow()['audio_in_channels']
 
     # Open the input stream from default input device
     stream = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NORMAL, cm.lightshow()['audio_in_card'])
-    stream.setchannels(cm.lightshow()['audio_in_channels'])
+    stream.setchannels(input_channels)
     stream.setformat(aa.PCM_FORMAT_S16_LE) # Expose in config if needed
     stream.setrate(sample_rate)
     stream.setperiodsize(CHUNK_SIZE)
@@ -190,24 +191,38 @@ def audio_in():
             l, data = stream.read()
             
             if l:
-                matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits)
+                try:
+                    matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits, input_channels)
+                    if not np.isfinite(np.sum(matrix)):
+                        # Bad data --- skip it
+                        continue
+                except ValueError as e:
+                    # Error calculating fft --- skip it
+                    logging.debug("error in calculationg frequency levels: " + str(e))
+                    continue
+
                 update_lights(matrix, mean, std)
 
                 # Keep track of the last N samples to compute a running std / mean
                 #
                 # TODO(todd): Look into using this algorithm to compute this on a per sample basis:
                 # http://www.johndcook.com/blog/standard_deviation/                
-                if num_samples > 250:
+                if num_samples >= 250:
+                    no_connection_ct = 0
                     for i in range(0, hc.GPIOLEN):
                         mean[i] = np.mean([item for item in recent_samples[:, i] if item > 0])
                         std[i] = np.std([item for item in recent_samples[:, i] if item > 0])
                         
-                        # Do not let mean drop below 9, as we're in the noise at that point
-                        if mean[i] < 9.0:
-                            mean[i] = 9.0
+                        # Count how many channels are below 10, if more than 1/2, assume noise (no connection)
+                        if mean[i] < 10.0:
+                            no_connection_ct += 1
                             
+                    # If more than 1/2 of the channels appear to be not connected, turn all off
+                    if no_connection_ct > hc.GPIOLEN / 2:
+                        logging.debug("no input detected, turning all lights off")
+                        mean = [20 for _ in range(hc.GPIOLEN)]
+                    else:
                         logging.debug("std: " + str(std) + ", mean: " + str(mean))
-                            
                     num_samples = 0
                 else:
                     for i in range(0, hc.GPIOLEN):
@@ -236,13 +251,6 @@ def play_song():
     parser.add_argument('--readcache', type=int, default=1,
                         help='read light timing from cache if available. Default: true')
     args = parser.parse_args()
-
-    # Log everything to our log file
-    # TODO(todd): Add logging configuration options.
-    logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.play.dbg',
-                        format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
-                        ' - %(message)s',
-                        level=logging.DEBUG)
 
     # Make sure one of --playlist or --file was specified
     if args.file == None and args.playlist == None:
@@ -418,6 +426,13 @@ def play_song():
     hc.clean_up()
 
 if __name__ == "__main__":
+    # Log everything to our log file
+    # TODO(todd): Add logging configuration options.
+    logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.play.dbg',
+                        format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
+                        ' - %(message)s',
+                        level=logging.DEBUG)
+
     if cm.lightshow()['mode'] == 'audio-in':
         audio_in()
     else:
