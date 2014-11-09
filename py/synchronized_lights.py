@@ -197,8 +197,12 @@ def audio_in():
                         # Bad data --- skip it
                         continue
                 except ValueError as e:
-                    # Error calculating fft --- skip it
-                    logging.debug("error in calculationg frequency levels: " + str(e))
+                    # TODO(todd): This is most likely occuring due to extra time in calculating
+                    # mean/std every 250 samples which causes more to be read than expected the
+                    # next time around.  Would be good to update mean/std in separate thread to
+                    # avoid this --- but for now, skip it when we run into this error is good 
+                    # enough ;)
+                    logging.debug("skipping update: " + str(e))
                     continue
 
                 update_lights(matrix, mean, std)
