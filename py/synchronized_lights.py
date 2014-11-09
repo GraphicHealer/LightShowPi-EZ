@@ -221,7 +221,7 @@ def extern_show():
     matrix    = [0,0,0,0,0,0,0,0]
 
     # Open stream as mono, 48000 Hz, 16 bit little endian samples
-    stream = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NONBLOCK)
+    stream = aa.PCM(aa.PCM_CAPTURE)
     stream.setchannels(1)
     stream.setformat(aa.PCM_FORMAT_S16_LE)
     stream.setrate(sample_rate)
