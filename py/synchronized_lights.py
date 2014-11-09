@@ -220,8 +220,10 @@ def extern_show():
     _CUSTOM_CHANNEL_MAPPING = 0
     matrix    = [0,0,0,0,0,0,0,0]
 
+    # Open stream as mono, 48000 Hz, 16 bit little endian samples
     stream = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NONBLOCK)
     stream.setchannels(1)
+    stream.setformat(aa.PCM_FORMAT_S16_LE)
     stream.setrate(sample_rate)
     stream.setperiodsize(chunk)
  
@@ -230,8 +232,7 @@ def extern_show():
     print "Starting, use Ctrl+C to stop"
     try:
         hc.initialize()
-        #data = stream.read(chunk)
-        frequency_limits = calculate_channel_frequency(min_frequency, max_frequency,0,0)
+        frequency_limits = calculate_channel_frequency(min_frequency, max_frequency, 0, 0)
         print frequency_limits
         while True:
             
