@@ -232,7 +232,7 @@ def play_song():
 
     # Handle the pre-show
     if not play_now:
-        result = Preshow().execute(cm.lightshow()['preshow'])
+        result = Preshow().execute()
         if result == Preshow.PlayNowInterrupt:
             play_now = True
 
