@@ -31,7 +31,7 @@ class Preshow:
     Done, PlayNowInterrupt = range(2)
     
     def __init__(self):
-        self.config = cm.lightshow(['preshow'])
+        self.config = cm.lightshow()['preshow']
 
     def setConfig(self, config):
         '''Set a new configuration to use for the preshow'''
