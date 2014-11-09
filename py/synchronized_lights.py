@@ -53,18 +53,21 @@ import logging
 import os
 import random
 import sys
-import time
 import wave
 
 import alsaaudio as aa
+import fft
 import configuration_manager as cm
 import decoder
 import hardware_controller as hc
 import numpy as np
 
+from preshow import Preshow
+
 
 # Configurations - TODO(todd): Move more of this into configuration manager
 _CONFIG = cm.CONFIG
+_MODE = cm.lightshow()['mode']
 _MIN_FREQUENCY = _CONFIG.getfloat('audio_processing', 'min_frequency')
 _MAX_FREQUENCY = _CONFIG.getfloat('audio_processing', 'max_frequency')
 _RANDOMIZE_PLAYLIST = _CONFIG.getboolean('lightshow', 'randomize_playlist')
@@ -80,44 +83,11 @@ try:
 except:
     _CUSTOM_CHANNEL_FREQUENCIES = 0
 try:
-    _PLAYLIST_PATH = _CONFIG.get('lightshow', 'playlist_path').replace('$SYNCHRONIZED_LIGHTS_HOME',
-                                                                       cm.HOME_DIR)
+    _PLAYLIST_PATH = cm.lightshow()['playlist_path'].replace('$SYNCHRONIZED_LIGHTS_HOME', cm.HOME_DIR)
 except: 
     _PLAYLIST_PATH = "/home/pi/music/.playlist"
-CHUNK_SIZE = 2048  # Use a multiple of 8
+CHUNK_SIZE = 2048  # Use a multiple of 8 (move to config file?)
 
-def execute_preshow(config):
-    '''Execute the "Preshow" for the given preshow configuration'''
-    for transition in config['transitions']:
-        start = time.time()
-        if transition['type'].lower() == 'on':
-            hc.turn_on_lights(True)
-        else:
-            hc.turn_off_lights(True)
-        logging.debug('Transition to ' + transition['type'] + ' for '
-            + str(transition['duration']) + ' seconds')
-
-        if 'channel_control' in transition:
-            channel_control = transition['channel_control']
-            for key in channel_control.keys():
-                mode = key
-                channels = channel_control[key]
-                for channel in channels:
-                    if mode == 'on':
-                        hc.turn_on_light(int(channel) - 1,1)
-                    elif mode == 'off':
-                        hc.turn_off_light(int(channel) - 1,1)
-                    else:
-                        logging.error("Unrecognized channel_control mode defined in preshow_configuration " + str(mode))
-
-        while transition['duration'] > (time.time() - start):
-            cm.load_state()  # Force a refresh of state from file
-            play_now = int(cm.get_state('play_now', 0))
-            if play_now:
-                return  # Skip out on the rest of the preshow
-
-            # Check once every ~ .1 seconds to break out
-            time.sleep(0.1)
 
 def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_mapping,
                                 custom_channel_frequencies):
@@ -168,99 +138,59 @@ def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_map
     else:
         return frequency_store
 
-def piff(val, sample_rate):
-    '''Return the power array index corresponding to a particular frequency.'''
-    return int(CHUNK_SIZE * val / sample_rate)
+def update_lights(matrix, mean, std):
+    '''Update the state of all the lights based upon the current frequency response matrix'''
+    for i in range(0, hc.GPIOLEN):
+        # Calculate output pwm, where off is at some portion of the std below
+        # the mean and full on is at some portion of the std above the mean.
+        brightness = matrix[i] - mean[i] + 0.5 * std[i]
+        brightness = brightness / (1.25 * std[i])
+        if brightness > 1.0:
+            brightness = 1.0
+        if brightness < 0:
+            brightness = 0
+        if not hc.is_pin_pwm(i):
+            # If pin is on / off mode we'll turn on at 1/2 brightness
+            if (brightness > 0.5):
+                hc.turn_on_light(i, True)
+            else:
+                hc.turn_off_light(i, True)
+        else:
+            hc.turn_on_light(i, True, brightness)
 
-# TODO(todd): Move FFT related code into separate file as a library
-def calculate_levels(data, sample_rate, frequency_limits):
-    '''Calculate frequency response for each channel
+def audio_in():
+    '''Control the lightshow from audio coming in from a USB audio card'''
+    matrix = [0,0,0,0,0,0,0,0]
+    sample_rate = cm.lightshow()['audio_in_sample_rate']
 
-    Initial FFT code inspired from the code posted here:
-    http://www.raspberrypi.org/phpBB3/viewtopic.php?t=35838&p=454041
-
-    Optimizations from work by Scott Driscoll:
-    http://www.instructables.com/id/Raspberry-Pi-Spectrum-Analyzer-with-RGB-LED-Strip-/
-    '''
-
-    # create a numpy array. This won't work with a mono file, stereo only.
-    data_stereo = np.frombuffer(data, dtype=np.int16)
-    data = np.empty(len(data) / 4)  # data has two channels and 2 bytes per channel
-    data[:] = data_stereo[::2]  # pull out the even values, just using left channel
-
-    # if you take an FFT of a chunk of audio, the edges will look like
-    # super high frequency cutoffs. Applying a window tapers the edges
-    # of each end of the chunk down to zero.
-    window = np.hanning(len(data))
-    data = data * window
-
-    # Apply FFT - real data
-    fourier = np.fft.rfft(data)
-
-    # Remove last element in array to make it the same size as CHUNK_SIZE
-    fourier = np.delete(fourier, len(fourier) - 1)
-
-    # Calculate the power spectrum
-    power = np.abs(fourier) ** 2
-
-    matrix = [0 for i in range(hc.GPIOLEN)]
-    for i in range(hc.GPIOLEN):
-        # take the log10 of the resulting sum to approximate how human ears perceive sound levels
-        matrix[i] = np.log10(np.sum(power[piff(frequency_limits[i][0], sample_rate)
-                                          :piff(frequency_limits[i][1], sample_rate):1]))
-
-    return matrix
-
-def extern_show():
-    chunk = 2048 
-    sample_rate = 48000   #<----- you might need to change this one
-    min_frequency = 20
-    max_frequency = 15000
-    _CUSTOM_CHANNEL_FREQUENCIES = 0
-    _CUSTOM_CHANNEL_MAPPING = 0
-    matrix    = [0,0,0,0,0,0,0,0]
-
-    # Open stream as mono, 48000 Hz, 16 bit little endian samples
-    stream = aa.PCM(aa.PCM_CAPTURE)
-    stream.setchannels(1)
-    stream.setformat(aa.PCM_FORMAT_S16_LE)
+    # Open the input stream from default input device
+    stream = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NORMAL, cm.lightshow()['audio_in_card'])
+    stream.setchannels(cm.lightshow()['audio_in_channels'])
+    stream.setformat(aa.PCM_FORMAT_S16_LE) # Expose in config if needed
     stream.setrate(sample_rate)
-    stream.setperiodsize(chunk)
+    stream.setperiodsize(CHUNK_SIZE)
  
+    # TODO(todd): Use a moving std / mean taking in the last N samples
     mean = [12.0 for _ in range(hc.GPIOLEN)]
     std = [1.5 for _ in range(hc.GPIOLEN)]
-    print "Starting, use Ctrl+C to stop"
+    
+    print "Running in audio-in mode, use Ctrl+C to stop"
     try:
         hc.initialize()
-        frequency_limits = calculate_channel_frequency(min_frequency, max_frequency, 0, 0)
-        print frequency_limits
+        frequency_limits = calculate_channel_frequency(_MIN_FREQUENCY,
+                                                       _MAX_FREQUENCY,
+                                                       _CUSTOM_CHANNEL_MAPPING,
+                                                       _CUSTOM_CHANNEL_FREQUENCIES)
+        print "Frequency channel limits: " + frequency_limits
+
+        # Listen on the audio input device until
         while True:
             
             l, data = stream.read()
-
-            matrix = calculate_levels(data, sample_rate, frequency_limits)
-
-            for i in range(0, hc.GPIOLEN):
-            # Calculate output pwm, where off is at 0.5 std below the mean
-            # and full on is at 0.75 std above the mean.
-                brightness = matrix[i] - mean[i] + 0.5 * std[i]
-                #brightness = brightness / (1.25 * std[i])
-                brightness = brightness / (2.2 * std[i])
-                if brightness > 1.0:
-                    brightness = 1.0
-                if brightness < 0:
-                    brightness = 0
-                if not hc.is_pin_pwm(i):
-                # If pin is on / off mode we'll turn on at 1/2 brightness
-                    if (brightness > 0.5):
-                        hc.turn_on_light(i, True)
-                    else:
-                        hc.turn_off_light(i, True)
-                else:
-                    hc.turn_on_light(i, True, brightness)
-
-               
-                #print data    #<---- comment out to not see calculated values
+            
+            if l:
+                matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits)
+                update_lights(matrix, mean, std)
  
     except KeyboardInterrupt:
         pass
@@ -268,9 +198,9 @@ def extern_show():
         print "\nStopping"
         hc.clean_up()
 
-# TODO(todd): Refactor this to make it more readable / modular.
-def main():
-    '''main'''
+# TODO(todd): Refactor more of this to make it more readable / modular.
+def play_song():
+    '''Play the next song from the play list (or --file argument).'''
     song_to_play = int(cm.get_state('song_to_play', 0))
     play_now = int(cm.get_state('play_now', 0))
 
@@ -300,8 +230,11 @@ def main():
     # Initialize Lights
     hc.initialize()
 
-    if not play_now:        
-        execute_preshow(cm.lightshow()['preshow'])
+    # Handle the pre-show
+    if not play_now:
+        result = Preshow().execute(cm.lightshow()['preshow'])
+        if result == Preshow.PlayNowInterrupt:
+            play_now = True
 
     # Determine the next file to play
     song_filename = args.file
@@ -439,26 +372,10 @@ def main():
 
         if matrix == None:
             # No cache - Compute FFT in this chunk, and cache results
-            matrix = calculate_levels(data, sample_rate, frequency_limits)
+            matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits)
             cache.append(matrix)
-
-        for i in range(0, hc.GPIOLEN):
-            # Calculate output pwm, where off is at 0.5 std below the mean
-            # and full on is at 0.75 std above the mean.
-            brightness = matrix[i] - mean[i] + 0.5 * std[i]
-            brightness = brightness / (1.25 * std[i])
-            if brightness > 1.0:
-                brightness = 1.0
-            if brightness < 0:
-                brightness = 0
-            if not hc.is_pin_pwm(i):
-                # If pin is on / off mode we'll turn on at 1/2 brightness
-                if (brightness > 0.5):
-                    hc.turn_on_light(i, True)
-                else:
-                    hc.turn_off_light(i, True)
-            else:
-                hc.turn_on_light(i, True, brightness)
+            
+        update_lights(matrix, mean, std)
 
         # Read next chunk of data from music song_filename
         data = musicfile.readframes(CHUNK_SIZE)
@@ -479,5 +396,7 @@ def main():
     hc.clean_up()
 
 if __name__ == "__main__":
-#    main()
-    extern_show()
+    if cm.lightshow()['mode'] == 'audio-in':
+        audio_in()
+    else:
+        play_song()
