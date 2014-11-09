@@ -173,7 +173,9 @@ def audio_in():
     # TODO(todd): Use a moving std / mean taking in the last N samples
     mean = [12.0 for _ in range(hc.GPIOLEN)]
     std = [1.5 for _ in range(hc.GPIOLEN)]
-    
+
+        
+    logging.debug("Running in audio-in mode - will run until Ctrl+C is pressed")
     print "Running in audio-in mode, use Ctrl+C to stop"
     try:
         hc.initialize()
@@ -181,7 +183,6 @@ def audio_in():
                                                        _MAX_FREQUENCY,
                                                        _CUSTOM_CHANNEL_MAPPING,
                                                        _CUSTOM_CHANNEL_FREQUENCIES)
-        print "Frequency channel limits: " + frequency_limits
 
         # Listen on the audio input device until
         while True:
