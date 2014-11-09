@@ -17,7 +17,6 @@ wiringpi2: python wrapper around wiring pi - https://github.com/WiringPi/WiringP
 """
 
 import argparse
-import ast
 import logging
 import time
 
@@ -89,7 +88,7 @@ def enable_device():
             
             # TODO: Devices below need testing, these should work but could not verify due to lack of hardware
             
-             # mcp23016
+            # mcp23016
             elif device.lower() == "mcp23016":
                 for slave in device_slaves:
                     params = slave
@@ -123,6 +122,7 @@ def enable_device():
                 logging.error("Device defined is not supported, please check your devices settings: " + str(device))
     except Exception as e:
         logging.debug("Error setting up devices, please check your devices settings.")
+        logging.debug(e)
 
 def is_pin_pwm(i):
     return PIN_MODES[i].lower() == "pwm"
