@@ -32,12 +32,12 @@ def calculate_levels(data, chunk_size, sample_rate, frequency_limits, channels=2
     http://www.instructables.com/id/Raspberry-Pi-Spectrum-Analyzer-with-RGB-LED-Strip-/
     '''
 
-    # create a numpy array. This won't work with a mono file, stereo only.
+    # create a numpy array, taking just the left channel if stereo
     data_stereo = np.frombuffer(data, dtype=np.int16)
-    if channels > 1:
+    if channels == 2:
         data = np.empty(len(data) / (2 * channels))  # data has 2 bytes per channel
         data[:] = data_stereo[::2]  # pull out the even values, just using left channel
-    else:
+    elif channels == 1:
         data = data_stereo
 
     # if you take an FFT of a chunk of audio, the edges will look like
