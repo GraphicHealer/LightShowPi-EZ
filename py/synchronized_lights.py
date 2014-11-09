@@ -184,9 +184,8 @@ def audio_in():
                                                        _CUSTOM_CHANNEL_MAPPING,
                                                        _CUSTOM_CHANNEL_FREQUENCIES)
 
-        # Listen on the audio input device until
-        while True:
-            
+        # Listen on the audio input device until CTRL-C is pressed
+        while True:            
             l, data = stream.read()
             
             if l:
