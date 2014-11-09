@@ -39,6 +39,7 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 * Ryan Jennings
 * Sean Millar
 * Scott Driscoll
+* Paul Dunn
 
 Release Notes
 ============
