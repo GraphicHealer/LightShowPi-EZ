@@ -22,11 +22,11 @@ import configuration_manager as cm
 import hardware_controller as hc
 
 class Preshow:
-    '''The Show class handles all pre-show logic
+    '''The Preshow class handles all pre-show logic
     
     Typical usage to simply play the default configured preshow:
     
-    Show().execute()
+    Preshow().execute()
     '''
     Done, PlayNowInterrupt = range(2)
     
