@@ -17,6 +17,7 @@ sudo killall play_sms
 sudo killall check_sms
 sudo killall play
 sudo killall python
+sudo killall pifm
 
 # Turn off lights and set back to inputs
 sudo python $SYNCHRONIZED_LIGHTS_HOME/py/hardware_controller.py --state=cleanup

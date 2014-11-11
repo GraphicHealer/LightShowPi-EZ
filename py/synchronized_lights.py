@@ -335,7 +335,7 @@ def main():
     if _usefm=='true':
         logging.info("Sending output as fm transmission")
         with open(os.devnull, "w") as dev_null:
-            fm_process = subprocess.Popen(["../bin/pifm","-",str(frequency),"44100", "stereo" if play_stereo else "mono"], stdin=music_pipe_r, stdout=dev_null)
+            fm_process = subprocess.Popen(["sudo",cm.HOME_DIR + "/bin/pifm","-",str(frequency),"44100", "stereo" if play_stereo else "mono"], stdin=music_pipe_r, stdout=dev_null)
     else:
         output = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL)
         output.setchannels(num_channels)
