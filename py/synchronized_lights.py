@@ -55,13 +55,13 @@ import sys
 import time
 import wave
 import json
+import subprocess
 
 import alsaaudio as aa
 import configuration_manager as cm
 import decoder
 import hardware_controller as hc
 import numpy as np
-
 
 # Configurations - TODO(todd): Move more of this into configuration manager
 _CONFIG = cm.CONFIG
@@ -86,6 +86,14 @@ except:
     _PLAYLIST_PATH = "/home/pi/music/.playlist"
 CHUNK_SIZE = 2048  # Use a multiple of 8
 
+try:
+    _usefm=_CONFIG.get('audio_processing','fm');
+    frequency =_CONFIG.get('audio_processing','frequency');
+    play_stereo = True
+    music_pipe_r,music_pipe_w = os.pipe()	
+except:
+    _usefm='false'
+	
 def execute_preshow(config):
     '''Execute the "Preshow" for the given preshow configuration'''
     for transition in config['transitions']:
@@ -323,16 +331,23 @@ def main():
 
     sample_rate = musicfile.getframerate()
     num_channels = musicfile.getnchannels()
-    output = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL)
-    output.setchannels(num_channels)
-    output.setrate(sample_rate)
-    output.setformat(aa.PCM_FORMAT_S16_LE)
-    output.setperiodsize(CHUNK_SIZE)
 
+    if _usefm=='true':
+        logging.info("Sending output as fm transmission")
+        with open(os.devnull, "w") as dev_null:
+            fm_process = subprocess.Popen(["../bin/pifm","-",str(frequency),"44100", "stereo" if play_stereo else "mono"], stdin=music_pipe_r, stdout=dev_null)
+    else:
+        output = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL)
+        output.setchannels(num_channels)
+        output.setrate(sample_rate)
+        output.setformat(aa.PCM_FORMAT_S16_LE)
+        output.setperiodsize(CHUNK_SIZE)
+    
+	logging.info("Playing: " + song_filename + " (" + str(musicfile.getnframes() / sample_rate)
+                 + " sec)")
     # Output a bit about what we're about to play to the logs
     song_filename = os.path.abspath(song_filename)
-    logging.info("Playing: " + song_filename + " (" + str(musicfile.getnframes() / sample_rate)
-                 + " sec)")
+    
 
     cache = []
     cache_found = False
@@ -369,7 +384,10 @@ def main():
                                                    _CUSTOM_CHANNEL_FREQUENCIES)
 
     while data != '' and not play_now:
-        output.write(data)
+        if _usefm=='true':
+            os.write(music_pipe_w, data)
+        else:
+            output.write(data)
 
         # Control lights with cached timing values if they exist
         matrix = None
