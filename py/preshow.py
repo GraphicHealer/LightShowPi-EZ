@@ -5,7 +5,6 @@
 #
 # Author: Todd Giles (todd@lightshowpi.com)
 # Author: Chris Usey (chris.usey@gmail.com)
-import time
 """Preshow functionality for the lightshows.
 
 Your lightshow can be configured to have a "preshow" before each individual song is
@@ -17,6 +16,7 @@ sudo python preshow.py
 """
 
 import logging
+import time
 
 import configuration_manager as cm
 import hardware_controller as hc
