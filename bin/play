@@ -23,6 +23,5 @@ IFS=$(echo -en "\n\b")
 for f in $@
 do
   filename=$(basename "$f")
-  sudo killall pifm
   sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py --file="$f"
 done

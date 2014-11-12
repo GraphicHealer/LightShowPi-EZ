@@ -18,7 +18,6 @@ if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
 fi 
 
 while true; do
-  sudo killall pifm
   sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py
 done
 
