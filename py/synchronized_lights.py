@@ -367,7 +367,7 @@ def play_song():
         output.setformat(aa.PCM_FORMAT_S16_LE)
         output.setperiodsize(CHUNK_SIZE)
     
-	logging.info("Playing: " + song_filename + " (" + str(musicfile.getnframes() / sample_rate)
+    logging.info("Playing: " + song_filename + " (" + str(musicfile.getnframes() / sample_rate)
                  + " sec)")
     # Output a bit about what we're about to play to the logs
     song_filename = os.path.abspath(song_filename)
@@ -443,6 +443,10 @@ def play_song():
             writer.writerows(cache)
             logging.info("Cached sync data written to '." + cache_filename
                          + "' [" + str(len(cache)) + " rows]")
+
+    # Cleanup the pifm process
+    if _usefm=='true':
+        fm_process.kill()
 
     # We're done, turn it all off and clean up things ;)
     hc.clean_up()
