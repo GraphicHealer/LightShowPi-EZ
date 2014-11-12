@@ -6,6 +6,7 @@
 # Author: Todd Giles (todd@lightshowpi.com)
 # Author: Chris Usey (chris.usey@gmail.com)
 # Author: Ryan Jennings
+# Author: Paul Dunn (dunnsept@gmail.com)
 """Play any audio file and synchronize lights to the music
 
 When executed, this script will play an audio file, as well as turn on and off N channels
@@ -39,7 +40,7 @@ sudo python synchronized_lights.py --file=/home/pi/music/jingle_bells.mp3
 
 Third party dependencies:
 
-alsaaudio: for audio output - http://pyalsaaudio.sourceforge.net/
+alsaaudio: for audio input/output - http://pyalsaaudio.sourceforge.net/
 decoder.py: decoding mp3, ogg, wma, ... - https://pypi.python.org/pypi/decoder.py/1.5XB
 numpy: for FFT calcuation - http://www.numpy.org/
 """
@@ -48,23 +49,27 @@ import argparse
 import csv
 import fcntl
 import gzip
+import json
 import logging
 import os
 import random
-import sys
-import time
-import wave
-import json
 import subprocess
+import sys
+import wave
 
 import alsaaudio as aa
+import fft
 import configuration_manager as cm
 import decoder
 import hardware_controller as hc
 import numpy as np
 
+from preshow import Preshow
+
+
 # Configurations - TODO(todd): Move more of this into configuration manager
 _CONFIG = cm.CONFIG
+_MODE = cm.lightshow()['mode']
 _MIN_FREQUENCY = _CONFIG.getfloat('audio_processing', 'min_frequency')
 _MAX_FREQUENCY = _CONFIG.getfloat('audio_processing', 'max_frequency')
 _RANDOMIZE_PLAYLIST = _CONFIG.getboolean('lightshow', 'randomize_playlist')
@@ -80,12 +85,9 @@ try:
 except:
     _CUSTOM_CHANNEL_FREQUENCIES = 0
 try:
-    _PLAYLIST_PATH = _CONFIG.get('lightshow', 'playlist_path').replace('$SYNCHRONIZED_LIGHTS_HOME',
-                                                                       cm.HOME_DIR)
+    _PLAYLIST_PATH = cm.lightshow()['playlist_path'].replace('$SYNCHRONIZED_LIGHTS_HOME', cm.HOME_DIR)
 except: 
     _PLAYLIST_PATH = "/home/pi/music/.playlist"
-CHUNK_SIZE = 2048  # Use a multiple of 8
-
 try:
     _usefm=_CONFIG.get('audio_processing','fm');
     frequency =_CONFIG.get('audio_processing','frequency');
@@ -93,39 +95,7 @@ try:
     music_pipe_r,music_pipe_w = os.pipe()	
 except:
     _usefm='false'
-	
-def execute_preshow(config):
-    '''Execute the "Preshow" for the given preshow configuration'''
-    for transition in config['transitions']:
-        start = time.time()
-        if transition['type'].lower() == 'on':
-            hc.turn_on_lights(True)
-        else:
-            hc.turn_off_lights(True)
-        logging.debug('Transition to ' + transition['type'] + ' for '
-            + str(transition['duration']) + ' seconds')
-
-        if 'channel_control' in transition:
-            channel_control = transition['channel_control']
-            for key in channel_control.keys():
-                mode = key
-                channels = channel_control[key]
-                for channel in channels:
-                    if mode == 'on':
-                        hc.turn_on_light(int(channel) - 1,1)
-                    elif mode == 'off':
-                        hc.turn_off_light(int(channel) - 1,1)
-                    else:
-                        logging.error("Unrecognized channel_control mode defined in preshow_configuration " + str(mode))
-
-        while transition['duration'] > (time.time() - start):
-            cm.load_state()  # Force a refresh of state from file
-            play_now = int(cm.get_state('play_now', 0))
-            if play_now:
-                return  # Skip out on the rest of the preshow
-
-            # Check once every ~ .1 seconds to break out
-            time.sleep(0.1)
+CHUNK_SIZE = 2048  # Use a multiple of 8 (move this to config)
 
 def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_mapping,
                                 custom_channel_frequencies):
@@ -176,52 +146,110 @@ def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_map
     else:
         return frequency_store
 
-def piff(val, sample_rate):
-    '''Return the power array index corresponding to a particular frequency.'''
-    return int(CHUNK_SIZE * val / sample_rate)
+def update_lights(matrix, mean, std):
+    '''Update the state of all the lights based upon the current frequency response matrix'''
+    for i in range(0, hc.GPIOLEN):
+        # Calculate output pwm, where off is at some portion of the std below
+        # the mean and full on is at some portion of the std above the mean.
+        brightness = matrix[i] - mean[i] + 0.5 * std[i]
+        brightness = brightness / (1.25 * std[i])
+        if brightness > 1.0:
+            brightness = 1.0
+        if brightness < 0:
+            brightness = 0
+        if not hc.is_pin_pwm(i):
+            # If pin is on / off mode we'll turn on at 1/2 brightness
+            if (brightness > 0.5):
+                hc.turn_on_light(i, True)
+            else:
+                hc.turn_off_light(i, True)
+        else:
+            hc.turn_on_light(i, True, brightness)
 
-# TODO(todd): Move FFT related code into separate file as a library
-def calculate_levels(data, sample_rate, frequency_limits):
-    '''Calculate frequency response for each channel
+def audio_in():
+    '''Control the lightshow from audio coming in from a USB audio card'''
+    sample_rate = cm.lightshow()['audio_in_sample_rate']
+    input_channels = cm.lightshow()['audio_in_channels']
 
-    Initial FFT code inspired from the code posted here:
-    http://www.raspberrypi.org/phpBB3/viewtopic.php?t=35838&p=454041
+    # Open the input stream from default input device
+    stream = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NORMAL, cm.lightshow()['audio_in_card'])
+    stream.setchannels(input_channels)
+    stream.setformat(aa.PCM_FORMAT_S16_LE) # Expose in config if needed
+    stream.setrate(sample_rate)
+    stream.setperiodsize(CHUNK_SIZE)
+         
+    logging.debug("Running in audio-in mode - will run until Ctrl+C is pressed")
+    print "Running in audio-in mode, use Ctrl+C to stop"
+    try:
+        hc.initialize()
+        frequency_limits = calculate_channel_frequency(_MIN_FREQUENCY,
+                                                       _MAX_FREQUENCY,
+                                                       _CUSTOM_CHANNEL_MAPPING,
+                                                       _CUSTOM_CHANNEL_FREQUENCIES)
 
-    Optimizations from work by Scott Driscoll:
-    http://www.instructables.com/id/Raspberry-Pi-Spectrum-Analyzer-with-RGB-LED-Strip-/
-    '''
+        # Start with these as our initial guesses - will calculate a rolling mean / std 
+        # as we get input data.
+        mean = [12.0 for _ in range(hc.GPIOLEN)]
+        std = [0.5 for _ in range(hc.GPIOLEN)]
+        recent_samples = np.empty((250, hc.GPIOLEN))
+        num_samples = 0
+    
+        # Listen on the audio input device until CTRL-C is pressed
+        while True:            
+            l, data = stream.read()
+            
+            if l:
+                try:
+                    matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits, input_channels)
+                    if not np.isfinite(np.sum(matrix)):
+                        # Bad data --- skip it
+                        continue
+                except ValueError as e:
+                    # TODO(todd): This is most likely occuring due to extra time in calculating
+                    # mean/std every 250 samples which causes more to be read than expected the
+                    # next time around.  Would be good to update mean/std in separate thread to
+                    # avoid this --- but for now, skip it when we run into this error is good 
+                    # enough ;)
+                    logging.debug("skipping update: " + str(e))
+                    continue
 
-    # create a numpy array. This won't work with a mono file, stereo only.
-    data_stereo = np.frombuffer(data, dtype=np.int16)
-    data = np.empty(len(data) / 4)  # data has two channels and 2 bytes per channel
-    data[:] = data_stereo[::2]  # pull out the even values, just using left channel
+                update_lights(matrix, mean, std)
 
-    # if you take an FFT of a chunk of audio, the edges will look like
-    # super high frequency cutoffs. Applying a window tapers the edges
-    # of each end of the chunk down to zero.
-    window = np.hanning(len(data))
-    data = data * window
+                # Keep track of the last N samples to compute a running std / mean
+                #
+                # TODO(todd): Look into using this algorithm to compute this on a per sample basis:
+                # http://www.johndcook.com/blog/standard_deviation/                
+                if num_samples >= 250:
+                    no_connection_ct = 0
+                    for i in range(0, hc.GPIOLEN):
+                        mean[i] = np.mean([item for item in recent_samples[:, i] if item > 0])
+                        std[i] = np.std([item for item in recent_samples[:, i] if item > 0])
+                        
+                        # Count how many channels are below 10, if more than 1/2, assume noise (no connection)
+                        if mean[i] < 10.0:
+                            no_connection_ct += 1
+                            
+                    # If more than 1/2 of the channels appear to be not connected, turn all off
+                    if no_connection_ct > hc.GPIOLEN / 2:
+                        logging.debug("no input detected, turning all lights off")
+                        mean = [20 for _ in range(hc.GPIOLEN)]
+                    else:
+                        logging.debug("std: " + str(std) + ", mean: " + str(mean))
+                    num_samples = 0
+                else:
+                    for i in range(0, hc.GPIOLEN):
+                        recent_samples[num_samples][i] = matrix[i]
+                    num_samples += 1
+ 
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print "\nStopping"
+        hc.clean_up()
 
-    # Apply FFT - real data
-    fourier = np.fft.rfft(data)
-
-    # Remove last element in array to make it the same size as CHUNK_SIZE
-    fourier = np.delete(fourier, len(fourier) - 1)
-
-    # Calculate the power spectrum
-    power = np.abs(fourier) ** 2
-
-    matrix = [0 for i in range(hc.GPIOLEN)]
-    for i in range(hc.GPIOLEN):
-        # take the log10 of the resulting sum to approximate how human ears perceive sound levels
-        matrix[i] = np.log10(np.sum(power[piff(frequency_limits[i][0], sample_rate)
-                                          :piff(frequency_limits[i][1], sample_rate):1]))
-
-    return matrix
-
-# TODO(todd): Refactor this to make it more readable / modular.
-def main():
-    '''main'''
+# TODO(todd): Refactor more of this to make it more readable / modular.
+def play_song():
+    '''Play the next song from the play list (or --file argument).'''
     song_to_play = int(cm.get_state('song_to_play', 0))
     play_now = int(cm.get_state('play_now', 0))
 
@@ -236,13 +264,6 @@ def main():
                         help='read light timing from cache if available. Default: true')
     args = parser.parse_args()
 
-    # Log everything to our log file
-    # TODO(todd): Add logging configuration options.
-    logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.play.dbg',
-                        format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
-                        ' - %(message)s',
-                        level=logging.DEBUG)
-
     # Make sure one of --playlist or --file was specified
     if args.file == None and args.playlist == None:
         print "One of --playlist or --file must be specified"
@@ -251,8 +272,11 @@ def main():
     # Initialize Lights
     hc.initialize()
 
-    if not play_now:        
-        execute_preshow(cm.lightshow()['preshow'])
+    # Handle the pre-show
+    if not play_now:
+        result = Preshow().execute()
+        if result == Preshow.PlayNowInterrupt:
+            play_now = True
 
     # Determine the next file to play
     song_filename = args.file
@@ -400,26 +424,10 @@ def main():
 
         if matrix == None:
             # No cache - Compute FFT in this chunk, and cache results
-            matrix = calculate_levels(data, sample_rate, frequency_limits)
+            matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits)
             cache.append(matrix)
-
-        for i in range(0, hc.GPIOLEN):
-            # Calculate output pwm, where off is at 0.5 std below the mean
-            # and full on is at 0.75 std above the mean.
-            brightness = matrix[i] - mean[i] + 0.5 * std[i]
-            brightness = brightness / (1.25 * std[i])
-            if brightness > 1.0:
-                brightness = 1.0
-            if brightness < 0:
-                brightness = 0
-            if not hc.is_pin_pwm(i):
-                # If pin is on / off mode we'll turn on at 1/2 brightness
-                if (brightness > 0.5):
-                    hc.turn_on_light(i, True)
-                else:
-                    hc.turn_off_light(i, True)
-            else:
-                hc.turn_on_light(i, True, brightness)
+            
+        update_lights(matrix, mean, std)
 
         # Read next chunk of data from music song_filename
         data = musicfile.readframes(CHUNK_SIZE)
@@ -440,4 +448,14 @@ def main():
     hc.clean_up()
 
 if __name__ == "__main__":
-    main()
+    # Log everything to our log file
+    # TODO(todd): Add logging configuration options.
+    logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.play.dbg',
+                        format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
+                        ' - %(message)s',
+                        level=logging.DEBUG)
+
+    if cm.lightshow()['mode'] == 'audio-in':
+        audio_in()
+    else:
+        play_song()
