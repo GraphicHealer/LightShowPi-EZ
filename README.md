@@ -9,7 +9,7 @@ as well to share your experiences using lightshowPi, as well as videos of your s
 
 Thanks, and enjoy ;)
 
-Todd Giles ([todd.giles@gmail.com](mailto:todd.giles@gmail.com))
+Todd Giles ([todd@lightshowpi.com](mailto:todd@lightshowpi.com))
 
 Installation / Getting Started
 ==============================
@@ -25,9 +25,9 @@ Directory Structure
 * config/* - Configuration files.
 * crontab/synchronized_lights - Add these via 'sudo crontab -e' to start / stop the lightshow automatically
 * logs/* - Log files will be output here.
-* music/* - Music files go here (includes some samples).
+* music/* - Music files go here (includes some samples to get you started).
 * py/* - All the python code.
-* tools/* - Tools helpful for those developing / debugging lightshowPi.
+* tools/* - Various tools helpful in configuring / using / etc... LightshowPi
 
 Contributors
 ============
@@ -39,6 +39,8 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 * Ryan Jennings
 * Sean Millar
 * Scott Driscoll
+* Paul Dunn
+* Stephen Burning
 
 Release Notes
 ============
