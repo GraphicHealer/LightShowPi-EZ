@@ -50,6 +50,8 @@ Release Notes
 ============
 
 2014/11/27 :: Version 1.1
+-------------------------------
+
 * piFM support (thanks to Stephen Burning)
 * audio-in support (thanks to Paul Dunn)
 * command line play-list generator (thanks to Eric Higdon)
@@ -60,4 +62,6 @@ Release Notes
 * other misc bug fixes (see Issues list for more details)
 
 2014/02/16 :: Version 1
+-------------------------------
+
 * First "stable" release
