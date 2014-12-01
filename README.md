@@ -39,11 +39,29 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 * Ryan Jennings
 * Sean Millar
 * Scott Driscoll
+* Micah Wedemeyer
+* Chase Cromwell
+* Bruce Goheen
 * Paul Dunn
 * Stephen Burning
+* Eric Higdon
 
 Release Notes
 ============
 
+2014/11/27 :: Version 1.1
+-------------------------------
+
+* piFM support (thanks to Stephen Burning)
+* audio-in support (thanks to Paul Dunn)
+* command line play-list generator (thanks to Eric Higdon)
+* enhancements to preshow configuration, including per-channel control  (thanks to Chris Usey)
+* support for expansion cards, including mcp23s17,mcp23017 (thanks to Chris Usey)
+* updated to support RPi B+ (thanks to Chris Usey)
+* clarification on comments and in-code documentation (thanks to Bruce Goheen, Chase Cromwell, and Micah Wedemeyer)
+* other misc bug fixes (see Issues list for more details)
+
 2014/02/16 :: Version 1
-- First "stable" release
+-------------------------------
+
+* First "stable" release
