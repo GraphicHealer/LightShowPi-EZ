@@ -18,11 +18,17 @@ export PATH
 exec > >(tee install.log)
 
 #Root check
-if [ `whoami` != 'root' ]; then
-	echo "This must be run as root. usage sudo $0"
-	exit 1
-fi
-
+function check_uid {
+  if [ $UID != 0 ] ; then
+    echo "The lightshowpi installer requires root authority"
+    echo "If needed enter the password here :"
+    sudo $0
+    Exit_Command=$?
+    exit $Exit_Command
+  fi
+  return 0
+}
+check_uid
 
 function errchk {
 # basic error reporting
