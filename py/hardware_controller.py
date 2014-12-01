@@ -21,6 +21,7 @@ import argparse
 import logging
 import math
 import time
+import subprocess
 
 import configuration_manager as cm
 import wiringpi2 as wiringpi
@@ -50,11 +51,13 @@ _ALWAYS_OFF_CHANNELS = \
 _INVERTED_CHANNELS = \
     [int(channel) for channel in _LIGHTSHOW_CONFIG['invert_channels'].split(',')]
 
+_EXPORT_PINS = _CONFIG.getboolean('hardware', 'export_pins')
+_GPIO_UTILITY_PATH = _CONFIG.get('hardware', 'gpio_utility_path')
+
 # Initialize GPIO
 _GPIOASINPUT = 0
 _GPIOASOUTPUT = 1
 GPIOLEN = len(_GPIO_PINS)
-wiringpi.wiringPiSetup()
 
 # If only a single pin mode is specified, assume all pins should be in that mode
 if len(PIN_MODES) == 1:
@@ -159,25 +162,54 @@ def is_pin_pwm(i):
     """Is the pin setup for pwm"""
     return PIN_MODES[i].lower() == "pwm"
 
-def set_pins_as_outputs():
+def set_pins_as_outputs(exportpins=True):
     '''Set all the configured pins as outputs.'''
-    for i in range(GPIOLEN):
-        set_pin_as_output(i)
 
-def set_pins_as_inputs():
+    if exportpins:
+        subprocess.check_call([_GPIO_UTILITY_PATH, 'unexportall'])
+
+    for i in range(GPIOLEN):
+        set_pin_as_output(i, exportpins)
+
+    if exportpins:
+        wiringpi.wiringPiSetupSys()
+    else:
+        wiringpi.wiringPiSetup()
+
+
+def set_pins_as_inputs(exportpins=True):
     '''Set all the configured pins as inputs.'''
+    if exportpins:
+        subprocess.check_call([_GPIO_UTILITY_PATH, 'unexportall'])
+
     for i in range(GPIOLEN):
-        set_pin_as_input(i)
+        set_pin_as_input(i, exportpins)
 
-def set_pin_as_output(i):
+    if exportpins:
+        wiringpi.wiringPiSetupSys()
+    else:
+        wiringpi.wiringPiSetup()
+
+def set_pin_as_output(i, exportpins):
     '''Set the specified pin as an output.'''
-    wiringpi.pinMode(_GPIO_PINS[i], _GPIOASOUTPUT)
-    if is_pin_pwm(i):
-        wiringpi.softPwmCreate(_GPIO_PINS[i], 0, _PWM_MAX)
 
-def set_pin_as_input(i):
+    if exportpins:
+        if is_pin_pwm(i):
+            # Error! Can't do PWM with gpio pin export
+            logging.error("Cannot use gpio pin export with PWM")
+        else:
+            subprocess.check_call([_GPIO_UTILITY_PATH, 'export', str(_GPIO_PINS[i]), 'out'])
+    else:
+        wiringpi.pinMode(_GPIO_PINS[i], _GPIOASOUTPUT)
+        if is_pin_pwm(i):
+            wiringpi.softPwmCreate(_GPIO_PINS[i], 0, _PWM_MAX)
+
+def set_pin_as_input(i, exportpins):
     '''Set the specified pin as an input.'''
-    wiringpi.pinMode(_GPIO_PINS[i], _GPIOASINPUT)
+    if exportpins:
+        subprocess.check_call([_GPIO_UTILITY_PATH, 'export', str(_GPIO_PINS[i]), 'in'])
+    else:
+        wiringpi.pinMode(_GPIO_PINS[i], _GPIOASINPUT)
 
 def turn_off_lights(usealwaysonoff=0):
     '''
@@ -269,12 +301,16 @@ def clean_up():
     Turn off all lights set the pins as inputs
     """
     turn_off_lights()
-    set_pins_as_inputs()
+    set_pins_as_inputs(_EXPORT_PINS)
 
 def initialize():
     '''Set pins as outputs, and start all lights in the off state.'''
+
+    if not _EXPORT_PINS:
+        wiringpi.wiringPiSetup()
+
     enable_device()
-    set_pins_as_outputs()
+    set_pins_as_outputs(_EXPORT_PINS)
     turn_off_lights()
 
 # __________________Main________________
