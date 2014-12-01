@@ -325,7 +325,9 @@ def play_song():
                 current_song = songs[play_now - 1]
             # Get random song
             elif _RANDOMIZE_PLAYLIST:
-                current_song = songs[random.randint(0, len(songs) - 1)]
+                # Use python's random.randrange() to get a random song
+                current_song = songs[random.randrange(0, len(songs))]
+
             # Play next song in the lineup
             else:
                 song_to_play = song_to_play if (song_to_play <= len(songs) - 1) else 0
@@ -372,8 +374,8 @@ def play_song():
     # Output a bit about what we're about to play to the logs
     song_filename = os.path.abspath(song_filename)
     
-
-    cache = []
+    # create empty array for the cache_matrix
+    cache_matrix = np.empty(shape=[0, hc.GPIOLEN])
     cache_found = False
     cache_filename = os.path.dirname(song_filename) + "/." + os.path.basename(song_filename) \
         + ".sync.gz"
@@ -381,20 +383,25 @@ def play_song():
     # the actual mean and standard deviations calculated for each channel).
     mean = [12.0 for _ in range(hc.GPIOLEN)]
     std = [1.5 for _ in range(hc.GPIOLEN)]
+    
     if args.readcache:
         # Read in cached fft
         try:
-            with gzip.open(cache_filename, 'rb') as playlist_fp:
-                cachefile = csv.reader(playlist_fp, delimiter=',')
-                for row in cachefile:
-                    cache.append([0.0 if np.isinf(float(item)) else float(item) for item in row])
-                cache_found = True
-                # TODO(todd): Optimize this and / or cache it to avoid delay here
-                cache_matrix = np.array(cache)
-                for i in range(0, hc.GPIOLEN):
-                    std[i] = np.std([item for item in cache_matrix[:, i] if item > 0])
-                    mean[i] = np.mean([item for item in cache_matrix[:, i] if item > 0])
-                logging.debug("std: " + str(std) + ", mean: " + str(mean))
+            # load cache from file using numpy loadtxt
+            cache_matrix = np.loadtxt(cache_filename)
+            cache_found = True
+
+            # get std from matrix / located at index 0
+            std = np.array(cache_matrix[0])
+
+            # get mean from matrix / located at index 1
+            mean = np.array(cache_matrix[1])
+
+            # delete mean and std from the array
+            cache_matrix = np.delete(cache_matrix, (0), axis = 0)
+            cache_matrix = np.delete(cache_matrix, (0), axis = 0)
+
+            logging.debug("std: " + str(std) + ", mean: " + str(mean))
         except IOError:
             logging.warn("Cached sync data song_filename not found: '" + cache_filename
                          + ".  One will be generated.")
@@ -416,8 +423,8 @@ def play_song():
         # Control lights with cached timing values if they exist
         matrix = None
         if cache_found and args.readcache:
-            if row < len(cache):
-                matrix = cache[row]
+            if row < len(cache_matrix):
+                matrix = cache_matrix[row]
             else:
                 logging.warning("Ran out of cached FFT values, will update the cache.")
                 cache_found = False
@@ -425,7 +432,9 @@ def play_song():
         if matrix == None:
             # No cache - Compute FFT in this chunk, and cache results
             matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits)
-            cache.append(matrix)
+
+            # Add the matrix to the end of the cache 
+            cache_matrix = np.vstack([cache_matrix, matrix])
             
         update_lights(matrix, mean, std)
 
@@ -438,11 +447,20 @@ def play_song():
         play_now = int(cm.get_state('play_now', 0))
 
     if not cache_found:
-        with gzip.open(cache_filename, 'wb') as playlist_fp:
-            writer = csv.writer(playlist_fp, delimiter=',')
-            writer.writerows(cache)
-            logging.info("Cached sync data written to '." + cache_filename
-                         + "' [" + str(len(cache)) + " rows]")
+        # Compute the standard deviation and mean values for the cache
+        for i in range(0, hc.GPIOLEN):
+            std[i] = np.std([item for item in cache_matrix[:, i] if item > 0])
+            mean[i] = np.mean([item for item in cache_matrix[:, i] if item > 0])
+
+        # Add mean and std to the top of the cache
+        cache_matrix = np.vstack([mean, cache_matrix])
+        cache_matrix = np.vstack([std, cache_matrix])
+
+        # Save the cache using numpy savetxt
+        np.savetxt(cache_filename, cache_matrix)
+        
+        logging.info("Cached sync data written to '." + cache_filename
+                        + "' [" + str(len(cache_matrix)) + " rows]")
 
     # Cleanup the pifm process
     if _usefm=='true':
