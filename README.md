@@ -45,6 +45,7 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 * Paul Dunn
 * Stephen Burning
 * Eric Higdon
+* Tom Enos
 
 Release Notes
 ============
