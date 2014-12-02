@@ -48,7 +48,6 @@ numpy: for FFT calcuation - http://www.numpy.org/
 import argparse
 import csv
 import fcntl
-import gzip
 import json
 import logging
 import os
@@ -378,7 +377,7 @@ def play_song():
     cache_matrix = np.empty(shape=[0, hc.GPIOLEN])
     cache_found = False
     cache_filename = os.path.dirname(song_filename) + "/." + os.path.basename(song_filename) \
-        + ".sync.gz"
+        + ".sync"
     # The values 12 and 1.5 are good estimates for first time playing back (i.e. before we have
     # the actual mean and standard deviations calculated for each channel).
     mean = [12.0 for _ in range(hc.GPIOLEN)]
