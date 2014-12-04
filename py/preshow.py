@@ -17,6 +17,7 @@ sudo python preshow.py
 
 import logging
 import time
+import subprocess
 
 import configuration_manager as cm
 import hardware_controller as hc
@@ -44,6 +45,13 @@ class Preshow:
         pre-show played to completion, or PlayNowInterrupt if the
         pre-show was interrupted by a play now command.
         '''
+        try:
+            if self.config['audio_file']:
+                audio_file = self.config['audio_file']
+                audio = subprocess.Popen(["mpg123", "-q", audio_file])
+        except:
+            pass
+        
         for transition in self.config['transitions']:
             start = time.time()
             if transition['type'].lower() == 'on':
@@ -65,16 +73,23 @@ class Preshow:
                             hc.turn_off_light(int(channel) - 1,1)
                         else:
                             logging.error("Unrecognized channel_control mode defined in preshow_configuration " + str(mode))
-    
+
             while transition['duration'] > (time.time() - start):
                 cm.load_state()  # Force a refresh of state from file
                 if int(cm.get_state('play_now', 0)):
                     # Skip out on the rest of the preshow if play now requested!
+                    # kill the audio playback
+                    try:
+                        audio.kill()
+                    except:
+                        pass
                     return Preshow.PlayNowInterrupt
     
                 # Check once every ~ .1 seconds to break out
                 time.sleep(0.1)
-                
+
+        # wait for the audio playback to stop
+        audio.wait()
         return Preshow.Done
 
 if __name__ == "__main__":

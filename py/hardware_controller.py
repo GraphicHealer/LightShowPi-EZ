@@ -19,7 +19,9 @@ wiringpi2: python wrapper around wiring pi - https://github.com/WiringPi/WiringP
 import argparse
 import logging
 import time
+import subprocess
 
+import Aftershow
 import configuration_manager as cm
 import wiringpi2 as wiringpi
 
@@ -38,6 +40,9 @@ _ALWAYS_OFF_CHANNELS = [int(channel) for channel in
                         _LIGHTSHOW_CONFIG['always_off_channels'].split(',')]
 _INVERTED_CHANNELS = [int(channel) for channel in
                       _LIGHTSHOW_CONFIG['invert_channels'].split(',')]
+
+aftershow =  _CONFIG.getboolean('lightshow', 'after_show')
+aftershow_file = cm.lightshow()['aftershow_file'].replace('$SYNCHRONIZED_LIGHTS_HOME', cm.HOME_DIR)
 
 # Initialize GPIO
 _GPIOASINPUT = 0
@@ -212,8 +217,20 @@ def turn_on_light(i, useoverrides=0, brightness=1.0):
     else:
         wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOACTIVE)
 
-def clean_up():
-    '''Turn off all lights, and set the pins as inputs.'''
+def clean_up(end=None):
+    """
+    Clean up and end or run custom aftershow script
+    
+    Turn off all lights set the pins as inputs then run a custom script
+    if chustom is set
+    """
+    if aftershow:
+        if not end:
+            try:
+                Aftershow.AfterTheShow.start(aftershow_file)
+            except:
+                pass
+
     turn_off_lights()
     set_pins_as_inputs()
 

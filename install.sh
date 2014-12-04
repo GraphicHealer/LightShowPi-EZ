@@ -111,6 +111,11 @@ fi
 if [ $? -ne 0 ]; then
 errchk "audio-encoders" $?
 fi
+#install mpg123
+    sudo apt-get install -y mpg123
+if [ $? -ne 0 ]; then
+errchk "mpg123" $?
+fi
 
 #Setup environment variables
 ENV_VARIABLE="SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}"
