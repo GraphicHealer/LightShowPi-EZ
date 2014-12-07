@@ -77,40 +77,43 @@ class PrePostShow(object):
         # start the audio if there is any
         self.start_audio()
 
-        # display transition based show
-        for transition in self.config['transitions']:
-            start = time.time()
-            if transition['type'].lower() == 'on':
-                hc.turn_on_lights(True)
-            else:
-                hc.turn_off_lights(True)
-            logging.debug('Transition to ' + transition['type'] + ' for ' \
-                + str(transition['duration']) + ' seconds')
+        try:
+            # display transition based show
+            for transition in self.config['transitions']:
+                start = time.time()
+                if transition['type'].lower() == 'on':
+                    hc.turn_on_lights(True)
+                else:
+                    hc.turn_off_lights(True)
+                logging.debug('Transition to ' + transition['type'] + ' for ' \
+                    + str(transition['duration']) + ' seconds')
 
-            if 'channel_control' in transition:
-                channel_control = transition['channel_control']
-                for key in channel_control.keys():
-                    mode = key
-                    channels = channel_control[key]
-                    for channel in channels:
-                        if mode == 'on':
-                            hc.turn_on_light(int(channel) - 1, 1)
-                        elif mode == 'off':
-                            hc.turn_off_light(int(channel) - 1, 1)
-                        else:
-                            logging.error("Unrecognized channel_control mode "
-                                          "defined in preshow_configuration " \
-                                              + str(mode))
-            # hold transition for specified time
-            while transition['duration'] > (time.time() - start):
-                # check for play now
-                if check_state():
-                    # kill the audio playback if playing
-                    if self.has_audio:
-                        self.audio.kill()
-                    return PrePostShow.play_now_interrupt
-                time.sleep(0.1)
-
+                if 'channel_control' in transition:
+                    channel_control = transition['channel_control']
+                    for key in channel_control.keys():
+                        mode = key
+                        channels = channel_control[key]
+                        for channel in channels:
+                            if mode == 'on':
+                                hc.turn_on_light(int(channel) - 1, 1)
+                            elif mode == 'off':
+                                hc.turn_off_light(int(channel) - 1, 1)
+                            else:
+                                logging.error("Unrecognized channel_control mode "
+                                            "defined in preshow_configuration " \
+                                                + str(mode))
+                # hold transition for specified time
+                while transition['duration'] > (time.time() - start):
+                    # check for play now
+                    if check_state():
+                        # kill the audio playback if playing
+                        if self.has_audio:
+                            self.audio.kill()
+                        return PrePostShow.play_now_interrupt
+                    time.sleep(0.1)
+        except:
+            pass
+        
         # hold show until audio has finished if we have audio
         # or audio is not finished
         return_value = self.hold_for_audio()
