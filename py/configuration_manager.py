@@ -22,6 +22,7 @@ import datetime
 import fcntl
 import logging
 import os
+import os.path
 import sys
 import warnings
 import json
@@ -38,14 +39,10 @@ LOG_DIR = HOME_DIR + '/logs'
 # Load configuration file, loads defaults from config directory, and then
 # overrides from the same directory cfg file, then from /home/pi/.lights.cfg
 # and then from ~/.lights.cfg (which will be the root's home).
-CONFIG = ConfigParser.RawConfigParser()
+CONFIG = ConfigParser.RawConfigParser(allow_no_value=True)
 CONFIG.readfp(open(CONFIG_DIR + '/defaults.cfg'))
 CONFIG.read([CONFIG_DIR + '/overrides.cfg', '/home/pi/.lights.cfg',
              os.path.expanduser('~/.lights.cfg')])
-
-def _as_dict(section):
-    '''Return a dictionary from a configuration section.'''
-    return dict(x for x in CONFIG.items(section))
 
 def _as_list(list_str, delimiter=','):
     '''Return a list of items from a delimited string (after stripping whitespace).'''
@@ -54,72 +51,78 @@ def _as_list(list_str, delimiter=','):
 # Retrieve hardware configuration
 _HARDWARE_CONFIG = {}
 def hardware():
-    '''Retrieves the hardware configuration, loading and parsing it from a file if necessary.'''
+    """
+    Retrieves the hardware configuration
+
+    loading and parsing it from a file if necessary.
+    """
+
     global _HARDWARE_CONFIG
     if len(_HARDWARE_CONFIG) == 0:
-        _HARDWARE_CONFIG = _as_dict('hardware')
+        _HARDWARE_CONFIG = dict(CONFIG.items('hardware'))
 
-        '''Devices'''
+        # Devices
         devices = dict()
 
         try:
             devices = json.loads(_HARDWARE_CONFIG['devices'])
-        except Exception as e:
-            logging.error("devices not defined or not in JSON format." + str(e))
+        except Exception as error:
+            logging.error("devices not defined or not in JSON format." \
+                + str(error))
 
         _HARDWARE_CONFIG["devices"] = devices
 
     return _HARDWARE_CONFIG
 
-
-
 # Retrieve light show configuration
 _LIGHTSHOW_CONFIG = {}
 def lightshow():
-    '''Retrieves the lightshow configuration, loading and parsing it from a file if necessary.'''
+    """
+    Retrieve the lightshow configuration
+
+    loading and parsing it from a file as necessary.
+    """
     global _LIGHTSHOW_CONFIG
     if len(_LIGHTSHOW_CONFIG) == 0:
-        _LIGHTSHOW_CONFIG = _as_dict('lightshow')
+        _LIGHTSHOW_CONFIG = dict(CONFIG.items('lightshow'))
 
-        _LIGHTSHOW_CONFIG['audio_in_channels'] = CONFIG.getint('lightshow', 'audio_in_channels')
-        _LIGHTSHOW_CONFIG['audio_in_sample_rate'] = CONFIG.getint('lightshow', 'audio_in_sample_rate')
+        _LIGHTSHOW_CONFIG['audio_in_channels'] = \
+            CONFIG.getint('lightshow', 'audio_in_channels')
+        _LIGHTSHOW_CONFIG['audio_in_sample_rate'] = \
+            CONFIG.getint('lightshow', 'audio_in_sample_rate')
 
+        # setup up preshow
         preshow = dict()
-        preshow['transitions'] = []
 
-        ''' Check to see if we are using the DEPRECATED preshow setting first, if not, use the new preshow_configuration setting'''
-        if 'preshow' in _LIGHTSHOW_CONFIG:
-            logging.error("[DEPRECATED: preshow] the preshow option has been DEPRECATED in favor of preshow_configuration, please update accordingly")
-            # Parse out the preshow and replace it with the preshow CONFIG
-            # consiting of transitions to on or off for various durations.
-            for transition in _as_list(_LIGHTSHOW_CONFIG['preshow']):
-                try:
-                    transition = transition.split(':')
-                    if len(transition) == 0 or (len(transition) == 1 and len(transition[0]) == 0):
-                        continue
-                    if len(transition) != 2:
-                        logging.error("[DEPRECATED: preshow] Preshow transition definition should be in the form"
-                                      " [on|off]:<duration> - " + ':'.join(transition))
-                        continue
-                    transition_config = dict()
-                    transition_type = str(transition[0]).lower()
-                    if not transition_type in ['on', 'off']:
-                        logging.error("[DEPRECATED: preshow] Preshow transition transition_type must either 'on'"
-                              "or 'off': " + transition_type)
-                        continue
-                    transition_config['type'] = transition_type
-                    transition_config['duration'] = float(transition[1])
-                    preshow['transitions'].append(transition_config)
-                except Exception as e:
-                    logging.error("[DEPRECATED: preshow] Invalid preshow transition definition: " + ':'.join(transition))
-                    logging.error(e)
-        elif 'preshow_configuration' in _LIGHTSHOW_CONFIG:
+        if 'preshow_configuration' in _LIGHTSHOW_CONFIG:
             try:
-                preshow = json.loads(_LIGHTSHOW_CONFIG['preshow_configuration'])
-            except Exception as e:
-                logging.error("Preshow_configuration not defined or not in JSON format." + str(e))
-        
-        _LIGHTSHOW_CONFIG['preshow'] = preshow
+                preshow = \
+                    json.loads(_LIGHTSHOW_CONFIG['preshow_configuration'])
+            except (ValueError, TypeError) as error:
+                logging.error("Preshow_configuration not defined or not in "
+                              "JSON format." + str(error))
+
+        if "preshow_script" in _LIGHTSHOW_CONFIG:
+            if os.path.isfile(_LIGHTSHOW_CONFIG["preshow_script"]):
+                preshow = _LIGHTSHOW_CONFIG["preshow_script"]
+
+        _LIGHTSHOW_CONFIG["preshow"] = preshow
+
+        # setup postshow
+        postshow = dict()
+
+        if "postshow_configuration" in _LIGHTSHOW_CONFIG:
+            try:
+                postshow = \
+                    json.loads(_LIGHTSHOW_CONFIG["postshow_configuration"])
+            except (ValueError, TypeError) as error:
+                logging.error("Postshow_configuration not "
+                              "defined or not in JSON format." + str(error))
+
+        if "postshow_script" in _LIGHTSHOW_CONFIG:
+            if os.path.isfile(_LIGHTSHOW_CONFIG["postshow_script"]):
+                postshow = _LIGHTSHOW_CONFIG["postshow_script"]
+        _LIGHTSHOW_CONFIG["postshow"] = postshow
 
     return _LIGHTSHOW_CONFIG
 
@@ -129,7 +132,7 @@ def sms():
     '''Retrieves and validates sms configuration'''
     global _SMS_CONFIG, _WHO_CAN
     if len(_SMS_CONFIG) == 0:
-        _SMS_CONFIG = _as_dict('sms')
+        _SMS_CONFIG = dict(CONFIG.items('sms'))
         _WHO_CAN = dict()
         _WHO_CAN['all'] = set()
 
@@ -137,7 +140,8 @@ def sms():
         _SMS_CONFIG['commands'] = _as_list(_SMS_CONFIG['commands'])
         for cmd in _SMS_CONFIG['commands']:
             try:
-                _SMS_CONFIG[cmd + '_aliases'] = _as_list(_SMS_CONFIG[cmd + '_aliases'])
+                _SMS_CONFIG[cmd + '_aliases'] = _as_list(_SMS_CONFIG[cmd \
+                    + '_aliases'])
             except:
                 _SMS_CONFIG[cmd + '_aliases'] = []
             _WHO_CAN[cmd] = set()
@@ -147,11 +151,13 @@ def sms():
         _SMS_CONFIG['throttled_groups'] = dict()
         for group in _SMS_CONFIG['groups']:
             try:
-                _SMS_CONFIG[group + '_users'] = _as_list(_SMS_CONFIG[group + '_users'])
+                _SMS_CONFIG[group + '_users'] = _as_list(_SMS_CONFIG[group \
+                    + '_users'])
             except:
                 _SMS_CONFIG[group + '_users'] = []
             try:
-                _SMS_CONFIG[group + '_commands'] = _as_list(_SMS_CONFIG[group + '_commands'])
+                _SMS_CONFIG[group + '_commands'] = _as_list(_SMS_CONFIG[group \
+                    + '_commands'])
             except:
                 _SMS_CONFIG[group + '_commands'] = []
             for cmd in _SMS_CONFIG[group + '_commands']:
@@ -160,21 +166,25 @@ def sms():
 
             # Throttle
             try:
-                throttled_group_definitions = _as_list(_SMS_CONFIG[group + '_throttle'])
+                throttled_group_definitions = _as_list(_SMS_CONFIG[group \
+                    + '_throttle'])
                 throttled_group = dict()
                 for definition in throttled_group_definitions:
                     definition = definition.split(':')
                     if len(definition) != 2:
-                        warnings.warn(group + "_throttle definitions should be in the form "
-                          + "[command]:<limit> - " + definition.join(':'))
+                        warnings.warn(group + "_throttle definitions should "
+                                      "be in the form " \
+                                          + "[command]:<limit> - " \
+                                              + definition.join(':'))
                         continue
                     throttle_command = definition[0]
                     throttle_limit = int(definition[1])
                     throttled_group[throttle_command] = throttle_limit
                 _SMS_CONFIG['throttled_groups'][group] = throttled_group
             except:
-                warnings.warn("Throttle definition either does not exist or is configured "
-                             "incorrectly for group: " + group)
+                warnings.warn("Throttle definition either does not exist or "
+                              "is configured "
+                              "incorrectly for group: " + group)
 
         # Blacklist
         _SMS_CONFIG['blacklist'] = _as_list(_SMS_CONFIG['blacklist'])
@@ -185,14 +195,19 @@ _SONG_LIST = []
 def songs():
     '''Retrieve the song list'''
     if len(_SONG_LIST) == 0:
-        pass  # TODO(todd): Load playlist if not already loaded, also refactor the code
-              #             that loads the playlist in check_sms and synchronzied_lights such
-              #             that we don't duplicate it there.
+        pass  # TODO(todd): Load playlist if not already loaded, also refactor
+              #             the code that loads the playlist in check_sms and
+              #             synchronzied_lights such that we don't duplicate it
+              #             there.
     return _SONG_LIST
 
 # Sets the list of songs (if loaded elsewhere, as is done by check_sms)
 def set_songs(song_list):
-    '''Sets the list of songs (if loaded elsewhere, as is done by check_sms for example)'''
+    """
+    Sets the list of songs
+
+    if loaded elsewhere, as is done by check_sms for example
+    """
     global _SONG_LIST
     _SONG_LIST = song_list
 
@@ -219,8 +234,12 @@ def load_state():
 load_state()  # Do an initial load
 
 def get_state(name, default=''):
-    '''Return the value of a specific application state variable, or the specified default
-    if not able to load it from the state file'''
+    """
+    Get application state
+
+    Return the value of a specific application state variable, or the specified
+    default if not able to load it from the state file
+    """
     try:
         return STATE.get(STATE_SECTION, name)
     except:
@@ -260,11 +279,14 @@ def is_throttle_exceeded(cmd, user):
     throttlestarttime = datetime.datetime.strptime(
         throttlestate['throttle_timestamp_start'], '%Y-%m-%d %H:%M:%S.%f') \
         if "throttle_timestamp_start" in throttlestate else currenttimestamp
-    throttlestoptime = throttlestarttime + datetime.timedelta(seconds=int(throttletimelimit))
+    throttlestoptime = \
+        throttlestarttime + datetime.timedelta(seconds=int(throttletimelimit))
 
     # Compare times and see if we need to reset the throttle STATE
-    if (currenttimestamp == throttlestarttime) or (throttlestoptime < currenttimestamp):
-        # There is no time recorded or the time has expired reset the throttle STATE
+    if (currenttimestamp == throttlestarttime) or \
+        (throttlestoptime < currenttimestamp):
+        # There is no time recorded or the time has
+        # expired reset the throttle STATE
         throttlestate = {}
         throttlestate['throttle_timestamp_start'] = str(currenttimestamp)
         update_state('throttle', throttlestate)
@@ -278,9 +300,11 @@ def is_throttle_exceeded(cmd, user):
     for group in _SMS_CONFIG['groups']:
         userlist = _SMS_CONFIG[group + "_users"]
         if user in userlist:
-            # The user belongs to this group, check if there are any throttle definitions
+            # The user belongs to this group, check if there
+            # are any throttle definitions
             if group in _SMS_CONFIG['throttled_groups']:
-                # The group has throttle commands defined, now check if the command is defined
+                # The group has throttle commands defined,
+                # now check if the command is defined
                 throttledcommands = _SMS_CONFIG['throttled_groups'][group]
 
                 # Check if all command exists
@@ -291,7 +315,8 @@ def is_throttle_exceeded(cmd, user):
                 if cmd in throttledcommands:
                     cmdthrottlelimit = int(throttledcommands[cmd])
 
-                # A throttle definition was found, we no longer need to check anymore groups
+                # A throttle definition was found,
+                # we no longer need to check anymore groups
                 if allthrottlelimit != -1 or cmdthrottlelimit != -1:
                     throttled_group = group
                     break
@@ -320,7 +345,8 @@ def is_throttle_exceeded(cmd, user):
             throttlestate[throttled_group] = groupthrottlestate
             processcommandflag = False
         else:
-            # "all" throttle has been reached we dont want to process anything else
+            # "all" throttle has been reached we
+            # dont want to process anything else
             return True
 
     # Check to see if we need to apply "cmd"

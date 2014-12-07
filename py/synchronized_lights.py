@@ -46,6 +46,7 @@ numpy: for FFT calcuation - http://www.numpy.org/
 """
 
 import argparse
+import atexit
 import csv
 import fcntl
 import json
@@ -63,7 +64,7 @@ import decoder
 import hardware_controller as hc
 import numpy as np
 
-from preshow import Preshow
+from PrePostShow import PrePostShow
 
 
 # Configurations - TODO(todd): Move more of this into configuration manager
@@ -95,6 +96,11 @@ try:
 except:
     _usefm='false'
 CHUNK_SIZE = 2048  # Use a multiple of 8 (move this to config)
+
+def end_early():
+    hc.clean_up()
+    
+atexit.register(end_early)
 
 def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_mapping,
                                 custom_channel_frequencies):
@@ -271,11 +277,14 @@ def play_song():
     # Initialize Lights
     hc.initialize()
 
-    # Handle the pre-show
+    # Handle the pre/post show
     if not play_now:
-        result = Preshow().execute()
-        if result == Preshow.PlayNowInterrupt:
-            play_now = True
+        result = PrePostShow().execute()
+        # now unused.  if play_now = True
+        # song to play is always the first song in the playlist
+        
+        if result == PrePostShow.play_now_interrupt:
+            play_now = int(cm.get_state('play_now', 0))
 
     # Determine the next file to play
     song_filename = args.file
@@ -464,6 +473,9 @@ def play_song():
     # Cleanup the pifm process
     if _usefm=='true':
         fm_process.kill()
+
+    # check for postshow
+    done = PrePostShow("postshow").execute()
 
     # We're done, turn it all off and clean up things ;)
     hc.clean_up()
