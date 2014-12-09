@@ -8,19 +8,24 @@
 """
 Preshow and Postshow functionality for the lightshows.
 
-Your lightshow can be configured to have a "preshow" before each individual
-song is played or an "aftershow" after each individual song is played.
-See the default configuration file for more details on configuring your
-pre or after show.
+Your lightshow can be configured to have a "preshow" before each
+individual song is played or an "postshow" after each individual
+song is played.  See the default configuration file for more
+details on configuring your pre or post show.
 
-Sample usage (to test your preshow or aftershow configuration):
-sudo python preshow.py
+Sample usage (to test your preshow or postshow configuration):
+
+sudo python prepostshow.py "preshow"
+or
+sudo python prepostshow.py "postshow"
 """
+
 
 import logging
 import os
 import time
 import subprocess
+import signal
 import sys
 
 import configuration_manager as cm
@@ -40,28 +45,30 @@ def check_state():
     return False
 
 class PrePostShow(object):
-    '''The PreshowAftershow class handles all pre-show and post-show logic
+    """
+    The PreshowPostshow class handles all pre-show and post-show logic
 
     Typical usage to simply play the default configured preshow_configuration:
-    or aftershow_configuration:
+    or postshow_configuration:
 
-    PrePostShow().execute()
-    '''
+    PrePostShow("preshow").execute()
+    PrePostShow("postshow").execute()
+    """
     done, play_now_interrupt = range(2)
 
     def __init__(self, show="preshow"):
+        hc.initialize()
         self.config = cm.lightshow()[show]
         self.show = show
         self.audio = None
-        self.has_audio = False
 
     def set_config(self, config):
-        '''Set a new configuration to use for the preshow'''
+        """Set a new configuration to use for the preshow"""
         self.config = config
 
     def execute(self):
         """
-        Execute the pre-show as defined by the current config
+        Execute the pre/post show as defined by the current config
 
         Returns the exit status of the show, either done if the
         show played to completion, or play_now_interrupt if the
@@ -107,8 +114,9 @@ class PrePostShow(object):
                     # check for play now
                     if check_state():
                         # kill the audio playback if playing
-                        if self.has_audio:
-                            self.audio.kill()
+                        if self.audio:
+                            os.killpg(self.audio.pid, signal.SIGTERM)
+                            self.audio = None
                         return PrePostShow.play_now_interrupt
                     time.sleep(0.1)
         except:
@@ -122,20 +130,20 @@ class PrePostShow(object):
 
     def start_audio(self):
         """Start audio plaback if there is any"""
+        print self.config['audio_file']
         if "audio_file" in self.config and self.config['audio_file'] != None:
             audio_file = self.config['audio_file']
             self.audio = subprocess.Popen(["mpg123", "-q", audio_file])
-            self.has_audio = True
-
+            
     def hold_for_audio(self):
         """hold show until audio has finished"""
-        if self.has_audio:
+        if self.audio:
             while self.audio.poll() == None:
                 # check for play now
                 if check_state():
                     # kill the audio playback if playing
-                    if self.has_audio:
-                        self.audio.kill()
+                    os.killpg(self.audio.pid, signal.SIGTERM)
+                    self.audio = None
                     return PrePostShow.play_now_interrupt
                 time.sleep(0.1)
         return PrePostShow.done
@@ -144,6 +152,7 @@ class PrePostShow(object):
         """Start a seperate script to control the lights"""
         return_value = PrePostShow.done
         hc.clean_up()
+        
         # make a copy of the path
         path = list(sys.path)
 
@@ -151,19 +160,23 @@ class PrePostShow(object):
         sys.path.insert(0, cm.HOME_DIR + "/py")
         sys.path.insert(0, os.path.split(self.config)[0])
 
-        # create environment for srcipt to run in
+        # create environment for script to run in
         environment = os.environ.copy()
         environment['PYTHONPATH'] = ':'.join(sys.path)
 
         #run script
-        show = subprocess.Popen(["python", self.config], env=environment)
+        show = subprocess.Popen(['python', self.config],
+                                preexec_fn=os.setsid,
+                                shell=True,
+                                close_fds=True,
+                                env=environment
+                                )
 
         # check for user interrupt
         while show.poll() is None:
             if check_state():
                 # Skip out on the rest of the show if play now requested!
-                subprocess.call(["killall", "mpg123"])
-                show.kill()
+                os.killpg(show.pid, signal.SIGTERM)
                 return_value = PrePostShow.play_now_interrupt
                 break
 
@@ -176,10 +189,12 @@ class PrePostShow(object):
         # insure clean up just in case the user forgot to do it
         hc.clean_up()
 
-        # initialize hardware for lightshow
-        hc.initialize()
-
         return return_value
 
 if __name__ == "__main__":
-    PrePostShow().execute()
+    show_to_call = 'preshow'
+
+    if len(sys.argv) > 1:
+        show_to_call = sys.argv[1]
+
+    PrePostShow(show_to_call).execute()

@@ -1,4 +1,4 @@
-"""trun off one light at a time with the others in an on state"""
+"""Turn off one light at a time with the others in an on state"""
 
 import time
 

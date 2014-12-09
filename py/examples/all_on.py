@@ -1,4 +1,4 @@
-"""Simple scritp to trun on all the lights"""
+"""Simple script to trun on all the lights"""
 
 import time
 

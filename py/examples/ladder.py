@@ -1,4 +1,4 @@
-"""Simply script to walk the lights up and down"""
+"""Simple script to walk the lights up and down"""
 
 import time
 

@@ -45,7 +45,7 @@ CONFIG.read([CONFIG_DIR + '/overrides.cfg', '/home/pi/.lights.cfg',
              os.path.expanduser('~/.lights.cfg')])
 
 def _as_list(list_str, delimiter=','):
-    '''Return a list of items from a delimited string (after stripping whitespace).'''
+    """Return a list of items from a delimited string (after stripping whitespace)."""
     return [str.strip(item) for item in list_str.split(delimiter)]
 
 # Retrieve hardware configuration
@@ -94,7 +94,7 @@ def lightshow():
         # setup up preshow
         preshow = dict()
 
-        if 'preshow_configuration' in _LIGHTSHOW_CONFIG:
+        if "preshow_configuration" in _LIGHTSHOW_CONFIG:
             try:
                 preshow = \
                     json.loads(_LIGHTSHOW_CONFIG['preshow_configuration'])
@@ -103,10 +103,10 @@ def lightshow():
                               "JSON format." + str(error))
 
         if "preshow_script" in _LIGHTSHOW_CONFIG:
-            if os.path.isfile(_LIGHTSHOW_CONFIG["preshow_script"]):
-                preshow = _LIGHTSHOW_CONFIG["preshow_script"]
+            if os.path.isfile(_LIGHTSHOW_CONFIG['preshow_script']):
+                preshow = _LIGHTSHOW_CONFIG['preshow_script']
 
-        _LIGHTSHOW_CONFIG["preshow"] = preshow
+        _LIGHTSHOW_CONFIG['preshow'] = preshow
 
         # setup postshow
         postshow = dict()
@@ -114,22 +114,22 @@ def lightshow():
         if "postshow_configuration" in _LIGHTSHOW_CONFIG:
             try:
                 postshow = \
-                    json.loads(_LIGHTSHOW_CONFIG["postshow_configuration"])
+                    json.loads(_LIGHTSHOW_CONFIG['postshow_configuration'])
             except (ValueError, TypeError) as error:
                 logging.error("Postshow_configuration not "
                               "defined or not in JSON format." + str(error))
 
         if "postshow_script" in _LIGHTSHOW_CONFIG:
-            if os.path.isfile(_LIGHTSHOW_CONFIG["postshow_script"]):
-                postshow = _LIGHTSHOW_CONFIG["postshow_script"]
-        _LIGHTSHOW_CONFIG["postshow"] = postshow
+            if os.path.isfile(_LIGHTSHOW_CONFIG['postshow_script']):
+                postshow = _LIGHTSHOW_CONFIG['postshow_script']
+        _LIGHTSHOW_CONFIG['postshow'] = postshow
 
     return _LIGHTSHOW_CONFIG
 
 _SMS_CONFIG = {}
 _WHO_CAN = {}
 def sms():
-    '''Retrieves and validates sms configuration'''
+    """Retrieves and validates sms configuration"""
     global _SMS_CONFIG, _WHO_CAN
     if len(_SMS_CONFIG) == 0:
         _SMS_CONFIG = dict(CONFIG.items('sms'))
@@ -193,7 +193,7 @@ def sms():
 
 _SONG_LIST = []
 def songs():
-    '''Retrieve the song list'''
+    """Retrieve the song list"""
     if len(_SONG_LIST) == 0:
         pass  # TODO(todd): Load playlist if not already loaded, also refactor
               #             the code that loads the playlist in check_sms and
@@ -226,7 +226,7 @@ if not os.path.isfile(STATE_FILENAME):
     open(STATE_FILENAME, 'a').close()
 
 def load_state():
-    '''Force the state to be reloaded form disk.'''
+    """Force the state to be reloaded form disk."""
     with open(STATE_FILENAME) as state_fp:
         fcntl.lockf(state_fp, fcntl.LOCK_SH)
         STATE.readfp(state_fp, STATE_FILENAME)
@@ -246,7 +246,7 @@ def get_state(name, default=''):
         return default
 
 def update_state(name, value):
-    '''Update the application state (name / value pair)'''
+    """Update the application state (name / value pair)"""
     value = str(value)
     logging.info('Updating application state {%s: %s}', name, value)
     try:
@@ -260,14 +260,14 @@ def update_state(name, value):
         fcntl.lockf(state_fp, fcntl.LOCK_UN)
 
 def has_permission(user, cmd):
-    '''Returns True iff a user has permissio to execute the given command'''
+    """Returns True iff a user has permissio to execute the given command"""
     blacklisted = user in sms()['blacklist']
     return not blacklisted and (user in _WHO_CAN['all']
                                 or 'all' in _WHO_CAN[cmd]
                                 or user in _WHO_CAN[cmd])
 
 def is_throttle_exceeded(cmd, user):
-    '''Returns True if the throttle has been exeeded and False otherwise'''
+    """Returns True if the throttle has been exeeded and False otherwise"""
     # Load throttle STATE
     load_state()
     throttlestate = ast.literal_eval(get_state('throttle', '{}'))
