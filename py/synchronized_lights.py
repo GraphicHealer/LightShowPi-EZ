@@ -7,29 +7,38 @@
 # Author: Chris Usey (chris.usey@gmail.com)
 # Author: Ryan Jennings
 # Author: Paul Dunn (dunnsept@gmail.com)
-"""Play any audio file and synchronize lights to the music
+"""
+Play any audio file and synchronize lights to the music
 
-When executed, this script will play an audio file, as well as turn on and off N channels
-of lights to the music (by default the first 8 GPIO channels on the Rasberry Pi), based upon
-music it is playing. Many types of audio files are supported (see decoder.py below), but
-it has only been tested with wav and mp3 at the time of this writing.
+When executed, this script will play an audio file, as well as turn on
+and off N channels of lights to the music (by default the first 8 GPIO
+channels on the Rasberry Pi), based upon music it is playing. Many
+types of audio files are supported (see decoder.py below), but it has
+only been tested with wav and mp3 at the time of this writing.
 
-The timing of the lights turning on and off is based upon the frequency response of the music
-being played.  A short segment of the music is analyzed via FFT to get the frequency response
-across each defined channel in the audio range.  Each light channel is then faded in and out based
-upon the amplitude of the frequency response in the corresponding audio channel.  Fading is 
-accomplished with a software PWM output.  Each channel can also be configured to simply turn on
-and off as the frequency response in the corresponding channel crosses a threshold.
+The timing of the lights turning on and off is based upon the frequency
+response of the music being played.  A short segment of the music is
+analyzed via FFT to get the frequency response across each defined
+channel in the audio range.  Each light channel is then faded in and
+out based upon the amplitude of the frequency response in the 
+corresponding audio channel.  Fading is accomplished with a software 
+PWM output.  Each channel can also be configured to simply turn on and
+off as the frequency response in the corresponding channel crosses a 
+threshold.
 
-FFT calculation can be CPU intensive and in some cases can adversely affect playback of songs
-(especially if attempting to decode the song as well, as is the case for an mp3).  For this reason,
-the FFT cacluations are cached after the first time a new song is played.  The values are cached
-in a gzip'd text file in the same location as the song itself.  Subsequent requests to play the
-same song will use the cached information and not recompute the FFT, thus reducing CPU utilization
-dramatically and allowing for clear music playback of all audio file types.
+FFT calculation can be CPU intensive and in some cases can adversely
+affect playback of songs (especially if attempting to decode the song
+as well, as is the case for an mp3).  For this reason, the FFT 
+cacluations are cached after the first time a new song is played.
+The values are cached in a gzip'd text file in the same location as the
+song itself.  Subsequent requests to play the same song will use the
+cached information and not recompute the FFT, thus reducing CPU
+utilization dramatically and allowing for clear music playback of all
+audio file types.
 
-Recent optimizations have improved this dramatically and most users are no longer reporting
-adverse playback of songs even on the first playback.
+Recent optimizations have improved this dramatically and most users are
+no longer reporting adverse playback of songs even on the first 
+playback.
 
 Sample usage:
 To play an entire list -
@@ -40,12 +49,18 @@ sudo python synchronized_lights.py --file=/home/pi/music/jingle_bells.mp3
 
 Third party dependencies:
 
-alsaaudio: for audio input/output - http://pyalsaaudio.sourceforge.net/
-decoder.py: decoding mp3, ogg, wma, ... - https://pypi.python.org/pypi/decoder.py/1.5XB
-numpy: for FFT calcuation - http://www.numpy.org/
+alsaaudio: for audio input/output 
+    http://pyalsaaudio.sourceforge.net/
+
+decoder.py: decoding mp3, ogg, wma, ... 
+    https://pypi.python.org/pypi/decoder.py/1.5XB
+
+numpy: for FFT calcuation 
+    http://www.numpy.org/
 """
 
 import argparse
+import atexit
 import csv
 import fcntl
 import json
@@ -63,7 +78,7 @@ import decoder
 import hardware_controller as hc
 import numpy as np
 
-from preshow import Preshow
+from PrePostShow import PrePostShow
 
 
 # Configurations - TODO(todd): Move more of this into configuration manager
@@ -73,8 +88,9 @@ _MIN_FREQUENCY = _CONFIG.getfloat('audio_processing', 'min_frequency')
 _MAX_FREQUENCY = _CONFIG.getfloat('audio_processing', 'max_frequency')
 _RANDOMIZE_PLAYLIST = _CONFIG.getboolean('lightshow', 'randomize_playlist')
 try:
-    _CUSTOM_CHANNEL_MAPPING = [int(channel) for channel in
-                               _CONFIG.get('audio_processing', 'custom_channel_mapping').split(',')]
+    _CUSTOM_CHANNEL_MAPPING = \
+        [int(channel) for channel in _CONFIG.get('audio_processing',\
+            'custom_channel_mapping').split(',')]
 except:
     _CUSTOM_CHANNEL_MAPPING = 0
 try:
@@ -84,7 +100,8 @@ try:
 except:
     _CUSTOM_CHANNEL_FREQUENCIES = 0
 try:
-    _PLAYLIST_PATH = cm.lightshow()['playlist_path'].replace('$SYNCHRONIZED_LIGHTS_HOME', cm.HOME_DIR)
+    _PLAYLIST_PATH = \
+        cm.lightshow()['playlist_path'].replace('$SYNCHRONIZED_LIGHTS_HOME', cm.HOME_DIR)
 except: 
     _PLAYLIST_PATH = "/home/pi/music/.playlist"
 try:
@@ -96,9 +113,19 @@ except:
     _usefm='false'
 CHUNK_SIZE = 2048  # Use a multiple of 8 (move this to config)
 
+def end_early():
+    hc.clean_up()
+    
+atexit.register(end_early)
+
 def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_mapping,
                                 custom_channel_frequencies):
-    '''Calculate frequency values for each channel, taking into account custom settings.'''
+    """
+    Calculate frequency values
+
+    Calculate frequency values for each channel,
+    taking into account custom settings.
+    """
 
     # How many channels do we need to calculate the frequency for
     if custom_channel_mapping != 0 and len(custom_channel_mapping) == hc.GPIOLEN:
@@ -146,7 +173,12 @@ def calculate_channel_frequency(min_frequency, max_frequency, custom_channel_map
         return frequency_store
 
 def update_lights(matrix, mean, std):
-    '''Update the state of all the lights based upon the current frequency response matrix'''
+    """
+    Update the state of all the lights
+
+    Update the state of all the lights based upon the current
+    frequency response matrix
+    """
     for i in range(0, hc.GPIOLEN):
         # Calculate output pwm, where off is at some portion of the std below
         # the mean and full on is at some portion of the std above the mean.
@@ -166,7 +198,7 @@ def update_lights(matrix, mean, std):
             hc.turn_on_light(i, True, brightness)
 
 def audio_in():
-    '''Control the lightshow from audio coming in from a USB audio card'''
+    """Control the lightshow from audio coming in from a USB audio card"""
     sample_rate = cm.lightshow()['audio_in_sample_rate']
     input_channels = cm.lightshow()['audio_in_channels']
 
@@ -199,7 +231,11 @@ def audio_in():
             
             if l:
                 try:
-                    matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits, input_channels)
+                    matrix = fft.calculate_levels(data,
+                                                  CHUNK_SIZE,
+                                                  sample_rate,
+                                                  frequency_limits,
+                                                  input_channels)
                     if not np.isfinite(np.sum(matrix)):
                         # Bad data --- skip it
                         continue
@@ -224,7 +260,8 @@ def audio_in():
                         mean[i] = np.mean([item for item in recent_samples[:, i] if item > 0])
                         std[i] = np.std([item for item in recent_samples[:, i] if item > 0])
                         
-                        # Count how many channels are below 10, if more than 1/2, assume noise (no connection)
+                        # Count how many channels are below 10, 
+                        # if more than 1/2, assume noise (no connection)
                         if mean[i] < 10.0:
                             no_connection_ct += 1
                             
@@ -248,7 +285,7 @@ def audio_in():
 
 # TODO(todd): Refactor more of this to make it more readable / modular.
 def play_song():
-    '''Play the next song from the play list (or --file argument).'''
+    """Play the next song from the play list (or --file argument)."""
     song_to_play = int(cm.get_state('song_to_play', 0))
     play_now = int(cm.get_state('play_now', 0))
 
@@ -268,14 +305,17 @@ def play_song():
         print "One of --playlist or --file must be specified"
         sys.exit()
 
+    # Handle the pre/post show
+    if not play_now:
+        result = PrePostShow('preshow').execute()
+        # now unused.  if play_now = True
+        # song to play is always the first song in the playlist
+        
+        if result == PrePostShow.play_now_interrupt:
+            play_now = int(cm.get_state('play_now', 0))
+
     # Initialize Lights
     hc.initialize()
-
-    # Handle the pre-show
-    if not play_now:
-        result = Preshow().execute()
-        if result == Preshow.PlayNowInterrupt:
-            play_now = True
 
     # Determine the next file to play
     song_filename = args.file
@@ -359,8 +399,18 @@ def play_song():
 
     if _usefm=='true':
         logging.info("Sending output as fm transmission")
+        
         with open(os.devnull, "w") as dev_null:
-            fm_process = subprocess.Popen(["sudo",cm.HOME_DIR + "/bin/pifm","-",str(frequency),"44100", "stereo" if play_stereo else "mono"], stdin=music_pipe_r, stdout=dev_null)
+            # play_stereo is always True as coded, Should it be changed to
+            # an option in the config file?
+            fm_process = subprocess.Popen(["sudo",
+                                           cm.HOME_DIR + "/bin/pifm",
+                                           "-",
+                                           str(frequency),
+                                           "44100",
+                                           "stereo" if play_stereo else "mono"],\
+                                               stdin=music_pipe_r,\
+                                                   stdout=dev_null)
     else:
         output = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL)
         output.setchannels(num_channels)
@@ -376,10 +426,12 @@ def play_song():
     # create empty array for the cache_matrix
     cache_matrix = np.empty(shape=[0, hc.GPIOLEN])
     cache_found = False
-    cache_filename = os.path.dirname(song_filename) + "/." + os.path.basename(song_filename) \
-        + ".sync"
-    # The values 12 and 1.5 are good estimates for first time playing back (i.e. before we have
-    # the actual mean and standard deviations calculated for each channel).
+    cache_filename = \
+        os.path.dirname(song_filename) + "/." + os.path.basename(song_filename) + ".sync"
+    
+    # The values 12 and 1.5 are good estimates for first time playing back 
+    # (i.e. before we have the actual mean and standard deviations 
+    # calculated for each channel).
     mean = [12.0 for _ in range(hc.GPIOLEN)]
     std = [1.5 for _ in range(hc.GPIOLEN)]
     
@@ -402,7 +454,8 @@ def play_song():
 
             logging.debug("std: " + str(std) + ", mean: " + str(mean))
         except IOError:
-            logging.warn("Cached sync data song_filename not found: '" + cache_filename
+            logging.warn("Cached sync data song_filename not found: '" 
+                         + cache_filename
                          + ".  One will be generated.")
 
     # Process audio song_filename
@@ -464,6 +517,9 @@ def play_song():
     # Cleanup the pifm process
     if _usefm=='true':
         fm_process.kill()
+
+    # check for postshow
+    done = PrePostShow('postshow').execute()
 
     # We're done, turn it all off and clean up things ;)
     hc.clean_up()
