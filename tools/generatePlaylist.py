@@ -16,7 +16,7 @@ location = raw_input("Enter the path to the folder of songs:")
 songEntry = ""
 
 for song in os.listdir(location):
-	if not str(song).startswith("."):
+    if not str(song).startswith("."):
         if str(song).endswith(".mp3"):
             metadata = mutagen.File(location + "/" + song, easy=True)
             if "title" in metadata:
