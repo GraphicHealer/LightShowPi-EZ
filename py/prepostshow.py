@@ -165,7 +165,7 @@ class PrePostShow(object):
         environment['PYTHONPATH'] = ':'.join(sys.path)
 
         #run script
-        show = subprocess.Popen(['python', self.config],
+        show = subprocess.Popen('python ' + self.config,
                                 preexec_fn=os.setsid,
                                 shell=True,
                                 close_fds=True,
