@@ -22,7 +22,7 @@ if not HOME_DIR:
     print("Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, "
           "see readme")
     sys.exit()
-    
+
 # hack to get the configuration_manager and fft modules to load
 # from a different directory
 path = list(sys.path)
@@ -40,10 +40,8 @@ import configuration_manager as cm
 _CONFIG = cm.CONFIG
 GPIOLEN = len([int(pin) for pin in _CONFIG.get('hardware', 
                                                'gpio_pins').split(',')])
-_MODE = cm.lightshow()['mode']
 _MIN_FREQUENCY = _CONFIG.getfloat('audio_processing', 'min_frequency')
 _MAX_FREQUENCY = _CONFIG.getfloat('audio_processing', 'max_frequency')
-_RANDOMIZE_PLAYLIST = _CONFIG.getboolean('lightshow', 'randomize_playlist')
 
 try:
     _CUSTOM_CHANNEL_MAPPING = \
@@ -51,7 +49,7 @@ try:
             'custom_channel_mapping').split(',')]
 except:
     _CUSTOM_CHANNEL_MAPPING = 0
-    
+
 try:
     _CUSTOM_CHANNEL_FREQUENCIES = [int(channel) for channel in
                                    _CONFIG.get('audio_processing',
@@ -60,8 +58,6 @@ except:
     _CUSTOM_CHANNEL_FREQUENCIES = 0
 
 CHUNK_SIZE = 2048  # Use a multiple of 8 (move this to config)
-
-
 
 def calculate_channel_frequency(min_frequency,
                                 max_frequency,
@@ -110,10 +106,8 @@ def calculate_channel_frequency(min_frequency,
     else:
         return frequency_store
 
-
 def cache_song(song_filename):
     """Play the next song from the play list (or --file argument)."""
-
     # Initialize FFT stats
     matrix = [0 for _ in range(GPIOLEN)] # get length of gpio and assign it to a variable
 
@@ -127,18 +121,18 @@ def cache_song(song_filename):
     num_channels = musicfile.getnchannels()
 
     song_filename = os.path.abspath(song_filename)
-    
+
     # create empty array for the cache_matrix
     cache_matrix = np.empty(shape=[0, GPIOLEN])
     cache_filename = \
         os.path.dirname(song_filename) + "/." + os.path.basename(song_filename) + ".sync"
-    
+
     # The values 12 and 1.5 are good estimates for first time playing back 
     # (i.e. before we have the actual mean and standard deviations 
     # calculated for each channel).
     mean = [12.0 for _ in range(GPIOLEN)]
     std = [1.5 for _ in range(GPIOLEN)]
-    
+
     # Process audio song_filename
     row = 0
     data = musicfile.readframes(CHUNK_SIZE) # move chunk_size to configuration_manager
@@ -157,7 +151,6 @@ def cache_song(song_filename):
         # Read next chunk of data from music song_filename
         data = musicfile.readframes(CHUNK_SIZE)
         row = row + 1
-
 
     # Compute the standard deviation and mean values for the cache
     for i in range(0, GPIOLEN):
@@ -211,9 +204,9 @@ def main():
             title = title.replace("_", " ")
             title = title.replace("-", " - ")
         playlistFile.write(title + "\t" + song + "\n")
-    
+
     playlistFile.close()
-    
+
     print "All Finished."
     print "A playlist was also generated"
     print location + "playlist"
@@ -221,8 +214,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
- 
