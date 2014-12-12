@@ -78,7 +78,7 @@ import decoder
 import hardware_controller as hc
 import numpy as np
 
-from PrePostShow import PrePostShow
+from prepostshow import PrePostShow
 
 
 # Configurations - TODO(todd): Move more of this into configuration manager

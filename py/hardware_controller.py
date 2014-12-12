@@ -19,6 +19,7 @@ wiringpi2: python wrapper around wiring pi
 
 import argparse
 import logging
+import math
 import time
 
 import configuration_manager as cm
@@ -241,6 +242,8 @@ def turn_on_light(i, useoverrides=0, brightness=1.0):
     taking into account various overrides if specified.
     '''
     if is_pin_pwm(i):
+        if math.isnan(brightness):
+            brightness = 0.0
         if _ACTIVE_LOW_MODE:
             brightness = 1.0 - brightness
         if brightness < 0.0:
