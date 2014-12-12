@@ -20,7 +20,6 @@ or
 sudo python prepostshow.py "postshow"
 """
 
-
 import logging
 import os
 import time
@@ -87,6 +86,7 @@ class PrePostShow(object):
 
         # start the audio if there is any
         self.start_audio()
+
         if 'transitions' in self.config:
             try:
                 # display transition based show
