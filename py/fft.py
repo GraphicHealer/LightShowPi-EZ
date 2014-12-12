@@ -13,29 +13,31 @@ Third party dependencies:
 numpy: for FFT calculation - http://www.numpy.org/
 """
 
-import hardware_controller as hc
 import numpy as np
 
-
 def piff(val, chunk_size, sample_rate):
-    '''Return the power array index corresponding to a particular frequency.'''
+    """Return the power array index corresponding to a particular frequency."""
     return int(chunk_size * val / sample_rate)
 
-def calculate_levels(data, chunk_size, sample_rate, frequency_limits, channels=2):
-    '''Calculate frequency response for each channel defined in frequency_limits
+def calculate_levels(data, chunk_size, sample_rate, frequency_limits, gpiolen, channels=2):
+    """
+    Calculate frequency response for each channel defined in frequency_limits
 
     Initial FFT code inspired from the code posted here:
     http://www.raspberrypi.org/phpBB3/viewtopic.php?t=35838&p=454041
 
     Optimizations from work by Scott Driscoll:
     http://www.instructables.com/id/Raspberry-Pi-Spectrum-Analyzer-with-RGB-LED-Strip-/
-    '''
+    """
 
     # create a numpy array, taking just the left channel if stereo
     data_stereo = np.frombuffer(data, dtype=np.int16)
     if channels == 2:
-        data = np.empty(len(data) / (2 * channels))  # data has 2 bytes per channel
-        data[:] = data_stereo[::2]  # pull out the even values, just using left channel
+        # data has 2 bytes per channel
+        data = np.empty(len(data) / (2 * channels))
+
+        # pull out the even values, just using left channel
+        data[:] = data_stereo[::2]
     elif channels == 1:
         data = data_stereo
 
@@ -54,10 +56,13 @@ def calculate_levels(data, chunk_size, sample_rate, frequency_limits, channels=2
     # Calculate the power spectrum
     power = np.abs(fourier) ** 2
 
-    matrix = np.zeros(hc.GPIOLEN)
-    for i in range(hc.GPIOLEN):
-        # take the log10 of the resulting sum to approximate how human ears perceive sound levels
-        matrix[i] = np.log10(np.sum(power[piff(frequency_limits[i][0], chunk_size, sample_rate)
-                                          :piff(frequency_limits[i][1], chunk_size, sample_rate):1]))
+    matrix = np.zeros(gpiolen)
+    for i in range(gpiolen):
+        # take the log10 of the resulting sum to approximate how human ears 
+        # perceive sound levels
+        matrix[i] = np.log10(np.sum(power[piff(frequency_limits[i][0], 
+                                               chunk_size, sample_rate)
+                                          :piff(frequency_limits[i][1], 
+                                                chunk_size, sample_rate):1]))
 
     return matrix
