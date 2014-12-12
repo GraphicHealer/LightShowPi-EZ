@@ -74,6 +74,10 @@ class PrePostShow(object):
         show played to completion, or play_now_interrupt if the
         show was interrupted by a play now command.
         """
+        # Is there a show to launch?
+        if self.config == None:
+            return PrePostShow.done
+        
         # Is the config a script or a transition based show
         # launch the script if it is
         if not isinstance(self.config, dict) and os.path.exists(self.config):
