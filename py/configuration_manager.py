@@ -92,34 +92,32 @@ def lightshow():
             CONFIG.getint('lightshow', 'audio_in_sample_rate')
 
         # setup up preshow
-        preshow = dict()
-
-        if "preshow_configuration" in _LIGHTSHOW_CONFIG:
+        preshow = None
+        if (CONFIG.get('lightshow', 'preshow_configuration') 
+            and not CONFIG.get('lightshow', 'preshow_script')):
             try:
                 preshow = \
                     json.loads(_LIGHTSHOW_CONFIG['preshow_configuration'])
             except (ValueError, TypeError) as error:
                 logging.error("Preshow_configuration not defined or not in "
                               "JSON format." + str(error))
-
-        if "preshow_script" in _LIGHTSHOW_CONFIG:
+        else:
             if os.path.isfile(_LIGHTSHOW_CONFIG['preshow_script']):
                 preshow = _LIGHTSHOW_CONFIG['preshow_script']
 
         _LIGHTSHOW_CONFIG['preshow'] = preshow
 
         # setup postshow
-        postshow = dict()
-
-        if "postshow_configuration" in _LIGHTSHOW_CONFIG:
+        postshow = None
+        if (CONFIG.get('lightshow', 'postshow_configuration') 
+            and not CONFIG.get('lightshow', 'postshow_script')):
             try:
                 postshow = \
                     json.loads(_LIGHTSHOW_CONFIG['postshow_configuration'])
             except (ValueError, TypeError) as error:
                 logging.error("Postshow_configuration not "
                               "defined or not in JSON format." + str(error))
-
-        if "postshow_script" in _LIGHTSHOW_CONFIG:
+        else:
             if os.path.isfile(_LIGHTSHOW_CONFIG['postshow_script']):
                 postshow = _LIGHTSHOW_CONFIG['postshow_script']
         _LIGHTSHOW_CONFIG['postshow'] = postshow

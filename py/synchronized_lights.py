@@ -235,6 +235,7 @@ def audio_in():
                                                   CHUNK_SIZE,
                                                   sample_rate,
                                                   frequency_limits,
+                                                  hc.GPIOLEN,
                                                   input_channels)
                     if not np.isfinite(np.sum(matrix)):
                         # Bad data --- skip it
@@ -483,7 +484,7 @@ def play_song():
 
         if matrix == None:
             # No cache - Compute FFT in this chunk, and cache results
-            matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits)
+            matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits, hc.GPIOLEN)
 
             # Add the matrix to the end of the cache 
             cache_matrix = np.vstack([cache_matrix, matrix])
