@@ -171,11 +171,10 @@ def set_pins_as_outputs(exportpins):
     for i in range(GPIOLEN):
         set_pin_as_output(i, exportpins)
 
+    # When exporting pins via the gpio utility, you have to re-call wiringPiSetupSys after
+    # after changing or exporting any pins.
     if exportpins:
         wiringpi.wiringPiSetupSys()
-    else:
-        wiringpi.wiringPiSetup()
-
 
 def set_pins_as_inputs(exportpins):
     '''Set all the configured pins as inputs.'''
@@ -187,8 +186,6 @@ def set_pins_as_inputs(exportpins):
 
     if exportpins:
         wiringpi.wiringPiSetupSys()
-    else:
-        wiringpi.wiringPiSetup()
 
 def set_pin_as_output(i, exportpins):
     '''Set the specified pin as an output.'''
