@@ -162,7 +162,7 @@ def is_pin_pwm(i):
     """Is the pin setup for pwm"""
     return PIN_MODES[i].lower() == "pwm"
 
-def set_pins_as_outputs(exportpins=True):
+def set_pins_as_outputs(exportpins):
     '''Set all the configured pins as outputs.'''
 
     if exportpins:
@@ -177,7 +177,7 @@ def set_pins_as_outputs(exportpins=True):
         wiringpi.wiringPiSetup()
 
 
-def set_pins_as_inputs(exportpins=True):
+def set_pins_as_inputs(exportpins):
     '''Set all the configured pins as inputs.'''
     if exportpins:
         subprocess.check_call([_GPIO_UTILITY_PATH, 'unexportall'])
@@ -294,23 +294,23 @@ def turn_on_light(i, useoverrides=0, brightness=1.0):
     else:
         wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOACTIVE)
 
-def clean_up():
+def clean_up(exportpins=_EXPORT_PINS):
     """
     Clean up and end the lightshow
 
     Turn off all lights set the pins as inputs
     """
     turn_off_lights()
-    set_pins_as_inputs(_EXPORT_PINS)
+    set_pins_as_inputs(exportpins)
 
-def initialize():
+def initialize(exportpins=_EXPORT_PINS):
     '''Set pins as outputs, and start all lights in the off state.'''
 
-    if not _EXPORT_PINS:
+    if not exportpins:
         wiringpi.wiringPiSetup()
 
     enable_device()
-    set_pins_as_outputs(_EXPORT_PINS)
+    set_pins_as_outputs(exportpins)
     turn_off_lights()
 
 # __________________Main________________
