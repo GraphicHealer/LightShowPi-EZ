@@ -15,6 +15,9 @@ numpy: for FFT calculation - http://www.numpy.org/
 
 import numpy as np
 
+# disable the RuntimeWarning: divide by zero encountered message 
+np.seterr(divide='ignore')
+
 def piff(val, chunk_size, sample_rate):
     """Return the power array index corresponding to a particular frequency."""
     return int(chunk_size * val / sample_rate)
