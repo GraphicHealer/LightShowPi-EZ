@@ -8,6 +8,9 @@
 # sudo dpkg-reconfigure tzdata
 # reboot
 
+#set enviroment variable
+SYNCHRONIZED_LIGHTS_HOME=/home/pi/lightshowpi
+﻿
 # Start playing back songs and checking sms message at 6:30pm
 30 18 * * * exec $SYNCHRONIZED_LIGHTS_HOME/bin/check_sms >> $SYNCHRONIZED_LIGHTS_HOME/logs/music_and_lights.check 2>&1 &
 30 18 * * * exec $SYNCHRONIZED_LIGHTS_HOME/bin/play_sms >> $SYNCHRONIZED_LIGHTS_HOME/logs/music_and_lights.play 2>&1 &
