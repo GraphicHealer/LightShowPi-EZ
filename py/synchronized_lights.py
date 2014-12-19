@@ -73,7 +73,6 @@ import wave
 
 import alsaaudio as aa
 import fft
-import configuration_manager as cm
 import decoder
 import hardware_controller as hc
 import numpy as np
@@ -82,8 +81,8 @@ from prepostshow import PrePostShow
 
 
 # Configurations - TODO(todd): Move more of this into configuration manager
-_CONFIG = cm.CONFIG
-_MODE = cm.lightshow()['mode']
+_CONFIG = hc.cm.CONFIG
+_MODE = hc.cm.lightshow()['mode']
 _MIN_FREQUENCY = _CONFIG.getfloat('audio_processing', 'min_frequency')
 _MAX_FREQUENCY = _CONFIG.getfloat('audio_processing', 'max_frequency')
 _RANDOMIZE_PLAYLIST = _CONFIG.getboolean('lightshow', 'randomize_playlist')
@@ -101,7 +100,7 @@ except:
     _CUSTOM_CHANNEL_FREQUENCIES = 0
 try:
     _PLAYLIST_PATH = \
-        cm.lightshow()['playlist_path'].replace('$SYNCHRONIZED_LIGHTS_HOME', cm.HOME_DIR)
+        hc.cm.lightshow()['playlist_path'].replace('$SYNCHRONIZED_LIGHTS_HOME', hc.cm.HOME_DIR)
 except: 
     _PLAYLIST_PATH = "/home/pi/music/.playlist"
 try:
@@ -199,11 +198,11 @@ def update_lights(matrix, mean, std):
 
 def audio_in():
     """Control the lightshow from audio coming in from a USB audio card"""
-    sample_rate = cm.lightshow()['audio_in_sample_rate']
-    input_channels = cm.lightshow()['audio_in_channels']
+    sample_rate = hc.cm.lightshow()['audio_in_sample_rate']
+    input_channels = hc.cm.lightshow()['audio_in_channels']
 
     # Open the input stream from default input device
-    stream = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NORMAL, cm.lightshow()['audio_in_card'])
+    stream = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NORMAL, hc.cm.lightshow()['audio_in_card'])
     stream.setchannels(input_channels)
     stream.setformat(aa.PCM_FORMAT_S16_LE) # Expose in config if needed
     stream.setrate(sample_rate)
@@ -286,9 +285,10 @@ def audio_in():
 
 # TODO(todd): Refactor more of this to make it more readable / modular.
 def play_song():
+    global _MIN_FREQUENCY, _MAX_FREQUENCY, _CUSTOM_CHANNEL_MAPPING, _CUSTOM_CHANNEL_FREQUENCIES
     """Play the next song from the play list (or --file argument)."""
-    song_to_play = int(cm.get_state('song_to_play', 0))
-    play_now = int(cm.get_state('play_now', 0))
+    song_to_play = int(hc.cm.get_state('song_to_play', 0))
+    play_now = int(hc.cm.get_state('play_now', 0))
 
     # Arguments
     parser = argparse.ArgumentParser()
@@ -306,17 +306,16 @@ def play_song():
         print "One of --playlist or --file must be specified"
         sys.exit()
 
-    # Handle the pre/post show
-    if not play_now:
-        result = PrePostShow('preshow').execute()
-        # now unused.  if play_now = True
-        # song to play is always the first song in the playlist
-        
-        if result == PrePostShow.play_now_interrupt:
-            play_now = int(cm.get_state('play_now', 0))
-
     # Initialize Lights
     hc.initialize()
+
+    # Handle the pre/post show
+    if not play_now:
+        result = PrePostShow('preshow', hc).execute()
+        # now unused.  if play_now = True
+        # song to play is always the first song in the playlist
+        if result == PrePostShow.play_now_interrupt:
+            play_now = int(hc.cm.get_state('play_now', 0))
 
     # Determine the next file to play
     song_filename = args.file
@@ -358,7 +357,6 @@ def play_song():
                         del song[2]
                 writer.writerows(songs)
                 fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
-
         else:
             # Get a "play now" requested song
             if play_now > 0 and play_now <= len(songs):
@@ -373,17 +371,17 @@ def play_song():
                 song_to_play = song_to_play if (song_to_play <= len(songs) - 1) else 0
                 current_song = songs[song_to_play]
                 next_song = (song_to_play + 1) if ((song_to_play + 1) <= len(songs) - 1) else 0
-                cm.update_state('song_to_play', next_song)
+                hc.cm.update_state('song_to_play', next_song)
 
         # Get filename to play and store the current song playing in state cfg
         song_filename = current_song[1]
-        cm.update_state('current_song', songs.index(current_song))
+        hc.cm.update_state('current_song', songs.index(current_song))
 
-    song_filename = song_filename.replace("$SYNCHRONIZED_LIGHTS_HOME", cm.HOME_DIR)
+    song_filename = song_filename.replace("$SYNCHRONIZED_LIGHTS_HOME", hc.cm.HOME_DIR)
 
     # Ensure play_now is reset before beginning playback
     if play_now:
-        cm.update_state('play_now', 0)
+        hc.cm.update_state('play_now', 0)
         play_now = 0
 
     # Initialize FFT stats
@@ -405,7 +403,7 @@ def play_song():
             # play_stereo is always True as coded, Should it be changed to
             # an option in the config file?
             fm_process = subprocess.Popen(["sudo",
-                                           cm.HOME_DIR + "/bin/pifm",
+                                           hc.cm.HOME_DIR + "/bin/pifm",
                                            "-",
                                            str(frequency),
                                            "44100",
@@ -467,6 +465,14 @@ def play_song():
                                                    _CUSTOM_CHANNEL_MAPPING,
                                                    _CUSTOM_CHANNEL_FREQUENCIES)
 
+    # Process audio song_filename
+    row = 0
+    data = musicfile.readframes(CHUNK_SIZE)
+    frequency_limits = calculate_channel_frequency(_MIN_FREQUENCY,
+                                                   _MAX_FREQUENCY,
+                                                   _CUSTOM_CHANNEL_MAPPING,
+                                                   _CUSTOM_CHANNEL_FREQUENCIES)
+
     while data != '' and not play_now:
         if _usefm=='true':
             os.write(music_pipe_w, data)
@@ -496,8 +502,8 @@ def play_song():
         row = row + 1
 
         # Load new application state in case we've been interrupted
-        cm.load_state()
-        play_now = int(cm.get_state('play_now', 0))
+        hc.cm.load_state()
+        play_now = int(hc.cm.get_state('play_now', 0))
 
     if not cache_found:
         # Compute the standard deviation and mean values for the cache
@@ -520,7 +526,7 @@ def play_song():
         fm_process.kill()
 
     # check for postshow
-    done = PrePostShow('postshow').execute()
+    done = PrePostShow('postshow', hc).execute()
 
     # We're done, turn it all off and clean up things ;)
     hc.clean_up()
@@ -528,12 +534,12 @@ def play_song():
 if __name__ == "__main__":
     # Log everything to our log file
     # TODO(todd): Add logging configuration options.
-    logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.play.dbg',
+    logging.basicConfig(filename=hc.cm.LOG_DIR + '/music_and_lights.play.dbg',
                         format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
                         ' - %(message)s',
                         level=logging.DEBUG)
 
-    if cm.lightshow()['mode'] == 'audio-in':
+    if hc.cm.lightshow()['mode'] == 'audio-in':
         audio_in()
     else:
         play_song()
