@@ -44,6 +44,10 @@ CONFIG.readfp(open(CONFIG_DIR + '/defaults.cfg'))
 CONFIG.read([CONFIG_DIR + '/overrides.cfg', '/home/pi/.lights.cfg',
              os.path.expanduser('~/.lights.cfg')])
 
+def _as_dict(section):
+    '''Return a dictionary from a configuration section.'''
+    return dict(x for x in CONFIG.items(section))
+
 def _as_list(list_str, delimiter=','):
     """Return a list of items from a delimited string (after stripping whitespace)."""
     return [str.strip(item) for item in list_str.split(delimiter)]
@@ -56,10 +60,9 @@ def hardware():
 
     loading and parsing it from a file if necessary.
     """
-
     global _HARDWARE_CONFIG
     if len(_HARDWARE_CONFIG) == 0:
-        _HARDWARE_CONFIG = dict(CONFIG.items('hardware'))
+        _HARDWARE_CONFIG = _as_dict('hardware')
 
         # Devices
         devices = dict()
@@ -84,7 +87,7 @@ def lightshow():
     """
     global _LIGHTSHOW_CONFIG
     if len(_LIGHTSHOW_CONFIG) == 0:
-        _LIGHTSHOW_CONFIG = dict(CONFIG.items('lightshow'))
+        _LIGHTSHOW_CONFIG = _as_dict('lightshow')
 
         _LIGHTSHOW_CONFIG['audio_in_channels'] = \
             CONFIG.getint('lightshow', 'audio_in_channels')
@@ -130,7 +133,7 @@ def sms():
     """Retrieves and validates sms configuration"""
     global _SMS_CONFIG, _WHO_CAN
     if len(_SMS_CONFIG) == 0:
-        _SMS_CONFIG = dict(CONFIG.items('sms'))
+        _SMS_CONFIG = _as_dict('sms')
         _WHO_CAN = dict()
         _WHO_CAN['all'] = set()
 

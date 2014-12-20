@@ -21,6 +21,7 @@ sudo python prepostshow.py "postshow"
 """
 
 import logging
+import multiprocessing
 import os
 import time
 import subprocess
@@ -161,26 +162,22 @@ class PrePostShow(object):
         # make a copy of the path
         path = list(sys.path)
 
-        # insert script location and hardware_controller location into path
-        sys.path.insert(0, self.hc.cm.HOME_DIR + "/py")
+        # insert script location into path
         sys.path.insert(0, os.path.split(self.config)[0])
 
-        # create environment for script to run in
-        environment = os.environ.copy()
-        environment['PYTHONPATH'] = ':'.join(sys.path)
-
-        #run script
-        show = subprocess.Popen('python ' + self.config,
-                                preexec_fn=os.setsid,
-                                shell=True,
-                                close_fds=True,
-                                env=environment)
-
-        # check for user interrupt
-        while show.poll() is None:
+        # import custom script
+        test = __import__(os.path.basename(os.path.splitext(self.config)[0]))
+ 
+        # run the scripts main method in a new thread 
+        event = multiprocessing.Event()
+        test_t = multiprocessing.Process(target=test.main, args = (self.hc, event,))
+        test_t.daemon = True
+        test_t.start()
+        
+        while test_t.is_alive():
             if self.check_state():
                 # Skip out on the rest of the show if play now requested!
-                os.killpg(show.pid, signal.SIGTERM)
+                exit_event.set()
                 return_value = PrePostShow.play_now_interrupt
                 break
 

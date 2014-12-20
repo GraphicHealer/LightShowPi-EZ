@@ -285,7 +285,6 @@ def audio_in():
 
 # TODO(todd): Refactor more of this to make it more readable / modular.
 def play_song():
-    global _MIN_FREQUENCY, _MAX_FREQUENCY, _CUSTOM_CHANNEL_MAPPING, _CUSTOM_CHANNEL_FREQUENCIES
     """Play the next song from the play list (or --file argument)."""
     song_to_play = int(hc.cm.get_state('song_to_play', 0))
     play_now = int(hc.cm.get_state('play_now', 0))
@@ -312,8 +311,6 @@ def play_song():
     # Handle the pre/post show
     if not play_now:
         result = PrePostShow('preshow', hc).execute()
-        # now unused.  if play_now = True
-        # song to play is always the first song in the playlist
         if result == PrePostShow.play_now_interrupt:
             play_now = int(hc.cm.get_state('play_now', 0))
 
@@ -456,14 +453,6 @@ def play_song():
             logging.warn("Cached sync data song_filename not found: '" 
                          + cache_filename
                          + ".  One will be generated.")
-
-    # Process audio song_filename
-    row = 0
-    data = musicfile.readframes(CHUNK_SIZE)
-    frequency_limits = calculate_channel_frequency(_MIN_FREQUENCY,
-                                                   _MAX_FREQUENCY,
-                                                   _CUSTOM_CHANNEL_MAPPING,
-                                                   _CUSTOM_CHANNEL_FREQUENCIES)
 
     # Process audio song_filename
     row = 0

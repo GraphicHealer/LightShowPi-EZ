@@ -11,19 +11,24 @@ make your lights do all kinds of things.
 Lets start with a basic template that you will need to follow
 
 [code]
+
+import atexit
 import time
-import hardware_controller as hc
 
-lights = hc._GPIO_PINS
+def end(hc):
+    hc.turn_off_lights()
 
-def main():
-    hc.initialize()
+def main(hc, exit_event):
+    atexit.register(end, hc)
+
+    lights = hc._GPIO_PINS
     
     <a loop>
     
         <your code here>
             
-    hc.clean_up()
+        if exit_event.is_set():
+            break
 
 if __name__ == "__main__":
     main()
@@ -32,16 +37,46 @@ if __name__ == "__main__":
 
 First import your modules.
 
+The atexit module is need, it's a handy way for us to make sure that
+every thing that we need to do at the end of the script happens
+even if we press <CTRL>+C it will still do everything we need done to
+make the script end cleanly, like turn the lights off, or kill a subprocess
+
 The time module is not strictly needed but it comes in handy
 
-The hardware_controller module is needed do don't forget to import it
+def end(hc):
+    hc.turn_off_lights()
 
-I think it's a good idea to assign the list of gpio pins to an easy to remember
+The above code is use to clean up everything after your script ends.  Anything 
+you want to happen as the script ends you do here.  With the use of the atexit module
+it will be done no matter what, even if an error happens this function will still be called.
+So don't forget to include it.
+
+You need to place most of your code in the main() function inside a loop of some kind.
+
+For the pre or post show to call your main function you need to include some parameters
+in the function definition.  hc and exit_event making your definition look like the below example
+
+def main(hc, exit_event):
+
+hc is the hardware controller and it is need if you want to do anything with your lights
+and exit_event is used to end your script if a play now request comes in.
+Both must be included or your script will not work
+
+atexit.register(end, hc)
+The above line needs to be in you main function, either as the first line or
+just before the working loop, this line tells the script what to do when it ends.
+So if you want everything to work right after you script finishes make sure to include it before the loop.
+
+Then I think it's a good idea to assign the list of gpio pins to an easy to remember
 variable name, but _GPIO_PINS in hardware_controller is the same list,
 you can decide which way you want to use them.
+You can also setup other things at this point if you need or want to.
+Setup other variables (like storing a start time from the time module)
+Start playing some audio.
+What ever you might need.
 
-You need to place your code in the main() function inside a loop of some kind
-
+The loop is where almost everything will happen
 while <exit condition>:
 or
 for count in range(<number>):
@@ -96,25 +131,17 @@ the loop count as not less then 10 (it was 10) so the loop exited
 Either is fine, just remember to test your <exit condition> if you use a while loop
 a bad <exit condition> will cause the loop not to run or trap you in an infinite loop
 
-After your loop finishes you need to shut everything down by calling
-hc.clean_up(True)
-
-The main() function must be started for it to do anything, making the following
-a must.
-
-if __name__ == "__main__":
-    main()
+This is used by the pre/post shows to exit your script if a play now request happens
+include this in the working loop, either at the top or bottom, it dosen't matter,
+as long as it is in there.
+if exit_event.is_set():
+    break
+            
+After your loop finishes it will automaticaly clean up after it self as long as
+you included the end() function and atexit.register.
 
 
 These are the functions that you can use from the hardware_controller module
-
-initialize()
-    initialize the hardware 
-    hc.initialize()
-
-clean_up()
-    used to shut everything down, you will need to pass in True for this to work
-    hc.clean_up()
 
 turn_on_light()
     this will turn on one light, you need to pass in the the gpio pin number

@@ -2,15 +2,27 @@
 
 import time
 
-# This import gives you full acess to the hardware
-import hardware_controller as hc
+# this module is needed so that we may exit this script 
+# and clean up after out script ends
+import atexit
 
-def main():
+# this is where we do the cleanup and end everything.
+def end(hc):
+    hc.turn_off_lights()
+
+# hc and exit_event are passed in the pre/post show script so that you
+# have access to the hardware controller, and an exit_event generated
+# by the pre/post show script. Do not forget to include then as if you
+# do not your script will not work
+def main(hc, exit_event):
     """
     PWM example
 
     Start at each end and walk to the other using pwm
     """
+    # required to cleanup all processes
+    atexit.register(end, hc)
+
     # this is a list of all the channels you have access to
     lights = hc._GPIO_PINS
 
@@ -20,8 +32,6 @@ def main():
     # get _PWM_MAX from the hc module
     # this is the max value for the pwm channels
     pwm_max = hc._PWM_MAX
-    # initialize your hardware for use
-    hc.initialize()
 
     # start with all the lights off
     hc.turn_off_lights()
@@ -85,8 +95,10 @@ def main():
 
                     time.sleep(.05 / pwm_max)
 
-    # This ends and cleans up everything
-    hc.clean_up()
+        # this is required so that an sms play now command will 
+        # end your script and any subprocess you have statred
+        if exit_event.is_set():
+            break
 
 if __name__ == "__main__":
     main()
