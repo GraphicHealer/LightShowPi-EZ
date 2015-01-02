@@ -1,20 +1,19 @@
-http://www.lightshowpi.com/
+http://lightshowpi.org/
 
 All files here are free to use under the BSD License (see the LICENSE file for details).  All we
 ask in return is that you send any updates / improvements you may make to them back to us so 
 that we can all benefit from your improvements!
 
-Join us on our [Google+ community page](https://plus.google.com/communities/101789596301454731630)
-as well to share your experiences using lightshowPi, as well as videos of your shows!
+Join us on our [Google+ community page](https://plus.google.com/communities/101789596301454731630) and / or [Facebook page](https://www.facebook.com/lightshowpi) as well to share your experiences using lightshowPi, as well as videos of your shows!
 
 Thanks, and enjoy ;)
 
-Todd Giles ([todd@lightshowpi.com](mailto:todd@lightshowpi.com))
+Todd Giles ([todd@lightshowpi.org](mailto:todd@lightshowpi.org))
 
 Installation / Getting Started
 ==============================
 
-Please visit the [Wiki](https://bitbucket.org/togiles/lightshowpi/wiki/Home) for details on getting
+Please visit the [Getting Started Page](http://lightshowpi.org/getting-started) for details on getting
 started.  Or for those who want to just jump on in, feel free to run the install.sh script and go 
 for it :-)
 
