@@ -24,13 +24,16 @@ import time
 import subprocess
 
 import configuration_manager as cm
-import wiringpi2 as wiringpi
-
+import wiringpi_wrapper
 
 # Get Configurations - TODO(todd): Move more of this into configuration manager
 _CONFIG = cm.CONFIG
 
 _GPIO_PINS = [int(pin) for pin in _CONFIG.get('hardware', 'gpio_pins').split(',')]
+
+_VIRTUAL_PINS = _CONFIG.getboolean('hardware', 'virtual_pins')
+
+wiringpi = wiringpi_wrapper.WiringpiWrapper(_VIRTUAL_PINS)
 
 PIN_MODES = _CONFIG.get('hardware', 'pin_modes').split(',')
 
@@ -165,7 +168,7 @@ def is_pin_pwm(i):
 def set_pins_as_outputs(exportpins):
     '''Set all the configured pins as outputs.'''
 
-    if exportpins:
+    if exportpins and not wiringpi.is_virtual_pins():
         subprocess.check_call([_GPIO_UTILITY_PATH, 'unexportall'])
 
     for i in range(GPIOLEN):
@@ -178,7 +181,7 @@ def set_pins_as_outputs(exportpins):
 
 def set_pins_as_inputs(exportpins):
     '''Set all the configured pins as inputs.'''
-    if exportpins:
+    if exportpins and not wiringpi.is_virtual_pins():
         subprocess.check_call([_GPIO_UTILITY_PATH, 'unexportall'])
 
     for i in range(GPIOLEN):
@@ -195,7 +198,8 @@ def set_pin_as_output(i, exportpins):
             # Error! Can't do PWM with gpio pin export
             logging.error("Cannot use gpio pin export with PWM")
         else:
-            subprocess.check_call([_GPIO_UTILITY_PATH, 'export', str(_GPIO_PINS[i]), 'out'])
+            if not wiringpi.is_virtual_pins():
+                subprocess.check_call([_GPIO_UTILITY_PATH, 'export', str(_GPIO_PINS[i]), 'out'])
     else:
         wiringpi.pinMode(_GPIO_PINS[i], _GPIOASOUTPUT)
         if is_pin_pwm(i):
@@ -203,7 +207,7 @@ def set_pin_as_output(i, exportpins):
 
 def set_pin_as_input(i, exportpins):
     '''Set the specified pin as an input.'''
-    if exportpins:
+    if exportpins and not wiringpi.is_virtual_pins():
         subprocess.check_call([_GPIO_UTILITY_PATH, 'export', str(_GPIO_PINS[i]), 'in'])
     else:
         wiringpi.pinMode(_GPIO_PINS[i], _GPIOASINPUT)
