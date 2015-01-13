@@ -59,14 +59,13 @@ decoder.py: decoding mp3, ogg, wma, ...
 numpy: for FFT calculation 
     http://www.numpy.org/
 """
-import sys
-sys.dont_write_bytecode = True
 import argparse
 import atexit
 import logging
 import os
 import random
 import subprocess
+import sys
 import wave
 
 import alsaaudio as aa

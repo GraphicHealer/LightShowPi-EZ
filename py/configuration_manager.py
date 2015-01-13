@@ -18,16 +18,15 @@ manage these configuration files.
 """
 # The home directory and configuration directory for the application.
 
-import sys
-sys.dont_write_bytecode = True
 import ConfigParser
 import ast
 import datetime
 import fcntl
+import json
 import logging
 import os
+import sys
 import warnings
-import json
 
 
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")

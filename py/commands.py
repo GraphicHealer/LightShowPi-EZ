@@ -27,11 +27,10 @@ To install the command, simply instantiate an instance of Command for the comman
 need to define all commands in this file).
 """
 
-import sys
-sys.dont_write_bytecode = True
 import logging
 import re
 import subprocess
+import sys
 
 import configuration_manager as cm
 

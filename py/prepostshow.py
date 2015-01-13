@@ -20,16 +20,14 @@ sudo python prepostshow.py "preshow"
 or
 sudo python prepostshow.py "postshow"
 """
-
-import sys
-sys.dont_write_bytecode = True
+import __builtin__
 import logging
 import os
-import time
-import subprocess
 import signal
+import subprocess
+import sys
 import threading
-import __builtin__
+import time
 
 
 class PrePostShow(object):

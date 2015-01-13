@@ -32,12 +32,11 @@ Beautiful Soup: http://www.crummy.com/software/BeautifulSoup/
 Note, I had to use the following version of pygooglevoice w/auth fix:
 https://code.google.com/r/bwpayne-pygooglevoice-auth-fix/
 """
-import sys
-sys.dont_write_bytecode = True
 
 import argparse
 import commands
 import logging
+import sys
 import time
 
 from bs4 import BeautifulSoup

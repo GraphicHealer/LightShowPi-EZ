@@ -18,13 +18,13 @@ Third party dependencies:
 wiringpi2: python wrapper around wiring pi - https://github.com/WiringPi/WiringPi2-Python
 """
 
-import sys
-sys.dont_write_bytecode = True
 import argparse
 import logging
 import math
 import time
 import subprocess
+import sys
+
 import configuration_manager as cm
 import wiringpi2 as wiringpi
 

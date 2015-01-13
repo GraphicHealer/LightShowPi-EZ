@@ -14,7 +14,6 @@ Third party dependencies:
 numpy: for FFT calculation - http://www.numpy.org/
 """
 import sys
-sys.dont_write_bytecode = True
 
 import numpy as np
 
