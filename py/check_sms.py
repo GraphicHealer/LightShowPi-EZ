@@ -118,70 +118,73 @@ def main():
     Process sms messages
     """
     while True:
-        # Load playlist from file, notifying users of any of their requests that have now played
-        logging.info('loading playlist ' + args.playlist)
-        playlist = cm.songs(args.playlist)
+        try:
+            # Load playlist from file, notifying users of any of their requests that have now played
+            logging.info('loading playlist ' + args.playlist)
+            playlist = cm.songs(args.playlist)
 
-        songs = []
-        for song in playlist:
-            logging.debug(song)
-            if len(song) < 2 or len(song) > 4:
-                logging.warn('Invalid playlist enrty.  Each line should be in the form: ' 
-                             '<song name><tab><path to song>')
-                continue
-            elif len(song) == 2:
-                song.append(set())
-            elif len(song) >= 3:
-                # Votes for the song are stored in the 3rd column
-                song[2] = set(song[2].split(','))
+            songs = []
+            for song in playlist:
+                logging.debug(song)
+                if len(song) < 2 or len(song) > 4:
+                    logging.warn('Invalid playlist enrty.  Each line should be in the form: ' 
+                                '<song name><tab><path to song>')
+                    continue
+                elif len(song) == 2:
+                    song.append(set())
+                elif len(song) >= 3:
+                    # Votes for the song are stored in the 3rd column
+                    song[2] = set(song[2].split(','))
 
-                if len(song) == 4:
-                    # Notification of a song being played is stored in the 4th column
-                    song_played(song)
-                    del song[3]
-                    song[2] = set()
+                    if len(song) == 4:
+                        # Notification of a song being played is stored in the 4th column
+                        song_played(song)
+                        del song[3]
+                        song[2] = set()
 
-            songs.append(song)
-        logging.info('loaded %d songs from playlist', len(songs))
-        cm.set_songs(songs)
+                songs.append(song)
+            logging.info('loaded %d songs from playlist', len(songs))
+            cm.set_songs(songs)
 
-        # Parse and act on any new sms messages
-        messages = VOICE.sms().messages
-        for msg in extract_sms(VOICE.sms.html):
-            logging.debug(str(msg))
-            response = commands.execute(msg['text'], msg['from'])
-            if response:
-                logging.info('Request: "' + msg['text'] + '" from ' + msg['from'])
-                try:
-                    if isinstance(response, basestring):
-                        VOICE.send_sms(msg['from'], response)
-                    else:
-                        # Multiple parts, send them with a delay in hopes to avoid
-                        # them being received out of order by the recipient.
-                        for part in response:
-                            VOICE.send_sms(msg['from'], str(part))
-                            time.sleep(2)
-                except:
-                    logging.warn('Error sending sms response (command still executed)', exc_info=1)
-                logging.info('Response: "' + str(response) + '"')
-            else:
-                logging.info('Unknown request: "' + msg['text'] + '" from ' + msg['from'])
-                VOICE.send_sms(msg['from'], unknown_command_response)
+            # Parse and act on any new sms messages
+            messages = VOICE.sms().messages
+            for msg in extract_sms(VOICE.sms.html):
+                logging.debug(str(msg))
+                response = commands.execute(msg['text'], msg['from'])
+                if response:
+                    logging.info('Request: "' + msg['text'] + '" from ' + msg['from'])
+                    try:
+                        if isinstance(response, basestring):
+                            VOICE.send_sms(msg['from'], response)
+                        else:
+                            # Multiple parts, send them with a delay in hopes to avoid
+                            # them being received out of order by the recipient.
+                            for part in response:
+                                VOICE.send_sms(msg['from'], str(part))
+                                time.sleep(2)
+                    except:
+                        logging.warn('Error sending sms response (command still executed)', exc_info=1)
+                    logging.info('Response: "' + str(response) + '"')
+                else:
+                    logging.info('Unknown request: "' + msg['text'] + '" from ' + msg['from'])
+                    VOICE.send_sms(msg['from'], unknown_command_response)
 
-        # Update playlist with latest votes
-        for song in songs:
-            if len(song[2]) > 0:
-                song[2] = ",".join(song[2])
-            else:
-                del song[2]
+            # Update playlist with latest votes
+            for song in songs:
+                if len(song[2]) > 0:
+                    song[2] = ",".join(song[2])
+                else:
+                    del song[2]
 
-        cm.update_songs(args.playlist, songs)
+            cm.update_songs(args.playlist, songs)
 
-        # Delete all messages now that we've processed them
-        for msg in messages:
-            msg.delete(1)
+            # Delete all messages now that we've processed them
+            for msg in messages:
+                msg.delete(1)
 
-        time.sleep(15)
+            time.sleep(15)
+        except:
+            pass
 
 if __name__ == "__main__":
     # parse command line arguments
