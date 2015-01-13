@@ -5,6 +5,7 @@
 #
 # Author: Todd Giles (todd@lightshowpi.com)
 # Author: Chris Usey (chris.usey@gmail.com)
+# Author: Tom Enos
 """
 Preshow and Postshow functionality for the lightshows.
 
@@ -20,17 +21,20 @@ or
 sudo python prepostshow.py "postshow"
 """
 
+import sys
+sys.dont_write_bytecode = True
 import logging
-import multiprocessing
 import os
 import time
 import subprocess
 import signal
-import sys
+import threading
+import __builtin__
+
 
 class PrePostShow(object):
     """
-    The PreshowPostshow class handles all pre-show and post-show logic
+    The PresPostShow class handles all pre-show and post-show logic
 
     Typical usage to simply play the default configured preshow_configuration:
     or postshow_configuration:
@@ -46,7 +50,9 @@ class PrePostShow(object):
         else:
             self.hc = __import__('hardware_controller')
             self.hc.initialize()
-        self.config = self.hc.cm.lightshow()[show]
+
+        self.cm = self.hc.cm
+        self.config = self.cm.lightshow()[show]
         self.show = show
         self.audio = None
 
@@ -57,12 +63,12 @@ class PrePostShow(object):
         Check the state file to see if play now requested
         """
         # refresh state
-        self.hc.cm.load_state()
-        if int(self.hc.cm.get_state('play_now', 0)):
+        self.cm.load_state()
+        if int(self.cm.get_state('play_now', 0)):
             # play now requested!
             return True
         return False
-
+    
     def set_config(self, config):
         """Set a new configuration to use for the preshow"""
         self.config = config
@@ -76,14 +82,14 @@ class PrePostShow(object):
         show was interrupted by a play now command.
         """
         # Is there a show to launch?
-        if self.config == None:
+        if self.config is None:
             return PrePostShow.done
         
         # Is the config a script or a transition based show
         # launch the script if it is
         if not isinstance(self.config, dict) and os.path.exists(self.config):
-            logging.debug("Launching external script " + self.config + " as " \
-                + self.show)
+            logging.debug("Launching external script " + self.config + " as "
+                          + self.show)
             return self.start_script()
 
         # start the audio if there is any
@@ -98,8 +104,8 @@ class PrePostShow(object):
                         self.hc.turn_on_lights(True)
                     else:
                         self.hc.turn_off_lights(True)
-                    logging.debug('Transition to ' + transition['type'] + ' for ' \
-                        + str(transition['duration']) + ' seconds')
+                    logging.debug('Transition to ' + transition['type'] + ' for '
+                                  + str(transition['duration']) + ' seconds')
 
                     if 'channel_control' in transition:
                         channel_control = transition['channel_control']
@@ -113,8 +119,8 @@ class PrePostShow(object):
                                     self.hc.turn_off_light(int(channel) - 1, 1)
                                 else:
                                     logging.error("Unrecognized channel_control mode "
-                                                "defined in preshow_configuration " \
-                                                    + str(mode))
+                                                  "defined in preshow_configuration "
+                                                  + str(mode))
                     # hold transition for specified time
                     while transition['duration'] > (time.time() - start):
                         # check for play now
@@ -136,7 +142,7 @@ class PrePostShow(object):
 
     def start_audio(self):
         """Start audio plaback if there is any"""
-        if "audio_file" in self.config and self.config['audio_file'] != None:
+        if "audio_file" in self.config and self.config['audio_file'] is not None:
             audio_file = self.config['audio_file']
             self.audio = subprocess.Popen(["mpg123", "-q", audio_file])
             logging.debug("Starting " + self.show + " audio file " + self.config['audio_file'])
@@ -144,7 +150,7 @@ class PrePostShow(object):
     def hold_for_audio(self):
         """hold show until audio has finished"""
         if self.audio:
-            while self.audio.poll() == None:
+            while self.audio.poll() is None:
                 # check for play now
                 if self.check_state():
                     # kill the audio playback if playing
@@ -164,17 +170,18 @@ class PrePostShow(object):
 
         # insert script location into path
         sys.path.insert(0, os.path.split(self.config)[0])
-
-        # import custom script
-        test = __import__(os.path.basename(os.path.splitext(self.config)[0]))
- 
-        # run the scripts main method in a new thread 
-        event = multiprocessing.Event()
-        test_t = multiprocessing.Process(target=test.main, args = (self.hc, event,))
-        test_t.daemon = True
-        test_t.start()
+        __builtin__.hc = self.hc
         
-        while test_t.is_alive():
+        # import custom script
+        script = __import__(os.path.basename(os.path.splitext(self.config)[0]))
+ 
+        # run the scripts main method 
+        exit_event = threading.Event()
+        script_thread = threading.Thread(target=script.main, args=(exit_event,))
+        script_thread.setDaemon(True)
+        script_thread.start()
+        
+        while script_thread.is_alive():
             if self.check_state():
                 # Skip out on the rest of the show if play now requested!
                 exit_event.set()
@@ -186,9 +193,6 @@ class PrePostShow(object):
 
         # restore path
         sys.path[:] = path
-
-        # insure clean up just in case the user forgot to do it
-        self.hc.turn_off_lights()
 
         return return_value
 
