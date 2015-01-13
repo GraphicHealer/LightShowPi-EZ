@@ -15,4 +15,3 @@ fi
 
 $SYNCHRONIZED_LIGHTS_HOME/bin/stop_music_and_lights
 $SYNCHRONIZED_LIGHTS_HOME/bin/play_sms &
-$SYNCHRONIZED_LIGHTS_HOME/bin/check_sms &

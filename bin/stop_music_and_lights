@@ -14,10 +14,11 @@ if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
 fi 
 
 sudo killall play_sms
-sudo killall check_sms
 sudo killall play
 sudo killall python
 sudo killall pifm
+sudo killall mpg123
+sudo killall lame
 
 # Turn off lights and set back to inputs
 sudo python $SYNCHRONIZED_LIGHTS_HOME/py/hardware_controller.py --state=cleanup

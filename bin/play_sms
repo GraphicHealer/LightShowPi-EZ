@@ -15,10 +15,10 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
     cat $DIR/env_error_msg
     exit 1
-fi 
+fi
+
+sudo python $SYNCHRONIZED_LIGHTS_HOME/py/check_sms.py &
 
 while true; do
   sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py
 done
-
-$SYNCHRONIZED_LIGHTS_HOME/bin/lights_off
