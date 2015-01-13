@@ -307,10 +307,6 @@ def next_song():
             logging.info("Most Votes: " + str(most_votes))
             current_song = most_votes
 
-            # Update playlist with latest votes
-            #with open(args.playlist, 'wb') as playlist_fp:
-                #fcntl.lockf(playlist_fp, fcntl.LOCK_EX)
-                #writer = csv.writer(playlist_fp, delimiter='\t')
             for song in songs:
                 if current_song == song and len(song) == 3:
                     song.append("playing!")
@@ -319,8 +315,6 @@ def next_song():
                 else:
                     del song[2]
             cm.update_songs(args.playlist, songs)
-                #writer.writerows(songs)
-                #fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
         else:
             # Get a "play now" requested song
             if 0 < play_now <= len(songs):

@@ -122,12 +122,11 @@ def main():
             # Load playlist from file, notifying users of any of their requests that have now played
             logging.info('loading playlist ' + args.playlist)
             playlist = cm.songs(args.playlist)
-
             songs = []
             for song in playlist:
                 logging.debug(song)
                 if len(song) < 2 or len(song) > 4:
-                    logging.warn('Invalid playlist enrty.  Each line should be in the form: ' 
+                    logging.warn('Invalid playlist entry.  Each line should be in the form: ' 
                                 '<song name><tab><path to song>')
                     continue
                 elif len(song) == 2:

@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
 # http://www.lightshowpi.com/

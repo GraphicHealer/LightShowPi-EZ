@@ -184,16 +184,7 @@ def turn_off_lights(use_always_onoff=0):
     :param use_always_onoff: int or boolean, should always on/off be used
     """
     for pin in range(GPIOLEN):
-        if is_pin_pwm[pin]:
-            # No overrides available for pwm mode pins
-            turn_off_light(pin, use_always_onoff)
-            continue
-
-        if use_always_onoff:
-            if pin + 1 not in lightshow_config['always_on_channels']:
-                wiringpi.digitalWrite(GPIO_PINS[pin], GPIOINACTIVE)
-        else:
-            wiringpi.digitalWrite(GPIO_PINS[pin], GPIOINACTIVE)
+        turn_off_light(pin, use_always_onoff)
 
 
 def turn_off_light(pin, use_overrides=0):
@@ -206,8 +197,7 @@ def turn_off_light(pin, use_overrides=0):
     """
     if use_overrides:
         if is_pin_pwm[pin]:
-            # No overrides available for pwm mode pins
-            turn_on_light(pin, use_overrides, 0, False)
+            turn_on_light(pin, use_overrides, 0)
         else:
             if pin + 1 not in lightshow_config['always_on_channels']:
                 if pin + 1 not in lightshow_config['invert_channels']:
@@ -231,7 +221,7 @@ def turn_on_lights(use_always_onoff=0):
    """
     for pin in range(GPIOLEN):
         if is_pin_pwm[pin]:
-            turn_on_light(pin, use_always_onoff, 1.0, False)
+            turn_on_light(pin, use_always_onoff, 1.0)
             continue
         if use_always_onoff:
             if pin + 1 not in lightshow_config['always_off_channels']:
@@ -240,7 +230,7 @@ def turn_on_lights(use_always_onoff=0):
             wiringpi.digitalWrite(GPIO_PINS[pin], GPIOACTIVE)
 
 
-def turn_on_light(pin, use_overrides=0, brightness=1.0, use_invert=True):
+def turn_on_light(pin, use_overrides=0, brightness=1.0):
     """
     Turn on the specified light
 
@@ -248,7 +238,6 @@ def turn_on_light(pin, use_overrides=0, brightness=1.0, use_invert=True):
     :param pin: int, index of pin in GPIO_PINS
     :param use_overrides: int or boolean, should overrides be used
     :param brightness: float, a float representing the brightness of the lights
-    :param use_invert: boolean, should inverted channels be used in pwm mode
     """
     if is_pin_pwm[pin]:
         if math.isnan(brightness):
@@ -264,7 +253,7 @@ def turn_on_light(pin, use_overrides=0, brightness=1.0, use_invert=True):
                 brightness = 0
             elif pin + 1 in lightshow_config['always_on_channels']:
                 brightness = 1
-            if pin + 1 in lightshow_config['invert_channels'] and use_invert:
+            if pin + 1 in lightshow_config['invert_channels']:
                 brightness = 1 - brightness
         wiringpi.softPwmWrite(GPIO_PINS[pin], int(brightness * PWM_MAX))
         return

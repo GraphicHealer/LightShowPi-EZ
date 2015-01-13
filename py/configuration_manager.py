@@ -285,11 +285,13 @@ def songs(playlist_file=None):
             fcntl.lockf(playlist_fp, fcntl.LOCK_SH)
             playlist = []
             for song in playlist_fp.readlines():
-                if len(song) < 2 or len(song) > 4:
+                song = song.strip().split('\t')
+                if not 2 <= len(song) <= 4:
+                    
                     logging.warn('Invalid playlist enrty.  Each line should be in the form: '
                                  '<song name><tab><path to song>')
                     continue
-                playlist.append(song.strip().split('\t'))
+                playlist.append(song)
             fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
         set_songs(playlist)
     return _SONG_LIST
