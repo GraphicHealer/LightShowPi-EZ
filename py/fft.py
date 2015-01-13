@@ -1,10 +1,11 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
 # http://www.lightshowpi.com/
 #
 # Author: Todd Giles (todd@lightshowpi.com)
-"""FFT methods for computing / analyzing frequency response of audio.
+"""
+FFT methods for computing / analyzing frequency response of audio.
 
 These are simply wrappers around FFT support of numpy.
 
@@ -12,19 +13,42 @@ Third party dependencies:
 
 numpy: for FFT calculation - http://www.numpy.org/
 """
+import sys
+sys.dont_write_bytecode = True
 
 import numpy as np
 
-# disable the RuntimeWarning: divide by zero encountered message 
+# Disable the RuntimeWarning: divide by zero encountered message
+# This only suppresses the message.  The error is caused by all
+# zeros in the data, since it only happens at the begging or end
+# of the audio file, it is quicker to ignore the error then to
+# test if the array is full of zeros.
 np.seterr(divide='ignore')
 
+
 def piff(val, chunk_size, sample_rate):
-    """Return the power array index corresponding to a particular frequency."""
+    """
+    Return the power array index corresponding to a particular frequency.
+
+    :rtype : int, power array index corresponding to a particular frequency
+    :param val: float, frequency limit
+    :param chunk_size: int, chunk size of audio data
+    :param sample_rate: int, audio file sample rate
+    """
     return int(chunk_size * val / sample_rate)
+
 
 def calculate_levels(data, chunk_size, sample_rate, frequency_limits, gpiolen, channels=2):
     """
     Calculate frequency response for each channel defined in frequency_limits
+
+    :rtype : numpy.array(), frequency limits for channels
+    :param data: decoder.frames(), audio data for fft calculations
+    :param chunk_size: int, chunk size of audio data
+    :param sample_rate: int, audio file sample rate
+    :param frequency_limits: list, list of frequency_limits
+    :param gpiolen: int, length of gpio to process
+    :param channels: int, number of audio channels to process for
 
     Initial FFT code inspired from the code posted here:
     http://www.raspberrypi.org/phpBB3/viewtopic.php?t=35838&p=454041
@@ -59,13 +83,11 @@ def calculate_levels(data, chunk_size, sample_rate, frequency_limits, gpiolen, c
     # Calculate the power spectrum
     power = np.abs(fourier) ** 2
 
-    matrix = np.zeros(gpiolen)
-    for i in range(gpiolen):
+    matrix = np.zeros(gpiolen, dtype='float64')
+    for pin in range(gpiolen):
         # take the log10 of the resulting sum to approximate how human ears 
         # perceive sound levels
-        matrix[i] = np.log10(np.sum(power[piff(frequency_limits[i][0], 
-                                               chunk_size, sample_rate)
-                                          :piff(frequency_limits[i][1], 
-                                                chunk_size, sample_rate):1]))
-
+        matrix[pin] = np.log10(np.sum(power[
+                                      piff(frequency_limits[pin][0], chunk_size, sample_rate):piff(
+                                          frequency_limits[pin][1], chunk_size, sample_rate):1]))
     return matrix
