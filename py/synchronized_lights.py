@@ -740,11 +740,6 @@ if __name__ == "__main__":
                                ' - %(message)s',
                         level=level)
 
-    # Check if we are generating sync file(s) or playing a show
-    if args.createcache:
-        create_cache(args.file or args.playlist)
-        sys.exit(0)
-
     # Begin audio playback
     if _MODE == 'audio-in':
         audio_in()
@@ -753,4 +748,10 @@ if __name__ == "__main__":
         if args.file is None and args.playlist is None:
             print "One of --playlist or --file must be specified"
             sys.exit()
+
+        # Check if we are generating sync file(s) or playing a show
+        if args.createcache:
+            create_cache(args.file or args.playlist)
+            sys.exit(0)
+
         play_song()
