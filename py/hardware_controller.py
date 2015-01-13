@@ -46,7 +46,7 @@ GPIOASINPUT = 0
 GPIOASOUTPUT = 1
 
 
-# quicker then using a function and a list index to check is the pin is in pwm mode
+# quicker then using a function and a list index to check if the pin is in pwm mode
 is_pin_pwm = list()
 for mode in range(len(PIN_MODES)):
     if PIN_MODES[mode] == "pwm":
