@@ -12,14 +12,9 @@ Lets start with a basic template that you will need to follow
 
 [code]
 
-import atexit
 import time
 
-def end(hc):
-    hc.turn_off_lights()
-
-def main(hc, exit_event):
-    atexit.register(end, hc)
+def main(exit_event):
 
     lights = hc._GPIO_PINS
     
@@ -30,43 +25,28 @@ def main(hc, exit_event):
         if exit_event.is_set():
             break
 
-if __name__ == "__main__":
-    main()
-
 [/code]
 
 First import your modules.
-
-The atexit module is need, it's a handy way for us to make sure that
-every thing that we need to do at the end of the script happens
-even if we press <CTRL>+C it will still do everything we need done to
-make the script end cleanly, like turn the lights off, or kill a subprocess
+NOTE: You do not need to import the hardware_controller module,
+      it has been made avaliable as a global variable in the prepostshow script
+      that calls this.
+      Also note that because of this your script will not run by it self.
+      you will need to run it through prepostshow.
 
 The time module is not strictly needed but it comes in handy
 
-def end(hc):
-    hc.turn_off_lights()
-
-The above code is use to clean up everything after your script ends.  Anything 
-you want to happen as the script ends you do here.  With the use of the atexit module
-it will be done no matter what, even if an error happens this function will still be called.
-So don't forget to include it.
-
 You need to place most of your code in the main() function inside a loop of some kind.
 
-For the pre or post show to call your main function you need to include some parameters
-in the function definition.  hc and exit_event making your definition look like the below example
+For the pre or post show to call your main function you need to include one parameter
+in the function definition.  exit_event to make your definition look like the below example
 
-def main(hc, exit_event):
+def main(exit_event):
 
-hc is the hardware controller and it is need if you want to do anything with your lights
-and exit_event is used to end your script if a play now request comes in.
-Both must be included or your script will not work
-
-atexit.register(end, hc)
-The above line needs to be in you main function, either as the first line or
-just before the working loop, this line tells the script what to do when it ends.
-So if you want everything to work right after you script finishes make sure to include it before the loop.
+exit_event is used to end your script if a play now request comes in.
+It must be included or your script will not work, but you do not have to use it
+if you don't want to.  It just means that the script will have to finish before
+it exits.
 
 Then I think it's a good idea to assign the list of gpio pins to an easy to remember
 variable name, but _GPIO_PINS in hardware_controller is the same list,
@@ -134,23 +114,24 @@ a bad <exit condition> will cause the loop not to run or trap you in an infinite
 This is used by the pre/post shows to exit your script if a play now request happens
 include this in the working loop, either at the top or bottom, it dosen't matter,
 as long as it is in there.
+
 if exit_event.is_set():
     break
             
-After your loop finishes it will automaticaly clean up after it self as long as
-you included the end() function and atexit.register.
+After your loop finishes it you will want to turn off all the lights.
 
+hc.turn_off_lights()
 
 These are the functions that you can use from the hardware_controller module
 
-turn_on_light()
+turn_on_light(light)
     this will turn on one light, you need to pass in the the gpio pin number
     if your gpio pins are set to onoff instead of pwm and you have allways_on
     allways_off channels set in your config files you can add an argument to 
     enforce these settings
     hc.turn_on_light(pin#, useoverrides=0)
 
-turn_off_light()
+turn_off_light(light)
     the oppisite of turn_on_light()
     hc.turn_off_light(pin#, useoverrides=0)
 
@@ -163,6 +144,13 @@ turn_on_lights()
 turn_off_lights()
     the oppisite of turn_off_lights()
     turn_off_lights(usealwaysonoff=0)
+    
+is_pin_pwm[pin]
+    check if a pin is in pwm mode.
+    NOTE: this is not a function, it is a list make sure you use [] and not ()
+
+There are a few other functions in hardware_controller but there is no need for
+them to be used here.  
 
 You can use any combination of the above to create anything you wish
 

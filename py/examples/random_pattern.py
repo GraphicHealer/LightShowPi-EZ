@@ -3,24 +3,15 @@
 import time
 import random
 
-# this module is needed so that we may exit this script 
-# and clean up after out script ends
-import atexit
-
-# this is where we do the cleanup and end everything.
-def end(hc):
-    hc.turn_off_lights()
-
-# hc and exit_event are passed in the pre/post show script so that you
-# have access to the hardware controller, and an exit_event generated
-# by the pre/post show script. Do not forget to include then as if you
-# do not your script will not work
-def main(hc, exit_event):
+# exit_event is passed in from the pre/post show script as is required
+# if an exit_event is generated the pre/post show script can terminate the script 
+# Do not forget to include it, if you do not sms commands will not be able
+# to end the script and you will have to wait for it to finish
+def main(exit_event):
     """
     Random flashing lights
     """
     # required to cleanup all processes
-    atexit.register(end, hc)
 
     # this is a list of all the channels you have access to
     # I'm also tracking the time here so that I know when I turned a light off
@@ -32,10 +23,6 @@ def main(hc, exit_event):
     # this will be use to make sure that no more then 40% of
     # the light will be off at any one time
     max_off = int(round(len(lights) * .4))
-
-    # initialize your hardware for use
-    hc.initialize()
-    print "Press <CTRL>-C to stop"
 
     # start with all the lights on
     hc.turn_on_lights()
@@ -81,5 +68,5 @@ def main(hc, exit_event):
         if exit_event.is_set():
             break
 
-if __name__ == "__main__":
-    main()
+    # lets make sure we turn off the lights before we go back to the show
+    hc.turn_off_lights()

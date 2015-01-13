@@ -1,9 +1,5 @@
 """simple script to play a message in the lightshow"""
 
-# this module is needed so that we may exit this script 
-# and clean up after out script ends
-import atexit
-
 # import the subprocess module so that
 # we can play some audio in a seperate process
 # which will allow us to manipulate the lights at the same time
@@ -12,21 +8,11 @@ import atexit
 import subprocess
 import os
 
-# this is where we do the cleanup and end everything.
-# if you start any subprocess you need to modify the os.killpg line
-# or use your_process.terminate()
-# to match the name of the subprocess you statred and add a reference 
-# to the function header.  you will also need to do the same thing
-# to atexit.register in the main function
-def end(hc, message):
-    hc.turn_off_lights()
-    os.killpg(message.pid, signal.SIGTERM)
-
-# hc and exit_event are passed in the pre/post show script so that you
-# have access to the hardware controller, and an exit_event generated
-# by the pre/post show script. Do not forget to include then as if you
-# do not your script will not work
-def main(hc, exit_event):
+# exit_event is passed in from the pre/post show script as is required
+# if an exit_event is generated the pre/post show script can terminate the script 
+# Do not forget to include it, if you do not sms commands will not be able
+# to end the script and you will have to wait for it to finish
+def main(exit_event):
     """
     Play a message
 
@@ -59,9 +45,6 @@ def main(hc, exit_event):
     # if it has finished, then you might start something else or end everything
     # and shutdown your pi.
 
-    # required to cleanup all processes
-    atexit.register(end, hc, message)
-
     # lights are on while audio is playing
     hc.turn_on_lights()
 
@@ -70,15 +53,12 @@ def main(hc, exit_event):
         # this is required so that an sms play now command will 
         # end your script and any subprocess you have statred
         if exit_event.is_set():
+            os.killpg(message.pid, signal.SIGTERM)
             break
 
         # if audio playback has finished break out of the loop
         if message.poll() != None:
             break
 
-if __name__ == "__main__":
-    main()
-
-
-
-
+    # lets make sure we turn off the lights before we go back to the show
+    hc.turn_off_lights()

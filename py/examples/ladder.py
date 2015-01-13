@@ -2,19 +2,11 @@
 
 import time
 
-# this module is needed so that we may exit this script 
-# and clean up after out script ends
-import atexit
-
-# this is where we do the cleanup and end everything.
-def end(hc):
-    hc.turn_off_lights()
-
-# hc and exit_event are passed in the pre/post show script so that you
-# have access to the hardware controller, and an exit_event generated
-# by the pre/post show script. Do not forget to include then as if you
-# do not your script will not work
-def main(hc, exit_event):
+# exit_event is passed in from the pre/post show script as is required
+# if an exit_event is generated the pre/post show script can terminate the script 
+# Do not forget to include it, if you do not sms commands will not be able
+# to end the script and you will have to wait for it to finish
+def main(exit_event):
     """
     ladder
 
@@ -22,11 +14,8 @@ def main(hc, exit_event):
     Then backs down to the first
     Then repeat everything 20 times
     """
-    # required to cleanup all processes
-    atexit.register(end, hc)
-
     # this is a list of all the channels you have access to
-    lights = hc._GPIO_PINS
+    lights = hc.GPIO_PINS
 
     # start with all the lights off
     hc.turn_off_lights()
@@ -43,14 +32,14 @@ def main(hc, exit_event):
             hc.turn_off_lights()
 
             # then turn on one
-            hc.turn_on_light(lights[light])
+            hc.turn_on_light(light)
 
             # wait a little bit
             time.sleep(.04)
 
         # to make the transition back smoother we handle the last pin here
         hc.turn_off_lights()
-        hc.turn_on_light(lights[light + 1])
+        hc.turn_on_light(light + 1)
 
         # this loop walks it back the other way
         for light in range(len(lights)-1, 0, -1):
@@ -58,19 +47,19 @@ def main(hc, exit_event):
             hc.turn_off_lights()
 
             # then turn on one
-            hc.turn_on_light(lights[light])
+            hc.turn_on_light(light)
 
             # wait a little bit
             time.sleep(.04)
 
         # again to make it smoother handle the first pin like the last pin
         hc.turn_off_lights()
-        hc.turn_on_light(lights[light - 1])
+        hc.turn_on_light(light - 1)
 
         # this is required so that an sms play now command will 
         # end your script and any subprocess you have statred
         if exit_event.is_set():
             break
 
-if __name__ == "__main__":
-    main()
+    # lets make sure we turn off the lights before we go back to the show
+    hc.turn_off_lights()
