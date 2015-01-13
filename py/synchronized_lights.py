@@ -727,11 +727,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Make sure one of --playlist or --file was specified
-    if args.file is None and args.playlist is None:
-        print "One of --playlist or --file must be specified"
-        sys.exit()
-
     # Log to our log file at the specified level
     levels = {'DEBUG': logging.DEBUG,
               'INFO': logging.INFO,
@@ -754,4 +749,8 @@ if __name__ == "__main__":
     if _MODE == 'audio-in':
         audio_in()
     else:
+        # Make sure one of --playlist or --file was specified
+        if args.file is None and args.playlist is None:
+            print "One of --playlist or --file must be specified"
+            sys.exit()
         play_song()
