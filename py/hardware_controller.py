@@ -220,15 +220,7 @@ def turn_on_lights(use_always_onoff=0):
     :param use_always_onoff: int or boolean, should always on/off be used
    """
     for pin in range(GPIOLEN):
-        if is_pin_pwm[pin]:
-            turn_on_light(pin, use_always_onoff, 1.0)
-            continue
-        if use_always_onoff:
-            if pin + 1 not in lightshow_config['always_off_channels']:
-                wiringpi.digitalWrite(GPIO_PINS[pin], GPIOACTIVE)
-        else:
-            wiringpi.digitalWrite(GPIO_PINS[pin], GPIOACTIVE)
-
+        turn_on_light(pin, use_always_onoff)
 
 def turn_on_light(pin, use_overrides=0, brightness=1.0):
     """
