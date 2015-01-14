@@ -268,21 +268,26 @@ def clean_up():
     """
     turn_off_lights()
     set_pins_as_inputs()
-
+    if EXPORT_PINS:
+        subprocess.check_call([_GPIO_UTILITY_PATH, 'unexportall'])
 
 def initialize():
     """Set pins as outputs, and start all lights in the off state."""
     if EXPORT_PINS:
-        wiringpi.wiringPiSetupSys()
         logging.info("Running as non root user, disabling pwm mode on all pin")
+        subprocess.check_call([_GPIO_UTILITY_PATH, 'load', 'spi', '8'])
         for pin in range(GPIOLEN):
             PIN_MODES[pin] = "onoff"
             is_pin_pwm[pin] = False
+        enable_device()
+        set_pins_as_outputs()
+        wiringpi.wiringPiSetupSys()
     else:
         wiringpi.wiringPiSetup()
 
-    enable_device()
-    set_pins_as_outputs()
+        enable_device()
+        set_pins_as_outputs()
+        
     turn_off_lights()
 
 
