@@ -222,6 +222,7 @@ def turn_on_lights(use_always_onoff=0):
     for pin in range(GPIOLEN):
         turn_on_light(pin, use_always_onoff)
 
+
 def turn_on_light(pin, use_overrides=0, brightness=1.0):
     """
     Turn on the specified light
@@ -270,6 +271,7 @@ def clean_up():
     set_pins_as_inputs()
     if EXPORT_PINS:
         subprocess.check_call([_GPIO_UTILITY_PATH, 'unexportall'])
+
 
 def initialize():
     """Set pins as outputs, and start all lights in the off state."""

@@ -126,7 +126,7 @@ def main():
                 logging.debug(song)
                 if len(song) < 2 or len(song) > 4:
                     logging.warn('Invalid playlist entry.  Each line should be in the form: ' 
-                                '<song name><tab><path to song>')
+                                 '<song name><tab><path to song>')
                     continue
                 elif len(song) == 2:
                     song.append(set())
@@ -161,7 +161,8 @@ def main():
                                 VOICE.send_sms(msg['from'], str(part))
                                 time.sleep(2)
                     except:
-                        logging.warn('Error sending sms response (command still executed)', exc_info=1)
+                        logging.warn('Error sending sms response (command still executed)',
+                                     exc_info=1)
                     logging.info('Response: "' + str(response) + '"')
                 else:
                     logging.info('Unknown request: "' + msg['text'] + '" from ' + msg['from'])
