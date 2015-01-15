@@ -61,13 +61,27 @@ def hardware():
     if len(hardware_config) == 0:
         for key, value in CONFIG.items('hardware'):
             hardware_config[key] = value
-        hardware_config['gpio_pins'] = [int(pin) for pin in hardware_config['gpio_pins'].split(',')]
+
+        hardware_config['gpio_pins'] = \
+            [int(pin) for pin in hardware_config['gpio_pins'].split(',')]
+
         hardware_config['active_low_mode'] = CONFIG.getboolean('hardware', 'active_low_mode')
-        hardware_config['pin_modes'] = hardware_config['pin_modes'].split(',')
         hardware_config['gpiolen'] = len(hardware_config['gpio_pins'])
+
+        hardware_config['pin_modes'] = hardware_config['pin_modes'].split(',')
         if len(hardware_config['pin_modes']) == 1:
             hardware_config['pin_modes'] = \
                 [hardware_config['pin_modes'][0] for _ in range(hardware_config['gpiolen'])]
+        else:
+            if len(hardware_config['pin_modes']) < hardware_config['gpiolen']:
+                length_to_extend = hardware_config['gpiolen'] - len(hardware_config['pin_modes'])
+                hardware_config['pin_modes'].extend(['onoff' for _ in range(length_to_extend)])
+                logging.warn("not enough pins specified, extending list")
+            elif len(hardware_config['pin_modes']) > hardware_config['gpiolen']:
+                hardware_config['pin_modes'] = \
+                    hardware_config['pin_modes'][:hardware_config['gpiolen']]
+                logging.warn("to many pins, truncing list")
+        
         hardware_config['pwm_range'] = int(hardware_config['pwm_range'])
         hardware_config['export_pins'] = CONFIG.getboolean('hardware', 'export_pins')
         
@@ -76,10 +90,10 @@ def hardware():
 
         try:
             devices = json.loads(hardware_config['devices'])
-        except Exception as e:
-            logging.error("devices not defined or not in JSON format." + str(e))
+        except (ValueError, TypeError) as error:
+            logging.error("devices not defined or not in JSON format." + str(error))
 
-        hardware_config["devices"] = devices
+        hardware_config['devices'] = devices
         
     return hardware_config
 
@@ -95,17 +109,24 @@ def lightshow():
     if len(lightshow_config) == 0:
         for key, value in CONFIG.items('lightshow'):
             lightshow_config[key] = value
+            
         lightshow_config['audio_in_channels'] = CONFIG.getint('lightshow', 'audio_in_channels')
+        
         lightshow_config['audio_in_sample_rate'] = \
             CONFIG.getint('lightshow', 'audio_in_sample_rate')
+        
         lightshow_config['always_on_channels'] = \
             [int(channel) for channel in lightshow_config['always_on_channels'].split(',')]
+        
         lightshow_config['always_off_channels'] = \
             [int(channel) for channel in lightshow_config['always_off_channels'].split(',')]
+        
         lightshow_config['invert_channels'] = \
             [int(channel) for channel in lightshow_config['invert_channels'].split(',')]
+        
         lightshow_config['playlist_path'] = \
             lightshow_config['playlist_path'].replace('$SYNCHRONIZED_LIGHTS_HOME', HOME_DIR)
+        
         lightshow_config['randomize_playlist'] = \
             CONFIG.getboolean('lightshow', 'randomize_playlist')
 
@@ -114,7 +135,7 @@ def lightshow():
         if lightshow_config['preshow_configuration'] and not lightshow_config['preshow_script']:
             try:
                 preshow = json.loads(lightshow_config['preshow_configuration'])
-            except Exception as e:
+            except (ValueError, TypeError) as e:
                 logging.error("Preshow_configuration not defined or not in JSON format." + str(e))
         else:
             if os.path.isfile(lightshow_config['preshow_script']):
@@ -127,7 +148,7 @@ def lightshow():
         if lightshow_config['postshow_configuration'] and not lightshow_config['postshow_script']:
             try:
                 postshow = json.loads(lightshow_config['postshow_configuration'])
-            except Exception as e:
+            except (ValueError, TypeError) as e:
                 logging.error("Postshow_configuration not defined or not in JSON format." + str(e))
         else:
             if os.path.isfile(lightshow_config['postshow_script']):
@@ -149,21 +170,29 @@ def audio_processing():
     if len(audio_config) == 0:
         for key, value in CONFIG.items('audio_processing'):
             audio_config[key] = value
+
         audio_config['min_frequency'] = float(audio_config['min_frequency'])
         audio_config['max_frequency'] = float(audio_config['max_frequency'])
+
         if audio_config['custom_channel_mapping']:
             audio_config['custom_channel_mapping'] = \
                 [int(channel) for channel in audio_config['custom_channel_mapping'].split(',')]
         else:
             audio_config['custom_channel_mapping'] = 0
+
         if audio_config['custom_channel_frequencies']:
             audio_config['custom_channel_frequencies'] = \
                 [int(channel) for channel in audio_config['custom_channel_frequencies'].split(',')]
         else:
             audio_config['custom_channel_frequencies'] = 0
+
         audio_config['fm'] = CONFIG.getboolean('audio_processing', 'fm')
-        audio_config['chunk_size'] = int(audio_config['chunk_size'])
         
+        audio_config['chunk_size'] = int(audio_config['chunk_size'])
+        if audio_config['chunk_size'] % 8 != 0:
+            audio_config['chunk_size'] = 2048
+            logging.warn('chunk_size must be a multiple of 8, defaulting to 2048')
+
     return audio_config
 
 
@@ -286,13 +315,13 @@ def songs(playlist_file=None):
             for song in playlist_fp.readlines():
                 song = song.strip().split('\t')
                 if not 2 <= len(song) <= 4:
-                    
                     logging.warn('Invalid playlist enrty.  Each line should be in the form: '
                                  '<song name><tab><path to song>')
                     continue
                 playlist.append(song)
             fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
         set_songs(playlist)
+
     return _SONG_LIST
 
 
@@ -307,6 +336,7 @@ def update_songs(playlist_file, playlist):
         fcntl.lockf(playlist_fp, fcntl.LOCK_EX)
         for song in playlist:
             playlist_fp.write('\t'.join(song) + "\r\n")
+        fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
     set_songs(playlist)
 
 
