@@ -277,7 +277,6 @@ def initialize():
     """Set pins as outputs, and start all lights in the off state."""
     if EXPORT_PINS:
         logging.info("Running as non root user, disabling pwm mode on all pin")
-        subprocess.check_call([_GPIO_UTILITY_PATH, 'load', 'spi', '8'])
         for pin in range(GPIOLEN):
             PIN_MODES[pin] = "onoff"
             is_pin_pwm[pin] = False
