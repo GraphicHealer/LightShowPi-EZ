@@ -197,7 +197,7 @@ def turn_off_light(pin, use_overrides=0):
     """
     if use_overrides:
         if is_pin_pwm[pin]:
-            turn_on_light(pin, use_overrides, 0)
+            turn_on_light(pin, use_overrides, PWM_OFF)
         else:
             if pin + 1 not in lightshow_config['always_on_channels']:
                 if pin + 1 not in lightshow_config['invert_channels']:
