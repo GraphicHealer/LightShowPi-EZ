@@ -197,7 +197,7 @@ def turn_off_light(pin, use_overrides=0):
     """
     if use_overrides:
         if is_pin_pwm[pin]:
-            turn_on_light(pin, use_overrides, 0)
+            turn_on_light(pin, use_overrides, PWM_OFF)
         else:
             if pin + 1 not in lightshow_config['always_on_channels']:
                 if pin + 1 not in lightshow_config['invert_channels']:
@@ -277,7 +277,6 @@ def initialize():
     """Set pins as outputs, and start all lights in the off state."""
     if EXPORT_PINS:
         logging.info("Running as non root user, disabling pwm mode on all pin")
-        subprocess.check_call([_GPIO_UTILITY_PATH, 'load', 'spi', '8'])
         for pin in range(GPIOLEN):
             PIN_MODES[pin] = "onoff"
             is_pin_pwm[pin] = False
