@@ -17,25 +17,6 @@ import sys
 
 import numpy as np
 
-# Disable the RuntimeWarning: divide by zero encountered message
-# This only suppresses the message.  The error is caused by all
-# zeros in the data, since it only happens at the begging or end
-# of the audio file, it is quicker to ignore the error then to
-# test if the array is full of zeros.
-np.seterr(divide='ignore')
-
-
-def piff(val, chunk_size, sample_rate):
-    """
-    Return the power array index corresponding to a particular frequency.
-
-    :rtype : int, power array index corresponding to a particular frequency
-    :param val: float, frequency limit
-    :param chunk_size: int, chunk size of audio data
-    :param sample_rate: int, audio file sample rate
-    """
-    return int(chunk_size * val / sample_rate)
-
 
 def calculate_levels(data, chunk_size, sample_rate, frequency_limits, gpiolen, channels=2):
     """
@@ -86,7 +67,25 @@ def calculate_levels(data, chunk_size, sample_rate, frequency_limits, gpiolen, c
     for pin in range(gpiolen):
         # take the log10 of the resulting sum to approximate how human ears 
         # perceive sound levels
-        matrix[pin] = np.log10(np.sum(power[
-                                      piff(frequency_limits[pin][0], chunk_size, sample_rate):piff(
-                                          frequency_limits[pin][1], chunk_size, sample_rate):1]))
+        
+        # Get the power array index corresponding to a particular frequency.
+        idx1 = int(chunk_size * frequency_limits[pin][0] / sample_rate)
+        idx2 = int(chunk_size * frequency_limits[pin][1] / sample_rate)
+        
+        # if index1 is the same as index2 the value is an invalid value
+        # we can fix this by incrementing index2 by 1, This is a tempoary fix
+        # for RuntimeWarning: invalid value encountered in double_scalars
+        # generated while calculating the standard deviation.  This warning
+        # results in some channels not lighting up during playback.
+        if idx1 == idx2:
+            idx2 += 1
+        
+        npsum = np.sum(power[idx1:idx2:1])
+        
+        # if the sum is 0 lets not take log10, just use 0
+        if npsum == 0:
+            matrix[pin] = 0
+        else:
+            matrix[pin] = np.log10(npsum)
+
     return matrix
