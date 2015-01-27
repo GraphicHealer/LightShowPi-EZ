@@ -452,7 +452,6 @@ def create_cache(items):
                     pass
 
     for song in playlist:
-        #print "Generating sync file for :", song
         logging.info("Generating sync file for :" + song)
         per_song_config_filename = song + ".cfg"
         per_song_config(per_song_config_filename)
@@ -472,8 +471,13 @@ def create_cache(items):
         sys.stdout.write("\rSync file generated for  :%s %d%%" % (song, 100))
         sys.stdout.write("\n")
         sys.stdout.flush()
-        #print "Sync file generated for :", song
+
         logging.info("Sync file generated for :" + song)
+
+        # reset for next song
+        cache_matrix = list()
+        mean = [12.0 for _ in range(GPIOLEN)]
+        std = [1.5 for _ in range(GPIOLEN)]
 
 
 def read_cache(cache_filename, music_file):
