@@ -65,7 +65,7 @@ while not logged_in:
     try:
         VOICE.login()
         logged_in = True
-            pass
+        pass
     except Voice.LoginError:
         time.sleep(5)
 
