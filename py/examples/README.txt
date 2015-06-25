@@ -11,52 +11,37 @@ make your lights do all kinds of things.
 Lets start with a basic template that you will need to follow
 
 [code]
-
 import time
+import hardware_controller as hc
 
-def main(exit_event):
+lights = hc._GPIO_PINS
 
-    lights = hc._GPIO_PINS
+def main():
+    hc.initialize()
     
     <a loop>
     
         <your code here>
             
-        if exit_event.is_set():
-            break
+    hc.clean_up()
+
+if __name__ == "__main__":
+    main()
 
 [/code]
 
 First import your modules.
-NOTE: You do not need to import the hardware_controller module,
-      it has been made avaliable as a global variable in the prepostshow script
-      that calls this.
-      Also note that because of this your script will not run by it self.
-      you will need to run it through prepostshow.
 
 The time module is not strictly needed but it comes in handy
 
-You need to place most of your code in the main() function inside a loop of some kind.
+The hardware_controller module is needed do don't forget to import it
 
-For the pre or post show to call your main function you need to include one parameter
-in the function definition.  exit_event to make your definition look like the below example
-
-def main(exit_event):
-
-exit_event is used to end your script if a play now request comes in.
-It must be included or your script will not work, but you do not have to use it
-if you don't want to.  It just means that the script will have to finish before
-it exits.
-
-Then I think it's a good idea to assign the list of gpio pins to an easy to remember
+I think it's a good idea to assign the list of gpio pins to an easy to remember
 variable name, but _GPIO_PINS in hardware_controller is the same list,
 you can decide which way you want to use them.
-You can also setup other things at this point if you need or want to.
-Setup other variables (like storing a start time from the time module)
-Start playing some audio.
-What ever you might need.
 
-The loop is where almost everything will happen
+You need to place your code in the main() function inside a loop of some kind
+
 while <exit condition>:
 or
 for count in range(<number>):
@@ -111,27 +96,34 @@ the loop count as not less then 10 (it was 10) so the loop exited
 Either is fine, just remember to test your <exit condition> if you use a while loop
 a bad <exit condition> will cause the loop not to run or trap you in an infinite loop
 
-This is used by the pre/post shows to exit your script if a play now request happens
-include this in the working loop, either at the top or bottom, it dosen't matter,
-as long as it is in there.
+After your loop finishes you need to shut everything down by calling
+hc.clean_up(True)
 
-if exit_event.is_set():
-    break
-            
-After your loop finishes it you will want to turn off all the lights.
+The main() function must be started for it to do anything, making the following
+a must.
 
-hc.turn_off_lights()
+if __name__ == "__main__":
+    main()
+
 
 These are the functions that you can use from the hardware_controller module
 
-turn_on_light(light)
+initialize()
+    initialize the hardware 
+    hc.initialize()
+
+clean_up()
+    used to shut everything down, you will need to pass in True for this to work
+    hc.clean_up()
+
+turn_on_light()
     this will turn on one light, you need to pass in the the gpio pin number
     if your gpio pins are set to onoff instead of pwm and you have allways_on
     allways_off channels set in your config files you can add an argument to 
     enforce these settings
     hc.turn_on_light(pin#, useoverrides=0)
 
-turn_off_light(light)
+turn_off_light()
     the oppisite of turn_on_light()
     hc.turn_off_light(pin#, useoverrides=0)
 
@@ -144,13 +136,6 @@ turn_on_lights()
 turn_off_lights()
     the oppisite of turn_off_lights()
     turn_off_lights(usealwaysonoff=0)
-    
-is_pin_pwm[pin]
-    check if a pin is in pwm mode.
-    NOTE: this is not a function, it is a list make sure you use [] and not ()
-
-There are a few other functions in hardware_controller but there is no need for
-them to be used here.  
 
 You can use any combination of the above to create anything you wish
 

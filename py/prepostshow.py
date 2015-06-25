@@ -5,7 +5,6 @@
 #
 # Author: Todd Giles (todd@lightshowpi.com)
 # Author: Chris Usey (chris.usey@gmail.com)
-# Author: Tom Enos
 """
 Preshow and Postshow functionality for the lightshows.
 
@@ -20,19 +19,33 @@ sudo python prepostshow.py "preshow"
 or
 sudo python prepostshow.py "postshow"
 """
-import __builtin__
+
 import logging
 import os
-import signal
-import subprocess
-import sys
-import threading
 import time
+import subprocess
+import signal
+import sys
 
+import configuration_manager as cm
+import hardware_controller as hc
+
+def check_state():
+    """
+    Check State file
+
+    Check the state file to see if play now requested
+    """
+    # refresh state
+    cm.load_state()
+    if int(cm.get_state('play_now', 0)):
+        # play now requested!
+        return True
+    return False
 
 class PrePostShow(object):
     """
-    The PresPostShow class handles all pre-show and post-show logic
+    The PreshowPostshow class handles all pre-show and post-show logic
 
     Typical usage to simply play the default configured preshow_configuration:
     or postshow_configuration:
@@ -42,31 +55,12 @@ class PrePostShow(object):
     """
     done, play_now_interrupt = range(2)
 
-    def __init__(self, show="preshow", hardware=None):
-        if hardware:
-            self.hc = hardware
-        else:
-            self.hc = __import__('hardware_controller')
-            self.hc.initialize()
-
-        self.cm = self.hc.cm
-        self.config = self.cm.lightshow()[show]
+    def __init__(self, show="preshow"):
+        hc.initialize()
+        self.config = cm.lightshow()[show]
         self.show = show
         self.audio = None
 
-    def check_state(self):
-        """
-        Check State file
-
-        Check the state file to see if play now requested
-        """
-        # refresh state
-        self.cm.load_state()
-        if int(self.cm.get_state('play_now', 0)):
-            # play now requested!
-            return True
-        return False
-    
     def set_config(self, config):
         """Set a new configuration to use for the preshow"""
         self.config = config
@@ -80,14 +74,14 @@ class PrePostShow(object):
         show was interrupted by a play now command.
         """
         # Is there a show to launch?
-        if self.config is None:
+        if self.config == None:
             return PrePostShow.done
         
         # Is the config a script or a transition based show
         # launch the script if it is
         if not isinstance(self.config, dict) and os.path.exists(self.config):
-            logging.debug("Launching external script " + self.config + " as "
-                          + self.show)
+            logging.debug("Launching external script " + self.config + " as " \
+                + self.show)
             return self.start_script()
 
         # start the audio if there is any
@@ -99,11 +93,11 @@ class PrePostShow(object):
                 for transition in self.config['transitions']:
                     start = time.time()
                     if transition['type'].lower() == 'on':
-                        self.hc.turn_on_lights(True)
+                        hc.turn_on_lights(True)
                     else:
-                        self.hc.turn_off_lights(True)
-                    logging.debug('Transition to ' + transition['type'] + ' for '
-                                  + str(transition['duration']) + ' seconds')
+                        hc.turn_off_lights(True)
+                    logging.debug('Transition to ' + transition['type'] + ' for ' \
+                        + str(transition['duration']) + ' seconds')
 
                     if 'channel_control' in transition:
                         channel_control = transition['channel_control']
@@ -112,17 +106,17 @@ class PrePostShow(object):
                             channels = channel_control[key]
                             for channel in channels:
                                 if mode == 'on':
-                                    self.hc.turn_on_light(int(channel) - 1, 1)
+                                    hc.turn_on_light(int(channel) - 1, 1)
                                 elif mode == 'off':
-                                    self.hc.turn_off_light(int(channel) - 1, 1)
+                                    hc.turn_off_light(int(channel) - 1, 1)
                                 else:
                                     logging.error("Unrecognized channel_control mode "
-                                                  "defined in preshow_configuration "
-                                                  + str(mode))
+                                                "defined in preshow_configuration " \
+                                                    + str(mode))
                     # hold transition for specified time
                     while transition['duration'] > (time.time() - start):
                         # check for play now
-                        if self.check_state():
+                        if check_state():
                             # kill the audio playback if playing
                             if self.audio:
                                 os.killpg(self.audio.pid, signal.SIGTERM)
@@ -140,7 +134,7 @@ class PrePostShow(object):
 
     def start_audio(self):
         """Start audio plaback if there is any"""
-        if "audio_file" in self.config and self.config['audio_file'] is not None:
+        if "audio_file" in self.config and self.config['audio_file'] != None:
             audio_file = self.config['audio_file']
             self.audio = subprocess.Popen(["mpg123", "-q", audio_file])
             logging.debug("Starting " + self.show + " audio file " + self.config['audio_file'])
@@ -148,9 +142,9 @@ class PrePostShow(object):
     def hold_for_audio(self):
         """hold show until audio has finished"""
         if self.audio:
-            while self.audio.poll() is None:
+            while self.audio.poll() == None:
                 # check for play now
-                if self.check_state():
+                if check_state():
                     # kill the audio playback if playing
                     os.killpg(self.audio.pid, signal.SIGTERM)
                     self.audio = None
@@ -161,28 +155,31 @@ class PrePostShow(object):
     def start_script(self):
         """Start a seperate script to control the lights"""
         return_value = PrePostShow.done
-        self.hc.turn_off_lights()
+        hc.clean_up()
         
         # make a copy of the path
         path = list(sys.path)
 
-        # insert script location into path
+        # insert script location and hardware_controller location into path
+        sys.path.insert(0, cm.HOME_DIR + "/py")
         sys.path.insert(0, os.path.split(self.config)[0])
-        __builtin__.hc = self.hc
-        
-        # import custom script
-        script = __import__(os.path.basename(os.path.splitext(self.config)[0]))
- 
-        # run the scripts main method 
-        exit_event = threading.Event()
-        script_thread = threading.Thread(target=script.main, args=(exit_event,))
-        script_thread.setDaemon(True)
-        script_thread.start()
-        
-        while script_thread.is_alive():
-            if self.check_state():
+
+        # create environment for script to run in
+        environment = os.environ.copy()
+        environment['PYTHONPATH'] = ':'.join(sys.path)
+
+        #run script
+        show = subprocess.Popen('python ' + self.config,
+                                preexec_fn=os.setsid,
+                                shell=True,
+                                close_fds=True,
+                                env=environment)
+
+        # check for user interrupt
+        while show.poll() is None:
+            if check_state():
                 # Skip out on the rest of the show if play now requested!
-                exit_event.set()
+                os.killpg(show.pid, signal.SIGTERM)
                 return_value = PrePostShow.play_now_interrupt
                 break
 
@@ -191,6 +188,9 @@ class PrePostShow(object):
 
         # restore path
         sys.path[:] = path
+
+        # insure clean up just in case the user forgot to do it
+        hc.clean_up()
 
         return return_value
 

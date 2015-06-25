@@ -2,11 +2,10 @@
 
 import time
 
-# exit_event is passed in from the pre/post show script as is required
-# if an exit_event is generated the pre/post show script can terminate the script 
-# Do not forget to include it, if you do not sms commands will not be able
-# to end the script and you will have to wait for it to finish
-def main(exit_event):
+# This import gives you full acess to the hardware
+import hardware_controller as hc
+
+def main():
     """
     ladder
 
@@ -15,7 +14,10 @@ def main(exit_event):
     Then repeat everything 20 times
     """
     # this is a list of all the channels you have access to
-    lights = hc.GPIO_PINS
+    lights = hc._GPIO_PINS
+
+    # initialize your hardware for use
+    hc.initialize()
 
     # start with all the lights off
     hc.turn_off_lights()
@@ -25,41 +27,46 @@ def main(exit_event):
 
     # working loop
     for _ in range(20):
-        # here we just loop over the gpio pins and do something with them
-        # except the last one
-        for light in range(len(lights)-1):
-            # turn off all the lights
+        # try except block to catch keyboardinterrupt by user to stop
+        try:
+            # here we just loop over the gpio pins and do something with them
+            # except the last one
+            for light in range(len(lights)-1):
+                # turn off all the lights
+                hc.turn_off_lights()
+
+                # then turn on one
+                hc.turn_on_light(lights[light])
+
+                # wait a little bit
+                time.sleep(.04)
+
+            # to make the transition back smoother we handle the last pin here
             hc.turn_off_lights()
+            hc.turn_on_light(lights[light + 1])
 
-            # then turn on one
-            hc.turn_on_light(light)
+            # this loop walks it back the other way
+            for light in range(len(lights)-1, 0, -1):
+                # turn off all the lights
+                hc.turn_off_lights()
 
-            # wait a little bit
-            time.sleep(.04)
+                # then turn on one
+                hc.turn_on_light(lights[light])
 
-        # to make the transition back smoother we handle the last pin here
-        hc.turn_off_lights()
-        hc.turn_on_light(light + 1)
+                # wait a little bit
+                time.sleep(.04)
 
-        # this loop walks it back the other way
-        for light in range(len(lights)-1, 0, -1):
-            # turn off all the lights
+            # again to make it smoother handle the first pin like the last pin
             hc.turn_off_lights()
+            hc.turn_on_light(lights[light - 1])
 
-            # then turn on one
-            hc.turn_on_light(light)
-
-            # wait a little bit
-            time.sleep(.04)
-
-        # again to make it smoother handle the first pin like the last pin
-        hc.turn_off_lights()
-        hc.turn_on_light(light - 1)
-
-        # this is required so that an sms play now command will 
-        # end your script and any subprocess you have statred
-        if exit_event.is_set():
+        # if the user pressed <CTRL> + C to exit early break out of the loop
+        except KeyboardInterrupt:
+            print "\nstopped"
             break
 
-    # lets make sure we turn off the lights before we go back to the show
-    hc.turn_off_lights()
+    # This ends and cleans up everything
+    hc.clean_up()
+
+if __name__ == "__main__":
+    main()
