@@ -14,7 +14,4 @@ if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
     exit 1
 fi 
 
-while true; do
-  sudo python $SYNCHRONIZED_LIGHTS_HOME/py/check_sms.py
-  sleep 15
-done
+sudo python $SYNCHRONIZED_LIGHTS_HOME/py/check_sms.py
