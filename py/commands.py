@@ -70,7 +70,7 @@ class Command(object):
         :param args: function to execute
         :type args: function
 
-        :return: an executed command
+        :return: response to an executed command
         :rtype: object
         """
         return self.func(user, args)
