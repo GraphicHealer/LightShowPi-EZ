@@ -145,11 +145,11 @@ errchk "google voice deps"  $?
 fi
 
 #Install fixed version of googlevoice
-wget -O google_voice_authfix.zip https://bwpayne-pygooglevoice-auth-fix.googlecode.com/archive/56f4aaf3b1804977205076861e19ef79359bd7dd.zip
-
-unzip google_voice_authfix.zip
-cd bwpayne-pygooglevoice-auth-fix-56f4aaf3b180
+wget -O kkleidal-pygooglevoiceupdate.tar.gz https://kkleidal-pygooglevoiceupdate.googlecode.com/archive/450e372008a2d81aab4061fd387ee74e7797e030.tar.gz
+tar xvzf kkleidal-pygooglevoiceupdate.tar.gz
+cd kkleidal-pygooglevoiceupdate-450e372008a2
 sudo python setup.py install
+
 if [ $? -ne 0 ]; then
 errchk "googlevoice auth fix" $?
 fi
