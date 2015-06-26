@@ -6,7 +6,8 @@
 
 """FFT methods for computing / analyzing frequency response of audio.
 
-This is simply wrappers around FFT support of numpy.
+This is simply a wrapper around FFT support in numpy.
+
 Initial FFT code inspired from the code posted here:
 http://www.raspberrypi.org/phpBB3/viewtopic.php?t=35838&p=454041
 
@@ -22,7 +23,7 @@ from numpy import abs as npabs
 from numpy import log10, frombuffer, empty, hanning, fft, delete, int16, zeros
 
 
-def calculate_levels(data, chunk_size, sample_rate, frequency_limits, gpiolen, channels=2):
+def calculate_levels(data, chunk_size, sample_rate, frequency_limits, num_bins, input_channels=2):
     """Calculate frequency response for each channel defined in frequency_limits
 
     :param data: decoder.frames(), audio data for fft calculations
@@ -37,11 +38,11 @@ def calculate_levels(data, chunk_size, sample_rate, frequency_limits, gpiolen, c
     :param frequency_limits: list of frequency_limits
     :type frequency_limits: list
 
-    :param gpiolen: length of gpio to process
-    :type gpiolen: int
+    :param num_bins: length of gpio to process
+    :type num_bins: int
 
-    :param channels: number of audio channels to process for (default=2)
-    :type channels: int
+    :param input_channels: number of audio input channels to process for (default=2)
+    :type input_channels: int
 
     :return:
     :rtype: numpy.array
@@ -49,13 +50,13 @@ def calculate_levels(data, chunk_size, sample_rate, frequency_limits, gpiolen, c
 
     # create a numpy array, taking just the left channel if stereo
     data_stereo = frombuffer(data, dtype=int16)
-    if channels == 2:
+    if input_channels == 2:
         # data has 2 bytes per channel
-        data = empty(len(data) / (2 * channels))
+        data = empty(len(data) / (2 * input_channels))
 
         # pull out the even values, just using left channel
         data[:] = data_stereo[::2]
-    elif channels == 1:
+    elif input_channels == 1:
         data = data_stereo
 
     # if you take an FFT of a chunk of audio, the edges will look like
@@ -72,8 +73,8 @@ def calculate_levels(data, chunk_size, sample_rate, frequency_limits, gpiolen, c
     # Calculate the power spectrum
     power = npabs(fourier) ** 2
 
-    matrix = zeros(gpiolen, dtype='float64')
-    for pin in range(gpiolen):
+    matrix = zeros(num_bins, dtype='float64')
+    for pin in range(num_bins):
         # take the log10 of the resulting sum to approximate how human ears 
         # perceive sound levels
         

@@ -88,8 +88,8 @@ def execute(command, user):
     :param user: string, specified user
     :type user: str
 
-    :return: an executed command
-    :rtype: object
+    :return: response to an executed command
+    :rtype: str
 
     :raises: :ValueError: if command does not exist
     """
@@ -145,7 +145,7 @@ def cmd_help(*args):
     :param args: [specified user, arguments for command]
     :type args: list
 
-    :return: help message for args
+    :return: list of available commands that the current user has permission to execute
     :rtype: str
     """
     user = args[0]
