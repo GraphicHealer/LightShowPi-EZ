@@ -12,7 +12,7 @@ Enabled commands must be defined in the configuration file. Each command must al
 matching function defined in this file with a name in the form 'def cmd_commandname(user, args)'.
 For example, the command help would have a matching function definition for 'def cmd_help(user,
 args)'. The user argument will include the cell number of the user who made the request (if the
-command is recieved via sms) and the 'args' argument is a string containing all the text in the
+command is received via sms) and the 'args' argument is a string containing all the text in the
 command sent (e.g. an sms message) after the command name itself has already been stripped.
 So following the 'help' example, if a user with the cell phone number 1 (123) 456-7890 texted
 'help me please!!!' then the function cmd_help will be called with arguments user = '+11234567890:',
@@ -39,15 +39,19 @@ _CMD_NAMES = _CONFIG['commands']
 
 # The base command class. The class keeps track of all commands instantiated, so to install a new
 # command, simply instantiate a new instance of it.
-class Command(object):
-    '''The base command class. This class keeps track of all commands instantiated, so to install a
-    new command, simply instantiate a new instance of that command.'''
 
+
+class Command(object):
+    """The base command class
+
+    This class keeps track of all commands instantiated, so to install
+    a new command, simply instantiate a new instance of that command.
+    """
     commands = {}
 
     def __init__(self, name, func):
         self.name = name.lower()
-        if not self.name in _CMD_NAMES:
+        if self.name not in _CMD_NAMES:
             raise ValueError(name + ' command not defined in configuration file')
         if self.name in Command.commands:
             logging.warn(name + 'command is defined more than once, using last definition')
@@ -55,19 +59,45 @@ class Command(object):
         Command.commands[self.name] = self
 
     def execute(self, user, args):
-        '''Execute this command for the specified user with given arguments, returning a message to
-        be sent to the user after the command has finished'''
+        """
+        Execute this command for the specified user with given arguments,
+        returning a message to be sent to the user after the command has
+        finished
+
+        :param user: A specified user
+        :type user: str
+
+        :param args: function to execute
+        :type args: function
+
+        :return: an executed command
+        :rtype: object
+        """
         return self.func(user, args)
 
-# Attempt to execute a command for the specified user.
-def execute(command, user):
-    '''Attempt to execute a command for the specified user with given arguments, returning a message
-    to be sent to the user after the command has finished'''
 
+def execute(command, user):
+    """
+    Attempt to execute a command for the specified user with given
+    arguments, returning a message to be sent to the user after
+    the command has finished
+
+    :param command: function, function to execute
+    :type command: function
+
+    :param user: string, specified user
+    :type user: str
+
+    :return: an executed command
+    :rtype: object
+
+    :raises: :ValueError: if command does not exist
+    """
     # Determine the name of the command and arguments from the full
     # command (taking into account aliases).
     name = ''
     args = ''
+
     for command_name in _CMD_NAMES:
         if bool(re.match(command_name, command, re.I)):
             name = command_name
@@ -81,6 +111,7 @@ def execute(command, user):
                         break
             except KeyError:
                 pass  # No aliases defined, that's fine - keep looking
+
         if name:
             break
 
@@ -90,10 +121,10 @@ def execute(command, user):
         args = command
 
     # Verify this command is installed
-    if not name in Command.commands:
+    if name not in Command.commands:
         raise ValueError(name
-            + ' command must be installed by calling Command(\''
-            + name + '\', <handler>)')
+                         + ' command must be installed by calling Command(\''
+                         + name + '\', <handler>)')
 
     # Verify the user has permission to execute this command
     if not cm.has_permission(user, name):
@@ -106,56 +137,108 @@ def execute(command, user):
     # Execute the command
     return Command.commands[name].execute(user, args.strip())
 
-def cmd_help(user, _args):
-    '''Returns a list of available commands for the requesting user.'''
+
+def cmd_help(*args):
+    """
+    Returns a list of available commands for the requesting user.
+
+    :param args: [specified user, arguments for command]
+    :type args: list
+
+    :return: help message for args
+    :rtype: str
+    """
+    user = args[0]
     help_msg = "Commands:\n"
+
     for cmd in _CMD_NAMES:
         if cm.has_permission(user, cmd):
             cmd_description = cm.sms()[cmd + '_description']
+
             if cmd_description:
                 help_msg += cmd_description + "\n"
+
     return help_msg
+
+
 Command('help', cmd_help)
 
 # TODO(todd): Add paging support for large playlist (Issue #22)
-def cmd_list(_user, _args):
-    '''Lists all the songs from the current playlist.'''
+def cmd_list(*args):
+    """Lists all the songs from the current playlist.
 
+    :param args: Not used but left in for compatibility
+    :type args: list
+
+    :return: list of songs
+    :rtype: list
+    """
     songlist = ['Vote by texting the song #:\n']
     division = 0
     index = 1
+
     for song in cm.songs():
         songlist[division] += str(index) + ' - ' + song[0] + '\n'
         index += 1
+
         if (index - 1) % 4 == 0:
             division += 1
             songlist.append('')
+
     return songlist
+
+
 Command('list', cmd_list)
 
-def cmd_play(_user, args):
-    '''Interrupts whatever is going on, and plays the requested song.'''
+
+def cmd_play(*args):
+    """Interrupts whatever is going on, and plays the requested song.
+
+    :param args: [specified user, arguments for command]
+    :type args: list
+
+    :return: play song response
+    :rtype: str
+    """
+    args = args[1]
+
     if len(args) == 0 or not args.isdigit():
         cm.update_state('play_now', -1)
+
         return 'Skipping straight ahead to the next show!'
     else:
         song = int(args)
+
         if song < 1 or song > len(cm.songs()):
             return 'Sorry, the song you requested ' + args + ' is out of range :('
         else:
             cm.update_state('play_now', song)
+
             return '"' + cm.songs()[song - 1][0] + '" coming right up!'
+
+
 Command('play', cmd_play)
 
-def cmd_volume(_user, args):
-    '''Changes the system volume.'''
+
+def cmd_volume(*args):
+    """Changes the system volume.
+
+    :param args: [specified user, arguments for command]
+    :type args: list
+
+    :return: volume request result
+    :rtype: str
+    """
     # Sanitize the input before passing to volume script
+    args = args[1]
+
     if '-' in args:
         sanitized_cmd = '-'
     elif '+' in args:
         sanitized_cmd = '+'
     elif args.isdigit():
         vol = int(args)
+
         if vol < 0 or vol > 100:
             return 'volume must be between 0 and 100'
         sanitized_cmd = str(vol)
@@ -165,25 +248,43 @@ def cmd_volume(_user, args):
     # Execute the sanitized command and handle result
     volscript = cm.HOME_DIR + '/bin/vol'
     output, error = subprocess.Popen(volscript + ' ' + sanitized_cmd,
-        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+                                     shell=True, stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE).communicate()
     if error:
         logging.warn('volume request failed: ' + str(error))
+
         return 'volume request failed'
     else:
         return 'volume = ' + str(output)
+
+
 Command('volume', cmd_volume)
 
-# Casts a vote for the next song to be played.
-def cmd_vote(user, args):
-    '''Casts a vote for the next song to be played'''
+
+def cmd_vote(*args):
+    """Casts a vote for the next song to be played
+
+    :param args: [specified user, arguments for command]
+    :type args: list
+
+    :return: unknown command response
+    :rtype: str
+    """
+    user = args[0]
+    args = args[1]
+
     if args.isdigit():
         song_num = int(args)
-        if user != 'Me' and song_num > 0 and song_num <= len(cm.songs()):
+
+        if user != 'Me' and 0 < song_num <= len(cm.songs()):
             song = cm.songs()[song_num - 1]
             song[2].add(user)
             logging.info('Song requested: ' + str(song))
+
             return 'Thank you for requesting "' + song[0] \
-                + '", we\'ll notify you when it starts!'
+                   + '", we\'ll notify you when it starts!'
     else:
         return cm.sms()['unknown_command_response']
+
+
 Command('vote', cmd_vote)
