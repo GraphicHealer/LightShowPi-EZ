@@ -6,9 +6,9 @@
 # Author: Todd Giles (todd@lightshowpi.com)
 #
 # TODO(todd): Refactor the configuration manager into a configuration manager class (to remove
-# the extensive use of globals currently used).
+#             the extensive use of globals currently used).
 # TODO(todd): Add a main and allow running configuration manager alone to view the current
-#                  configuration, and potentially edit it.
+#             configuration, and potentially edit it.
 
 
 """Configuration management for the lightshow.
@@ -238,9 +238,9 @@ def songs():
     """
     if len(_SONG_LIST) == 0:
         pass  # TODO(todd): Load playlist if not already loaded, also refactor
-        #             the code that loads the playlist in check_sms and
-        #             synchronzied_lights such that we don't duplicate it
-        #             there.
+        #                   the code that loads the playlist in check_sms and
+        #                   synchronzied_lights such that we don't duplicate it
+        #                   there.
     return _SONG_LIST
 
 
