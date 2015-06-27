@@ -1,4 +1,4 @@
-http://lightshowpi.org/
+[http://lightshowpi.org/](http://lightshowpi.org/)
 
 All files here are free to use under the BSD License (see the LICENSE file for details).  All we
 ask in return is that you send any updates / improvements you may make to them back to us so 
