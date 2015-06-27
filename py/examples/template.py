@@ -1,21 +1,21 @@
 """Example Template"""
 
-# This import gives you full acess to the hardware
-import hardware_controller as hc
+import time
 
 lights = hc._GPIO_PINS
 
-def main():
+# exit_event is passed in from the pre/post show script as is required
+# if an exit_event is generated the pre/post show script can terminate the script 
+# Do not forget to include it, if you do not sms commands will not be able
+# to end the script and you will have to wait for it to finish
+def main(exit_event):
     """
     Empyt script template for you to use
     """
-    # initialize our hardware for use
-    hc.initialize()
-
     # USE ONE OF THE BELOW LOOPS AS A STARTING POINT
     # JUST UNCOMMENT ONE AND DELETE THE OTHERS
 
-    #for count in range(10):
+    for count in range(10):
 
     #count = 0
     #while count < 10:
@@ -28,9 +28,12 @@ def main():
     #while time.time() < end_time:
 
     ####<PUT ALL YOU CODE IN THIS BLOCK>
+        
+        # include this in your loop
+        # it is required so that an sms play now command will 
+        # end your script and any subprocess you have statred
+        if exit_event.is_set():
+            break
 
-    # clean up and end
-    hc.clean_up()
-
-if __name__ == "__main__":
-    main()
+    # lets make sure we turn off the lights before we go back to the show
+    hc.turn_off_lights()
