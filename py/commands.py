@@ -71,7 +71,7 @@ class Command(object):
         :type args: function
 
         :return: response to an executed command
-        :rtype: object
+        :rtype: str
         """
         return self.func(user, args)
 
