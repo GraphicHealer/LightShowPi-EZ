@@ -166,9 +166,7 @@ def sms():
 
         # Commands
         _SMS_CONFIG['commands'] = _as_list(_SMS_CONFIG['commands'])
-        # KeyError is the only parsing error I can get on this one
-        # but I did find other issues, duplicate entries, empty entries
-        # conflicting entries with other command aliases
+
         for cmd in _SMS_CONFIG['commands']:
             try:
                 _SMS_CONFIG[cmd + '_aliases'] = _as_list(_SMS_CONFIG[cmd + '_aliases'])
@@ -180,6 +178,7 @@ def sms():
         # Groups / Permissions
         _SMS_CONFIG['groups'] = _as_list(_SMS_CONFIG['groups'])
         _SMS_CONFIG['throttled_groups'] = dict()
+        
         for group in _SMS_CONFIG['groups']:
             try:
                 _SMS_CONFIG[group + '_users'] = _as_list(_SMS_CONFIG[group
@@ -202,17 +201,21 @@ def sms():
                 throttled_group_definitions = _as_list(_SMS_CONFIG[group
                                                                    + '_throttle'])
                 throttled_group = dict()
+                
                 for definition in throttled_group_definitions:
                     definition = definition.split(':')
+                    
                     if len(definition) != 2:
                         warnings.warn(group + "_throttle definitions should "
                                               "be in the form "
                                       + "[command]:<limit> - "
                                       + ":".join(definition))
                         continue
+                    
                     throttle_command = definition[0]
                     throttle_limit = int(definition[1])
                     throttled_group[throttle_command] = throttle_limit
+                    
                 _SMS_CONFIG['throttled_groups'][group] = throttled_group
             except KeyError: 
                 warnings.warn("Throttle definition either does not exist or "
@@ -238,23 +241,6 @@ def songs():
         #             the code that loads the playlist in check_sms and
         #             synchronzied_lights such that we don't duplicate it
         #             there.
-        # NOTE: check_sms imports it's own copy of configuration_manager
-        #       so does the hardware_controller and synchronized_lights
-        #       if the configuration_manager were a class and only loaded
-        #       as a single instance, in say synchronized loaded and that
-        #       ran check_sms and passed it a reference to it's configuration_manager
-        #       then it would work.  There are still other issues like
-        #       command.py needing a copy of the configs too, it does not
-        #       affect this issue but does use limited resources, But we
-        #       could combine check_sms and commands into a single file
-        #       They would live happily together and share global resources
-        #       The way it is done now is the most appropriate,  The only other
-        #       way I can think of is with pipes and streams and that is way
-        #       overkill. mmap maybe, but same thing just shifted from a file
-        #       to memory, and a lot of unnecessary code.
-        #       Just thinking out loud.  Maybe someone will see this and have
-        #       a really good idea.
-        #
     return _SONG_LIST
 
 
