@@ -379,7 +379,7 @@ def is_throttle_exceeded(cmd, user):
         # expired reset the throttle STATE
         throttle_state = dict()
         throttle_state['throttle_timestamp_start'] = str(current_timestamp)
-        update_state('throttle', throttle_state)
+        update_state('throttle', str(throttle_state))
 
     # ANALYZE THE THROTTLE COMMANDS AND LIMITS
     all_throttle_limit = -1
