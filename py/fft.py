@@ -62,7 +62,7 @@ def calculate_levels(data, chunk_size, sample_rate, frequency_limits, num_bins, 
     # if you take an FFT of a chunk of audio, the edges will look like
     # super high frequency cutoffs. Applying a window tapers the edges
     # of each end of the chunk down to zero.
-    data *= hanning(len(data))
+    data = data * hanning(len(data))
 
     # Apply FFT - real data
     fourier = fft.rfft(data)
