@@ -23,10 +23,10 @@ import logging
 import math
 import time
 import subprocess
-import platform
+import Platform
 import configuration_manager as cm
 
-is_a_raspberryPI = "raspberrypi" in platform.uname()
+is_a_raspberryPI = Platform.platform_detect() == 1
 
 if is_a_raspberryPI:
     import wiringpi2 as wiringpi
