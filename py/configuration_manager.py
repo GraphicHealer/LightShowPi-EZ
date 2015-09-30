@@ -81,6 +81,9 @@ def lightshow():
     if len(_LIGHTSHOW_CONFIG) == 0:
         _LIGHTSHOW_CONFIG = _as_dict('lightshow')
 
+        _LIGHTSHOW_CONFIG['audio_in_channels'] = CONFIG.getint('lightshow', 'audio_in_channels')
+        _LIGHTSHOW_CONFIG['audio_in_sample_rate'] = CONFIG.getint('lightshow', 'audio_in_sample_rate')
+
         preshow = dict()
         preshow['transitions'] = []
 
