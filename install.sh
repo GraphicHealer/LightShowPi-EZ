@@ -75,7 +75,7 @@ if [ $? -eq 1 ]; then
     fi
 fi
 
-# install WireingPi2
+# install WiringPi2
 cd $BUILD_DIR
 
 git clone git://git.drogon.net/wiringPi
@@ -84,7 +84,7 @@ cd wiringPi
 ./build
 
 if [ $? -ne 0 ]; then
-    errchk "Git and configure WireingPi2" $?
+    errchk "Git and configure WiringPi2" $?
 fi
 cd $BUILD_DIR
 
@@ -124,7 +124,7 @@ fi
 version=`cat /etc/*-release | grep 'VERSION_ID' | awk -F \" '{print $2}'`
 declare -i version
 
-if [ $version = 7 ] ; then
+if [ $version -le 7 ] ; then
     apt-get install -y ffmpeg
 else
     apt-get install -y libav-tools
