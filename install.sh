@@ -17,139 +17,179 @@ PATH=$PATH
 export PATH
 exec > >(tee install.log)
 
-#Root check
-if [ `whoami` != 'root' ]; then
-	echo "This must be run as root. usage sudo $0"
-	exit 1
+# Root check
+if [ "$EUID" -ne 0 ]; then
+    echo "This must be run as root. usage sudo $0"
+    echo "Switching to root enter password if asked"
+    sudo su -c "$0 $*"
+    exit 
 fi
 
-
-function errchk {
 # basic error reporting
+function errchk {
     echo "Houston we have a problem....."
     echo "$1 failed with exit code $2"
     exit 1
 }
 
-
 # Defaults to install where install.sh is located
 INSTALL_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
-
 BUILD_DIR=${INSTALL_DIR}/build_dir
+
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 
-#Check to see if we have git
+# update first
+apt-get update
+
+# Check to see if we have git
 git --version > /dev/null
+
 if [ $? -eq 1 ]; then
 	#Nope, install git
-	sudo apt-get install -y git
+	apt-get install -y git
+	
     if [ $? -ne 0 ]; then
-        errchk "git" $?
+        errchk "Installing git" $?
     fi
 fi
 
-
-#install decoder
+# install decoder
+# http://www.brailleweb.com
 wget http://www.brailleweb.com/downloads/decoder-1.5XB-Unix.zip
 unzip decoder-1.5XB-Unix.zip
 cd decoder-1.5XB-Unix
 cp decoder.py codecs.pdc fileinfo.py /usr/lib/python2.7/.
 
-#install mutegen
+# install mutegen
 # rough test to see if it is installed
 which mutagen-pony > /dev/null
 
 if [ $? -eq 1 ]; then 
-	cd mutagen-1.19
-	sudo python setup.py build
-	sudo python setup.py install
+    cd mutagen-1.19
+    python setup.py build
+    python setup.py install
+
     if [ $? -ne 0 ]; then
-        errchk "mutagen" $?
+        errchk "Installing mutagen" $?
     fi
 fi
+
+# install WireingPi2
 cd $BUILD_DIR
-#install WiringPI2
 
 git clone git://git.drogon.net/wiringPi
 cd wiringPi
-sudo ./build
-    if [ $? -ne 0 ]; then
-        errchk "git" $?
-    fi
+
+./build
+
+if [ $? -ne 0 ]; then
+    errchk "Git and configure WireingPi2" $?
+fi
 cd $BUILD_DIR
 
-#install wiringpi2-Python
-sudo apt-get install -y python-dev python-setuptools
+# install wiringpi2-Python
+apt-get install -y python-dev python-setuptools
 git clone https://github.com/Gadgetoid/WiringPi2-Python.git
 cd WiringPi2-Python
-sudo python setup.py install
-    if [ $? -ne 0 ]; then
-        errchk "wiringpi2" $?
-    fi
-cd $BUILD_DIR
+python setup.py install
 
-#install numpy
+if [ $? -ne 0 ]; then
+    errchk "Installing wiringpi2" $?
+fi
+
+# install numpy
 # http://www.numpy.org/
-  	apt-get install -y python-numpy
+cd $BUILD_DIR
+apt-get install -y python-numpy
+
 if [ $? -ne 0 ]; then
-errchk "numpy" $?
-fi
-#install python-alsaaudio
-	sudo apt-get install -y python-alsaaudio
-if [ $? -ne 0 ]; then
-errchk "python-alsaaudio" $?
-fi
-#install audio encoders
-	sudo apt-get update && sudo apt-get install -y lame flac ffmpeg faad vorbis-tools
-if [ $? -ne 0 ]; then
-errchk "audio-encoders" $?
+    errchk "Installing numpy" $?
 fi
 
-#Setup environment variables
+# install python-alsaaudio
+apt-get install -y python-alsaaudio
+if [ $? -ne 0 ]; then
+    errchk "Installing python-alsaaudio" $?
+fi
+
+# install audio encoders
+apt-get install -y lame flac faad vorbis-tools
+
+if [ $? -ne 0 ]; then
+    errchk "Installing audio-encoders" $?
+fi
+
+# install audio encoder ffmpeg (wheezy) or libav-tools (Jessie or OSMC)
+version=`cat /etc/*-release | grep 'VERSION_ID' | awk -F \" '{print $2}'`
+declare -i version
+
+if [ $version = 7 ] ; then
+    apt-get install -y ffmpeg
+else
+    apt-get install -y libav-tools
+
+    # create symlink to avconv so the decoder can still work
+    echo "creating symlink"
+    ln -s /usr/bin/avconv /usr/bin/ffmpeg
+fi
+
+if [ $? -ne 0 ]; then
+    errchk "Installing ffmpeg or libav-tools" $?
+fi  
+
+# Setup environment variables
 ENV_VARIABLE="SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}"
 exists=`grep -r "$ENV_VARIABLE" /etc/profile*`
-if [ -z "$exists" ]; then
-  echo "# Lightshow Pi Home" > /etc/profile.d/lightshowpi.sh
-  echo "$ENV_VARIABLE" >> /etc/profile.d/lightshowpi.sh
-  echo "export SYNCHRONIZED_LIGHTS_HOME" >> /etc/profile.d/lightshowpi.sh
-  echo "" >> /etc/profile.d/lightshowpi.sh
-  echo "# Add Lightshow Pi bin directory to path" >> /etc/profile.d/lightshowpi.sh
-  echo "PATH=\$PATH:${INSTALL_DIR}/bin" >> /etc/profile.d/lightshowpi.sh
-  echo "export PATH" >> /etc/profile.d/lightshowpi.sh
 
-  # Force set this environment variable in this shell (as above doesn't take until reboot)
-  export $ENV_VARIABLE
+if [ -z "$exists" ]; then
+    echo "# Lightshow Pi Home" > /etc/profile.d/lightshowpi.sh
+    echo "$ENV_VARIABLE" >> /etc/profile.d/lightshowpi.sh
+    echo "export SYNCHRONIZED_LIGHTS_HOME" >> /etc/profile.d/lightshowpi.sh
+    echo "" >> /etc/profile.d/lightshowpi.sh
+    echo "# Add Lightshow Pi bin directory to path" >> /etc/profile.d/lightshowpi.sh
+    echo "PATH=\$PATH:${INSTALL_DIR}/bin" >> /etc/profile.d/lightshowpi.sh
+    echo "export PATH" >> /etc/profile.d/lightshowpi.sh
+
+    # Force set this environment variable in this shell (as above doesn't take until reboot)
+    export $ENV_VARIABLE
 fi
+
 KEEP_EN="Defaults	env_keep="SYNCHRONIZED_LIGHTS_HOME""
 exists=`grep "$KEEP_EN" /etc/sudoers`
+
 if [ -z "$exists" ]; then
-  echo "$KEEP_EN" >> /etc/sudoers
+    echo "$KEEP_EN" >> /etc/sudoers
 fi
 
-#Install googlevoice and sms depedencies
-sudo easy_install simplejson
+# Install googlevoice and sms depedencies
+easy_install simplejson
+
 if [ $? -ne 0 ]; then
-errchk "google voice deps"  $?
+    errchk "Installing simplejson"  $?
 fi
 
-#Install fixed version of googlevoice
-wget -O google_voice_authfix.zip https://bwpayne-pygooglevoice-auth-fix.googlecode.com/archive/56f4aaf3b1804977205076861e19ef79359bd7dd.zip
+# Install fixed version of googlevoice
+wget -O kkleidal-pygooglevoiceupdate.tar.gz https://kkleidal-pygooglevoiceupdate.googlecode.com/archive/450e372008a2d81aab4061fd387ee74e7797e030.tar.gz
+tar xvzf kkleidal-pygooglevoiceupdate.tar.gz
+cd kkleidal-pygooglevoiceupdate-450e372008a2
+python setup.py install
 
-unzip google_voice_authfix.zip
-cd bwpayne-pygooglevoice-auth-fix-56f4aaf3b180
-sudo python setup.py install
 if [ $? -ne 0 ]; then
-errchk "googlevoice auth fix" $?
+    errchk "Installing pygooglevoiceupdate" $?
 fi
 
-#install beautiful soup
-sudo easy_install beautifulsoup4
+# install beautiful soup
+easy_install beautifulsoup4
+
+if [ $? -ne 0 ]; then
+    errchk "Installing beautifulsoup4" $?
+fi
 
 # Explain to installer how they can test to see if we are working
 echo
 echo "You may need to reboot your Raspberry Pi before running lightshowPi (sudo reboot)."
 echo "Run the following command to test your installation and hardware setup (press CTRL-C to stop the test):"
 echo
-echo "sudo $INSTALL_DIR/py/hardware_controller.py --state flash"
+echo "sudo python $INSTALL_DIR/py/hardware_controller.py --state=flash"
 echo
