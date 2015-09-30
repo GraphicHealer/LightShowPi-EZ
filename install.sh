@@ -81,7 +81,7 @@ cd $BUILD_DIR
 
 #install wiringpi2-Python
 sudo apt-get install -y python-dev python-setuptools
-git clone -b modelbplus https://github.com/Gadgetoid/WiringPi2-Python.git
+git clone https://github.com/Gadgetoid/WiringPi2-Python.git
 cd WiringPi2-Python
 sudo python setup.py install
     if [ $? -ne 0 ]; then

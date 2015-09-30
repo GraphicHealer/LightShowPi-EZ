@@ -17,8 +17,8 @@ wiringpi2: python wrapper around wiring pi - https://github.com/WiringPi/WiringP
 """
 
 import argparse
-import ast
 import logging
+import math
 import time
 
 import configuration_manager as cm
@@ -89,7 +89,7 @@ def enable_device():
             
             # TODO: Devices below need testing, these should work but could not verify due to lack of hardware
             
-             # mcp23016
+            # mcp23016
             elif device.lower() == "mcp23016":
                 for slave in device_slaves:
                     params = slave
@@ -123,6 +123,7 @@ def enable_device():
                 logging.error("Device defined is not supported, please check your devices settings: " + str(device))
     except Exception as e:
         logging.debug("Error setting up devices, please check your devices settings.")
+        logging.debug(e)
 
 def is_pin_pwm(i):
     return PIN_MODES[i].lower() == "pwm"
@@ -165,7 +166,7 @@ def turn_on_lights(usealwaysonoff=0):
     '''Turn on all the lights, but leave off all lights designated to be always off if specified.'''
     for i in range(GPIOLEN):
         if is_pin_pwm(i):
-            # No overrides avaialble for pwm mode pins
+            # No overrides available for pwm mode pins
             wiringpi.softPwmWrite(_GPIO_PINS[i], _PWM_ON)
             continue
 
@@ -178,7 +179,7 @@ def turn_on_lights(usealwaysonoff=0):
 def turn_off_light(i, useoverrides=0):
     '''Turn off the specified light, taking into account various overrides if specified.'''
     if is_pin_pwm(i):
-        # No overrides avaialble for pwm mode pins
+        # No overrides available for pwm mode pins
         wiringpi.softPwmWrite(_GPIO_PINS[i], _PWM_OFF)
         return
 
@@ -194,6 +195,8 @@ def turn_off_light(i, useoverrides=0):
 def turn_on_light(i, useoverrides=0, brightness=1.0):
     '''Turn on the specified light, taking into account various overrides if specified.'''
     if is_pin_pwm(i):
+        if math.isnan(brightness):
+            brightness = 0
         if _ACTIVE_LOW_MODE:
             brightness = 1.0 - brightness
         if brightness < 0.0:
