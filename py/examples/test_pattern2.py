@@ -2,10 +2,11 @@
 
 import time
 
-# This import gives you full acess to the hardware
-import hardware_controller as hc
-
-def main():
+# exit_event is passed in from the pre/post show script as is required
+# if an exit_event is generated the pre/post show script can terminate the script 
+# Do not forget to include it, if you do not sms commands will not be able
+# to end the script and you will have to wait for it to finish
+def main(exit_event):
     """
     Test pattern2
 
@@ -13,9 +14,6 @@ def main():
     """
     # this is a list of all the channels you have access to
     lights = hc._GPIO_PINS
-
-    # initialize your hardware for use
-    hc.initialize()
 
     # start with all the lights off
     hc.turn_off_lights()
@@ -25,27 +23,22 @@ def main():
 
     # working loop
     for _ in range(50):
-        # try except block to catch keyboardinterrupt by user to stop
-        try:
-            # here we just loop over the gpio pins and do something with them
-            for light in lights:
-                # turn on all the lights
-                hc.turn_on_lights()
+        # here we just loop over the gpio pins and do something with them
+        for light in range(len(lights)):
+            # turn on all the lights
+            hc.turn_on_lights()
 
-                # then turn off one
-                hc.turn_off_light(light)
+            # then turn off one
+            hc.turn_off_light(light)
 
-                # wait a little bit before the for loop
-                # starts again and turns off the next light
-                time.sleep(.4)
+            # wait a little bit before the for loop
+            # starts again and turns off the next light
+            time.sleep(.4)
 
-        # if the user pressed <CTRL> + C to exit early break out of the loop
-        except KeyboardInterrupt:
-            print "\nstopped"
+        # this is required so that an sms play now command will 
+        # end your script and any subprocess you have statred
+        if exit_event.is_set():
             break
 
-    # This ends and cleans up everything
-    hc.clean_up()
-
-if __name__ == "__main__":
-    main()
+    # lets make sure we turn off the lights before we go back to the show
+    hc.turn_off_lights()

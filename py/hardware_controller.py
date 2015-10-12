@@ -6,6 +6,7 @@
 # Author: Ryan Jennings
 # Author: Chris Usey
 # Author: Todd Giles (todd@lightshowpi.com)
+
 """Control the raspberry pi hardware.
 
 The hardware controller handles all interaction with the raspberry pi
@@ -22,16 +23,23 @@ import logging
 import math
 import time
 import subprocess
-
+import Platform
 import configuration_manager as cm
 
-from wiring_pi_stub import WiringPiStub
-wiringpi = WiringPiStub.import_wiringpi2(logging)
+is_a_raspberryPI = Platform.platform_detect() == 1
+
+if is_a_raspberryPI:
+    import wiringpi2 as wiringpi
+else:
+    # if this is not a RPi you can't run wiringpi so lets load
+    # something in its place
+    import wiring_pi_stub as wiringpi
+    logging.debug("Not running on a raspberryPI")
 
 # Get Configurations - TODO(todd): Move more of this into configuration manager
 _CONFIG = cm.CONFIG
 
-_GPIO_PINS = [int(pin) for pin in _CONFIG.get('hardware', 'gpio_pins').split(',')]
+_GPIO_PINS = [int(gpio_pin) for gpio_pin in _CONFIG.get('hardware', 'gpio_pins').split(',')]
 
 PIN_MODES = _CONFIG.get('hardware', 'pin_modes').split(',')
 
@@ -64,6 +72,13 @@ GPIOLEN = len(_GPIO_PINS)
 if len(PIN_MODES) == 1:
     PIN_MODES = [PIN_MODES[0] for _ in range(GPIOLEN)]
 
+is_pin_pwm = list()
+for mode in range(len(PIN_MODES)):
+    if PIN_MODES[mode] == "pwm":
+        is_pin_pwm.append(True)
+    else:
+        is_pin_pwm.append(False)
+
 # Check ActiveLowMode Configuration Setting
 if _ACTIVE_LOW_MODE:
     # Enabled
@@ -78,9 +93,10 @@ else:
     _GPIOINACTIVE = 0
     _PWM_OFF = 0
 
+
 # Functions
 def enable_device():
-    '''enable the specified device '''
+    """enable the specified device """
     try:
         devices = _HARDWARE_CONFIG['devices']
 
@@ -159,120 +175,117 @@ def enable_device():
                       "settings.")
         logging.debug(error)
 
-def is_pin_pwm(i):
-    """Is the pin setup for pwm"""
-    return PIN_MODES[i].lower() == "pwm"
 
-def set_pins_as_outputs(exportpins):
-    '''Set all the configured pins as outputs.'''
+def set_pins_as_outputs():
+    """Set all the configured pins as outputs."""
+    for pin in range(GPIOLEN):
+        set_pin_as_output(pin)
 
-    if exportpins and not WiringPiStub.is_stubbed():
-        subprocess.check_call([_GPIO_UTILITY_PATH, 'unexportall'])
 
-    for i in range(GPIOLEN):
-        set_pin_as_output(i, exportpins)
+def set_pin_as_output(pin):
+    """Set the specified pin as an output.
 
-    # When exporting pins via the gpio utility, you have to re-call wiringPiSetupSys after
-    # after changing or exporting any pins.
-    if exportpins:
-        wiringpi.wiringPiSetupSys()
-
-def set_pins_as_inputs(exportpins):
-    '''Set all the configured pins as inputs.'''
-    if exportpins and not WiringPiStub.is_stubbed():
-        subprocess.check_call([_GPIO_UTILITY_PATH, 'unexportall'])
-
-    for i in range(GPIOLEN):
-        set_pin_as_input(i, exportpins)
-
-    if exportpins:
-        wiringpi.wiringPiSetupSys()
-
-def set_pin_as_output(i, exportpins):
-    '''Set the specified pin as an output.'''
-
-    if exportpins:
-        if is_pin_pwm(i):
-            # Error! Can't do PWM with gpio pin export
-            logging.error("Cannot use gpio pin export with PWM")
-        else:
-            if not WiringPiStub.is_stubbed():
-                subprocess.check_call([_GPIO_UTILITY_PATH, 'export', str(_GPIO_PINS[i]), 'out'])
+    :param pin: index of pin in _GPIO_PINS
+    :type pin: int
+    """
+    if _EXPORT_PINS and is_a_raspberryPI:
+        # set pin as output for use in export mode
+        subprocess.check_call([_GPIO_UTILITY_PATH, 'export', str(_GPIO_PINS[pin]), 'out'])
     else:
-        wiringpi.pinMode(_GPIO_PINS[i], _GPIOASOUTPUT)
-        if is_pin_pwm(i):
-            wiringpi.softPwmCreate(_GPIO_PINS[i], 0, _PWM_MAX)
-
-def set_pin_as_input(i, exportpins):
-    '''Set the specified pin as an input.'''
-    if exportpins and not WiringPiStub.is_stubbed():
-        subprocess.check_call([_GPIO_UTILITY_PATH, 'export', str(_GPIO_PINS[i]), 'in'])
-    else:
-        wiringpi.pinMode(_GPIO_PINS[i], _GPIOASINPUT)
-
-def turn_off_lights(usealwaysonoff=0):
-    '''
-    Turn off all the lights,
-
-    but leave on all lights designated to be always on if specified.
-    '''
-    for i in range(GPIOLEN):
-        if is_pin_pwm(i):
-            # No overrides available for pwm mode pins
-            wiringpi.softPwmWrite(_GPIO_PINS[i], _PWM_OFF)
-            continue
-
-        if usealwaysonoff:
-            if i + 1 not in _ALWAYS_ON_CHANNELS:
-                wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOINACTIVE)
+        if is_pin_pwm[pin]:
+            wiringpi.softPwmCreate(_GPIO_PINS[pin], 0, _PWM_MAX)
         else:
-            wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOINACTIVE)
+            wiringpi.pinMode(_GPIO_PINS[pin], _GPIOASOUTPUT)
 
-def turn_on_lights(usealwaysonoff=0):
-    '''
-    Turn on all the lights,
 
-    but leave off all lights designated to be always off if specified.
-    '''
-    for i in range(GPIOLEN):
-        if is_pin_pwm(i):
-            # No overrides available for pwm mode pins
-            wiringpi.softPwmWrite(_GPIO_PINS[i], _PWM_ON)
-            continue
+def set_pins_as_inputs():
+    """Set all the configured pins as inputs."""
+    for pin in range(GPIOLEN):
+        set_pin_as_input(pin)
 
-        if usealwaysonoff:
-            if i + 1 not in _ALWAYS_OFF_CHANNELS:
-                wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOACTIVE)
-        else:
-            wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOACTIVE)
 
-def turn_off_light(i, useoverrides=0):
-    '''
-    Turn off the specified light,
+def set_pin_as_input(pin):
+    """Set the specified pin as an input.
 
-    taking into account various overrides if specified.
-    '''
-    if is_pin_pwm(i):
-        # No overrides available for pwm mode pins
-        wiringpi.softPwmWrite(_GPIO_PINS[i], _PWM_OFF)
-        return
-
-    if useoverrides:
-        if i + 1 not in _ALWAYS_ON_CHANNELS:
-            if i + 1 not in _INVERTED_CHANNELS:
-                wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOINACTIVE)
-            else:
-                wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOACTIVE)
+    :param pin: index of pin in _GPIO_PINS
+    :type pin: int
+    """
+    if _EXPORT_PINS and is_a_raspberryPI:
+        # set pin as input for use in export mode
+        subprocess.check_call([_GPIO_UTILITY_PATH, 'export', str(_GPIO_PINS[pin]), 'in'])
     else:
-        wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOINACTIVE)
+        wiringpi.pinMode(_GPIO_PINS[pin], _GPIOASINPUT)
 
-def turn_on_light(i, useoverrides=0, brightness=1.0):
-    '''
-    Turn on the specified light, 
 
-    taking into account various overrides if specified.
-    '''
-    if is_pin_pwm(i):
+def turn_off_lights(use_always_onoff=False):
+    """
+    Turn off all the lights
+
+    But leave on all lights designated to be always on if specified.
+
+    :param use_always_onoff: boolean, should always on/off be used
+    :type use_always_onoff: bool
+    """
+    for pin in range(GPIOLEN):
+        turn_off_light(pin, use_always_onoff)
+
+
+def turn_off_light(pin, use_overrides=False):
+    """
+    Turn off the specified light
+
+    Taking into account various overrides if specified.
+
+    :param pin: index of pin in _GPIO_PINS
+    :type pin: int
+
+    :param use_overrides: should overrides be used
+    :type use_overrides: bool
+    """
+    if use_overrides:
+        if is_pin_pwm[pin]:
+            turn_on_light(pin, use_overrides, _PWM_OFF)
+        else:
+            if pin + 1 not in _ALWAYS_OFF_CHANNELS:
+                if pin + 1 not in _INVERTED_CHANNELS:
+                    wiringpi.digitalWrite(_GPIO_PINS[pin], _GPIOINACTIVE)
+                else:
+                    wiringpi.digitalWrite(_GPIO_PINS[pin], _GPIOACTIVE)
+    else:
+        if is_pin_pwm[pin]:
+            wiringpi.softPwmWrite(_GPIO_PINS[pin], _PWM_OFF)
+        else:
+            wiringpi.digitalWrite(_GPIO_PINS[pin], _GPIOINACTIVE)
+
+
+def turn_on_lights(use_always_onoff=False):
+    """
+    Turn on all the lights
+
+    But leave off all lights designated to be always off if specified.
+
+    :param use_always_onoff: should always on/off be used
+    :type use_always_onoff: bool
+    """
+    for pin in range(GPIOLEN):
+        turn_on_light(pin, use_always_onoff)
+
+
+def turn_on_light(pin, use_overrides=False, brightness=1.0):
+    """Turn on the specified light
+
+    Taking into account various overrides if specified.
+
+    :param pin: index of pin in _GPIO_PINS
+    :type pin: int
+
+    :param use_overrides: should overrides be used
+    :type use_overrides: bool
+
+    :param brightness: float, a float representing the brightness of the lights
+    :type brightness: float
+    """
+    if is_pin_pwm[pin]:
         if math.isnan(brightness):
             brightness = 0.0
         if _ACTIVE_LOW_MODE:
@@ -281,40 +294,60 @@ def turn_on_light(i, useoverrides=0, brightness=1.0):
             brightness = 0.0
         if brightness > 1.0:
             brightness = 1.0
-        wiringpi.softPwmWrite(_GPIO_PINS[i], int(brightness * _PWM_MAX))
+        if use_overrides:
+            if pin + 1 in _ALWAYS_OFF_CHANNELS:
+                brightness = 0
+            elif pin + 1 in _ALWAYS_ON_CHANNELS:
+                brightness = 1
+            if pin + 1 in _INVERTED_CHANNELS:
+                brightness = 1 - brightness
+        wiringpi.softPwmWrite(_GPIO_PINS[pin], int(brightness * _PWM_MAX))
         return
 
-    if useoverrides:
-        if i + 1 not in _ALWAYS_OFF_CHANNELS:
-            if i + 1 not in _INVERTED_CHANNELS:
-                wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOACTIVE)
+    if use_overrides:
+        if pin + 1 not in _ALWAYS_OFF_CHANNELS:
+            if pin + 1 not in _INVERTED_CHANNELS:
+                wiringpi.digitalWrite(_GPIO_PINS[pin], _GPIOACTIVE)
             else:
-                wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOINACTIVE)
+                wiringpi.digitalWrite(_GPIO_PINS[pin], _GPIOINACTIVE)
     else:
-        wiringpi.digitalWrite(_GPIO_PINS[i], _GPIOACTIVE)
+        wiringpi.digitalWrite(_GPIO_PINS[pin], _GPIOACTIVE)
 
-def clean_up(exportpins=_EXPORT_PINS):
+
+def clean_up():
     """
     Clean up and end the lightshow
 
-    Turn off all lights set the pins as inputs
+    Turn off all lights and set the pins as inputs
     """
     turn_off_lights()
-    set_pins_as_inputs(exportpins)
+    set_pins_as_inputs()
+    if _EXPORT_PINS:
+        subprocess.check_call([_GPIO_UTILITY_PATH, 'unexportall'])
 
-def initialize(exportpins=_EXPORT_PINS):
-    '''Set pins as outputs, and start all lights in the off state.'''
 
-    if not exportpins:
+def initialize():
+    """Set pins as outputs and start all lights in the off state."""
+    if _EXPORT_PINS:
+        logging.info("Running as non root user, disabling pwm mode on all pins")
+
+        for pin in range(GPIOLEN):
+            PIN_MODES[pin] = "onoff"
+            is_pin_pwm[pin] = False
+
+        set_pins_as_outputs()
+        wiringpi.wiringPiSetupSys()
+    else:
         wiringpi.wiringPiSetup()
+        enable_device()
+        set_pins_as_outputs()
 
-    enable_device()
-    set_pins_as_outputs(exportpins)
     turn_off_lights()
+
 
 # __________________Main________________
 def main():
-    '''main'''
+    """main"""
     parser = argparse.ArgumentParser()
     parser.add_argument('--state', choices=["off", "on", "flash", "fade", "cleanup"],
                         help='turn off, on, flash, or cleanup')
@@ -349,15 +382,15 @@ def main():
         while True:
             try:
                 for light in lights:
-                    if is_pin_pwm(light):
+                    if is_pin_pwm[light]:
                         for _ in range(flashes):
                             for brightness in range(0, _PWM_MAX):
                                 # fade in
-                                turn_on_light(light, 0, float(brightness) / _PWM_MAX)
+                                turn_on_light(light, False, float(brightness) / _PWM_MAX)
                                 time.sleep(sleep / _PWM_MAX)
                             for brightness in range(_PWM_MAX - 1, -1, -1):
                                 # fade out
-                                turn_on_light(light, 0, float(brightness) / _PWM_MAX)
+                                turn_on_light(light, False, float(brightness) / _PWM_MAX)
                                 time.sleep(sleep / _PWM_MAX)
             except KeyboardInterrupt:
                 print "\nstopped"
@@ -382,6 +415,7 @@ def main():
                 break
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()
