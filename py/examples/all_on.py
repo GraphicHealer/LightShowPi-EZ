@@ -2,15 +2,14 @@
 
 import time
 
-# This import gives you full acess to the hardware
-import hardware_controller as hc
-
-def main():
+# exit_event is passed in from the pre/post show script as is required
+# if an exit_event is generated the pre/post show script can terminate the script 
+# Do not forget to include it, if you do not sms commands will not be able
+# to end the script and you will have to wait for it to finish
+def main(exit_event):
     """Turn all the lights on for 2 minutes"""
 
-    # initialize your hardware for use
-    hc.initialize()
-
+    return_value = 0
     # turn on all the lights
     hc.turn_on_lights()
 
@@ -19,17 +18,10 @@ def main():
 
     # working loop will run as long as time.time() is less then "end"
     while time.time() < end:
-        # try except block to catch keyboardinterrupt by user to stop
-        try:
-            # do nothing, just wait
-            pass
-        # if the user pressed <CTRL> + C to exit early break out of the loop
-        except KeyboardInterrupt:
-            print "\nstopped"
+        # this is required so that an sms play now command will 
+        # end your script and any subprocess you have statred
+        if exit_event.is_set():
             break
 
-    # This ends and cleans up everything
-    hc.clean_up()
-
-if __name__ == "__main__":
-    main()
+    # lets make sure we turn off the lights before we go back to the show
+    hc.turn_off_lights()

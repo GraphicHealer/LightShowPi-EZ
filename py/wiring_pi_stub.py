@@ -1,67 +1,62 @@
-import os
+"""Empty wrapper module for wiringpi
 
-class WiringPiStub:
-    @classmethod
-    def import_wiringpi2(cls, logger):
-        is_pi = "raspberrypi" in os.uname()
-        if is_pi:
-            cls._is_stubbed = False
-            logger.info("Raspberry Pi detected, enabling wiringpi2 library")
-            import wiringpi2
-            return wiringpi2
-        else:
-            cls._is_stubbed = True
-            logger.info("Not running on the Raspberry Pi, using WiringPiStub")
-            return WiringPiStub(logger)
+This module is a place holder for virtual hardware to run a simulated lightshow
+an a pc.  This is module is not yet functional.
+"""
 
-    @classmethod
-    def is_stubbed(cls):
-      return cls._is_stubbed
+# TODO - Find a way to "method_missing" all of this...
 
-    def __init__(self, logger):
-        self._logger = logger
 
-    # TODO - Find a way to "method_missing" all of this...
+# Setup
+def wiringPiSetup(*args):
+    pass
 
-    # Setup
-    def wiringPiSetup(self, *args):
-        pass
 
-    def wiringPiSetupSys(self, *args):
-        pass
+def wiringPiSetupSys(*args):
+    pass
 
-    def pinMode(self, *args):
-        pass
 
-    # Pin Writes
-    def softPwmCreate(self, *args):
-        pass
+def pinMode(*args):
+    pass
 
-    def softPwmWrite(self, *args):
-        pass
 
-    def digitalWrite(self, *args):
-        pass
+# Pin Writes
+def softPwmCreate(*args):
+    pass
 
-    # Devices
-    def mcp23017Setup(self, *args):
-        pass
 
-    def mcp23s17Setup(self, *args):
-        pass
+def softPwmWrite(*args):
+    pass
 
-    def mcp23016Setup(self, *args):
-        pass
 
-    def mcp23008Setup(self, *args):
-        pass
+def digitalWrite(*args):
+    pass
 
-    def mcp23s08Setup(self, *args):
-        pass
 
-    def sr595Setup(self, *args):
-        pass
+# Devices
+def mcp23017Setup(*args):
+    pass
 
-    def pcf8574Setup(self, *args):
-        pass
 
+def mcp23s17Setup(*args):
+    pass
+
+
+def mcp23016Setup(*args):
+    pass
+
+
+def mcp23008Setup(*args):
+    pass
+
+
+def mcp23s08Setup(*args):
+    pass
+
+
+def sr595Setup(*args):
+    pass
+
+
+def pcf8574Setup(*args):
+    pass
