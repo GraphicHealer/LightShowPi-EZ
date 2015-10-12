@@ -1,2 +1,2 @@
 # Ignore local cached of fft output
-*.sync.gz
+*.sync
