@@ -207,6 +207,8 @@ def audio_in():
                 if audioop.max(data, 2) < 250:
                     # we will fill the matrix with zeros and turn the lights off
                     matrix = np.zeros(hc.GPIOLEN, dtype="float64")
+                    logging.debug("below threshold: '" + str(
+                        audioop.max(data, 2)) + "', turning the lights off")
                 else:
                     matrix = fft_calc.calculate_levels(data)
                     running_stats.push(matrix)
@@ -494,11 +496,11 @@ def play_song():
 
 
 if __name__ == "__main__":
-    # Log everything to our log file
-    # TODO(todd): Add logging configuration options.
-
     # Arguments
     parser = argparse.ArgumentParser()
+    parser.add_argument('--log', default='INFO',
+                        help='Set the logging level. levels:INFO, DEBUG, WARNING, ERROR, CRITICAL')
+
     filegroup = parser.add_mutually_exclusive_group()
     filegroup.add_argument('--playlist', default=_PLAYLIST_PATH,
                            help='Playlist to choose song from.')
@@ -512,7 +514,17 @@ if __name__ == "__main__":
     logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.play.dbg',
                         format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
                                ' - %(message)s',
-                        level=logging.DEBUG)
+                        level=logging.INFO)
+
+    # logging levels
+    levels = {'DEBUG': logging.DEBUG,
+              'INFO': logging.INFO,
+              'WARNING': logging.WARNING,
+              'ERROR': logging.ERROR,
+              'CRITICAL': logging.CRITICAL}
+
+    level = levels.get(parser.parse_args().log.upper())
+    logging.getLogger().setLevel(level)
 
     if cm.lightshow()['mode'] == 'audio-in':
         audio_in()
