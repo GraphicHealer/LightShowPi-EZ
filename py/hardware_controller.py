@@ -6,6 +6,7 @@
 # Author: Ryan Jennings
 # Author: Chris Usey
 # Author: Todd Giles (todd@lightshowpi.com)
+# Author: Tom Enos (tomslick.ca@gmail.com)
 
 """Control the raspberry pi hardware.
 

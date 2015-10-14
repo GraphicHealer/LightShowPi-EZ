@@ -1,11 +1,17 @@
+#!/usr/bin/env python
+#
+# Licensed under the BSD license.  See full license in LICENSE file.
+# http://www.lightshowpi.com/
+#
+# Author: Micah Wedemeyer
+# Author: Tom Enos (tomslick.ca@gmail.com)
+
+
 """Empty wrapper module for wiringpi
 
 This module is a place holder for virtual hardware to run a simulated lightshow
 an a pc.  This is module is not yet functional.
 """
-
-# TODO - Find a way to "method_missing" all of this...
-
 
 # Setup
 def wiringPiSetup(*args):
