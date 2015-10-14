@@ -5,6 +5,7 @@
 #
 # Author: Todd Giles (todd@lightshowpi.com)
 # Author: Chris Usey (chris.usey@gmail.com)
+# Author: Tom Enos (tomslick.ca@gmail.com)
 
 """Preshow and Postshow functionality for the lightshows.
 
