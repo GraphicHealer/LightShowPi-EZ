@@ -40,7 +40,7 @@ import logging
 import sys
 import time
 
-from bs4 import BeautifulSoup
+from BeautifulSoup import BeautifulSoup
 import configuration_manager as cm
 from googlevoice import Voice
 
@@ -74,16 +74,16 @@ def extractsms(htmlsms):
     dictionaries, one per message.'''
     msgitems = []
     tree = BeautifulSoup(htmlsms)  # parse HTML into tree
-    conversations = tree("div", attrs={"id" : True, "class" : "gc-message-unread"}, recursive=False)
+    conversations = tree.findAll("div",attrs={"id" : True},recursive=False)
     for conversation in conversations:
         #   For each conversation, extract each row, which is one SMS message.
-        rows = conversation(attrs={"class" : "gc-message-sms-row"})
+        rows = conversation.findAll(attrs={"class" : "gc-message-sms-row"})
         for row in rows:  # for all rows
             #   For each row, which is one message, extract all the fields.
             msgitem = {"id" : conversation["id"]}  # tag this message with conversation ID
-            spans = row("span", attrs={"class" : True}, recursive=False)
+            spans = row.findAll("span",attrs={"class" : True}, recursive=False)
             for span in spans:  # for all spans in row
-                name = span['class'][0].replace('gc-message-sms-', '')
+                name = span['class'].replace('gc-message-sms-', '')
                 msgitem[name] = (" ".join(span.findAll(text=True))).strip()  # put text in dict
             msgitems.append(msgitem)  # add msg dictionary to list
     return msgitems
