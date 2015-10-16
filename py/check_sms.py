@@ -47,7 +47,7 @@ import logging
 import sys
 import time
 
-from bs4 import BeautifulSoup
+from BeautifulSoup import BeautifulSoup
 import configuration_manager as cm
 from googlevoice import Voice
 
@@ -105,23 +105,23 @@ def extract_sms(html_sms):
 
     # parse HTML into tree
     tree = BeautifulSoup(html_sms)
-    conversations = tree("div", attrs={"id": True, "class": "gc-message-unread"}, recursive=False)
+    conversations = tree.findAll("div",attrs={"id" : True},recursive=False)
 
     for conversation in conversations:
 
         # For each conversation, extract each row, which is one SMS message.
-        rows = conversation(attrs={"class": "gc-message-sms-row"})
+        rows = conversation.findAll(attrs={"class" : "gc-message-sms-row"})
         # for all rows
         for row in rows:
 
             # For each row, which is one message, extract all the fields.
             # tag this message with conversation ID
             msgitem = {"id": conversation["id"]}
-            spans = row("span", attrs={"class": True}, recursive=False)
+            spans = row.findAll("span",attrs={"class" : True}, recursive=False)
 
             # for all spans in row
             for span in spans:
-                name = span['class'][0].replace('gc-message-sms-', '')
+                name = span['class'].replace('gc-message-sms-', '')
 
                 # put text in dict
                 msgitem[name] = (" ".join(span.findAll(text=True))).strip()
@@ -147,14 +147,24 @@ def main():
     parser.add_argument('--setup', default=False,
                         help='use this option to setup the default configuration file for Google Voice')
 
+    parser.add_argument('--log', default='INFO',
+                        help='Set the logging level. levels:INFO, DEBUG, WARNING, ERROR, CRITICAL')
     args = parser.parse_args()
 
-    # Log everything to debug log file
-    # TODO(todd): Add logging configuration options.
     logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.check.dbg',
                         format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
                                ' - %(message)s',
-                        level=logging.DEBUG)
+                        level=logging.INFO)
+    # logging levels
+    levels = {'DEBUG': logging.DEBUG,
+              'INFO': logging.INFO,
+              'WARNING': logging.WARNING,
+              'ERROR': logging.ERROR,
+              'CRITICAL': logging.CRITICAL}
+
+    level = levels.get(parser.parse_args().log.upper())
+    logging.getLogger().setLevel(level)
+
 
     # Load playlist from file, notifying users of any of their requests that have now played
     logging.info('loading playlist ' + args.playlist)
@@ -192,7 +202,6 @@ def main():
 
         # Parse and act on any new sms messages
         messages = VOICE.sms().messages
-
         for msg in extract_sms(VOICE.sms.html):
             logging.debug(str(msg))
             response = commands.execute(msg['text'], msg['from'])
