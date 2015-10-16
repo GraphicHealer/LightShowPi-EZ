@@ -191,10 +191,10 @@ if [ $? -ne 0 ]; then
 fi
 
 # install beautiful soup
-easy_install beautifulsoup4
+pip install Beautifulsoup
 
 if [ $? -ne 0 ]; then
-    errchk "Installing beautifulsoup4" $?
+    errchk "Installing Beautifulsoup" $?
 fi
 
 # Explain to installer how they can test to see if we are working
