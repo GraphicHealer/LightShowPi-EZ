@@ -169,7 +169,7 @@ class FFT(object):
         frequency_limits.append(self.min_frequency)
 
         if self.custom_channel_frequencies != 0 and (
-                    len(self.custom_channel_frequencies) >= channel_length + 1):
+                len(self.custom_channel_frequencies) >= channel_length + 1):
             logging.debug("Custom channel frequencies are being used")
             frequency_limits = self.custom_channel_frequencies
         else:
@@ -264,8 +264,12 @@ class FFT(object):
 
     def save_config(self):
         """Save the current configuration used to generate the fft data"""
-        if not self.config.has_section("fft"):
-            self.config.add_section("fft")
+        if self.config.has_section("fft"):
+            self.config.remove_section("fft")
+
+        self.config.add_section("fft")
+        self.config.set('fft', '# DO NOT EDIT THIS SECTION')
+        self.config.set('fft', '# EDITING THIS SECTION WILL CAUSE YOUR SYNC FILE TO BE INVALID')
 
         self.config.set('fft', 'chunk_size', str(self.chunk_size))
         self.config.set('fft', 'sample_rate', str(self.sample_rate))

@@ -6,6 +6,7 @@
 # Author: Todd Giles (todd@lightshowpi.com)
 #
 # Modifications by: Chris Usey (chris.usey@gmail.com)
+# Modifications by: Tom Enos (tomslick.ca@gmail.com)
 
 """Check SMS messages from a Google Voice account to control the lightshow
 
@@ -40,7 +41,6 @@ Note: Updated to use https://code.google.com/r/kkleidal-pygooglevoiceupdate
 """
 
 import argparse
-import commands
 import csv
 import fcntl
 import logging
@@ -48,14 +48,43 @@ import sys
 import time
 
 from BeautifulSoup import BeautifulSoup
-import configuration_manager as cm
 from googlevoice import Voice
+from googlevoice.util import LoginError, ValidationError
 
-# SMS Configurations
-_CONFIG = cm.sms()
+import configuration_manager
+# import commands
+
+cm = configuration_manager.Configuration(True)
+parser = argparse.ArgumentParser()
+parser.add_argument('--playlist',
+                    default=cm.playlist_path,
+                    help='filename with the song playlist, one song per line in the format: '
+                         '<song name><tab><path to song>')
+parser.add_argument('--setup', default=False,
+                    help='use this option to setup the default configuration file for Google Voice')
+
+parser.add_argument('--log', default='INFO',
+                    help='Set the logging level. levels:INFO, DEBUG, WARNING, ERROR, CRITICAL')
+args = parser.parse_args()
+
+logging.basicConfig(filename=configuration_manager.LOG_DIR + '/music_and_lights.check.dbg',
+                    format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
+                           ' - %(message)s',
+                    level=logging.INFO)
+# logging levels
+levels = {'DEBUG': logging.DEBUG,
+          'INFO': logging.INFO,
+          'WARNING': logging.WARNING,
+          'ERROR': logging.ERROR,
+          'CRITICAL': logging.CRITICAL}
+
+level = levels.get(parser.parse_args().log.upper())
+logging.getLogger().setLevel(level)
+
+import commands
 
 # First check to make sure SMS is enabled
-if _CONFIG['enable'].lower() != 'true':
+if not cm.enable:
     sys.exit()
 
 VOICE = Voice()
@@ -68,14 +97,22 @@ password=<google voice password>
 """
 
 # make sure we are logged in
+# if unable to login wait 30 seconds and try again
+# if unable to login after 3 attempts exit check_sms
 logged_in = False
+attempts = 0
 while not logged_in:
     try:
         VOICE.login()
         logged_in = True
-        pass
-    except:
-        time.sleep(5)
+        logging.info("Successfully logged in to Google Voice account")
+    except LoginError as error:
+        attempts += 1
+        if attempt <= 3:
+            time.sleep(30)
+        else:
+            logging.critical('Unable to login to Google Voice, Exiting SMS.' + error)
+            sys.exit(1)
 
 
 def song_played(song):
@@ -105,19 +142,18 @@ def extract_sms(html_sms):
 
     # parse HTML into tree
     tree = BeautifulSoup(html_sms)
-    conversations = tree.findAll("div",attrs={"id" : True},recursive=False)
+    conversations = tree.findAll("div", attrs={"id": True}, recursive=False)
 
     for conversation in conversations:
-
         # For each conversation, extract each row, which is one SMS message.
-        rows = conversation.findAll(attrs={"class" : "gc-message-sms-row"})
+        rows = conversation.findAll(attrs={"class": "gc-message-sms-row"})
         # for all rows
         for row in rows:
 
             # For each row, which is one message, extract all the fields.
             # tag this message with conversation ID
             msgitem = {"id": conversation["id"]}
-            spans = row.findAll("span",attrs={"class" : True}, recursive=False)
+            spans = row.findAll("span", attrs={"class": True}, recursive=False)
 
             # for all spans in row
             for span in spans:
@@ -138,36 +174,9 @@ def main():
     Download and process all sms messages from a Google Voice account.
     Runs in a loop that is executed every 15 seconds
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--playlist',
-                        default=cm.lightshow()['playlist_path'].replace("$SYNCHRONIZED_LIGHTS_HOME",
-                                                                        cm.HOME_DIR),
-                        help='filename with the song playlist, one song per line in the format: '
-                             '<song name><tab><path to song>')
-    parser.add_argument('--setup', default=False,
-                        help='use this option to setup the default configuration file for Google Voice')
-
-    parser.add_argument('--log', default='INFO',
-                        help='Set the logging level. levels:INFO, DEBUG, WARNING, ERROR, CRITICAL')
-    args = parser.parse_args()
-
-    logging.basicConfig(filename=cm.LOG_DIR + '/music_and_lights.check.dbg',
-                        format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
-                               ' - %(message)s',
-                        level=logging.INFO)
-    # logging levels
-    levels = {'DEBUG': logging.DEBUG,
-              'INFO': logging.INFO,
-              'WARNING': logging.WARNING,
-              'ERROR': logging.ERROR,
-              'CRITICAL': logging.CRITICAL}
-
-    level = levels.get(parser.parse_args().log.upper())
-    logging.getLogger().setLevel(level)
-
-
     # Load playlist from file, notifying users of any of their requests that have now played
     logging.info('loading playlist ' + args.playlist)
+    start_commands = False
     while True:
         with open(args.playlist, 'rb') as playlist_fp:
             fcntl.lockf(playlist_fp, fcntl.LOCK_SH)
@@ -198,7 +207,11 @@ def main():
             fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
 
         logging.info('loaded %d songs from playlist', len(songs))
-        cm.set_songs(songs)
+        cm.set_playlist(songs)
+
+        if not start_commands:
+            commands.start(cm)
+            start_commands = True
 
         # Parse and act on any new sms messages
         messages = VOICE.sms().messages
@@ -217,13 +230,14 @@ def main():
                         for part in response:
                             VOICE.send_sms(msg['from'], str(part))
                             time.sleep(2)
-                except:
-                    logging.warn('Error sending sms response (command still executed)', exc_info=1)
+                except ValidationError as v_error:
+                    logging.warn(str(v_error) + ': Error sending sms response (command still executed)',
+                                 exc_info=1)
 
                 logging.info('Response: "' + str(response) + '"')
             else:
                 logging.info('Unknown request: "' + msg['text'] + '" from ' + msg['from'])
-                VOICE.send_sms(msg['from'], _CONFIG['unknown_command_response'])
+                VOICE.send_sms(msg['from'], cm.unknown_command_response)
 
         # Update playlist with latest votes
         with open(args.playlist, 'wb') as playlist_fp:
