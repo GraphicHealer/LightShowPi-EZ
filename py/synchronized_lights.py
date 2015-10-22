@@ -706,9 +706,6 @@ if __name__ == "__main__":
     if _usefm:
         music_pipe_r, music_pipe_w = os.pipe()
 
-    # if _usefm:
-    #     music_pipe_r, music_pipe_w = os.pipe()
-
     if cm.mode == 'audio-in':
         audio_in()
     else:
