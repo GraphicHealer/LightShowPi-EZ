@@ -89,7 +89,7 @@ fi
 cd $BUILD_DIR
 
 # install wiringpi2-Python
-apt-get install -y python-dev python-setuptools
+apt-get install -y python-dev python-setuptools python-pip
 git clone https://github.com/Gadgetoid/WiringPi2-Python.git
 cd WiringPi2-Python
 python setup.py install
