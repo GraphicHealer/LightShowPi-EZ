@@ -99,7 +99,6 @@ def execute(command, user):
             args = command[len(command_name):]
         else:
             try:
-                # for command_alias in _CONFIG[command_name + '_aliases']:
                 for command_alias in cm.get(command_name + '_aliases'):
                     if bool(re.match(command_alias, command, re.I)):
                         name = command_name

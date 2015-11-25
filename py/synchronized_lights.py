@@ -285,7 +285,7 @@ def load_custom_config(config_filename):
                             preshow = json.loads(preshow_configuration)
                         except (ValueError, TypeError) as error:
                             msg = "Preshow_configuration not defined or not in JSON format."
-                            logging.error(msg + str(error))
+                            log.error(msg + str(error))
                     else:
                         if os.path.isfile(preshow_script):
                             preshow = preshow_script
@@ -306,7 +306,7 @@ def load_custom_config(config_filename):
                             postshow = json.loads(postshow_configuration)
                         except (ValueError, TypeError) as error:
                             msg = "Postshow_configuration not defined or not in JSON format."
-                            logging.error(msg + str(error))
+                            log.error(msg + str(error))
                     else:
                         if os.path.isfile(postshow_script):
                             postshow = postshow_script
@@ -503,7 +503,7 @@ def get_song():
 
             for song in playlist:
                 if len(song) < 2 or len(song) > 4:
-                    logging.error('Invalid playlist.  Each line should be in the form: '
+                    log.error('Invalid playlist.  Each line should be in the form: '
                                   '<song name><tab><path to song>')
                     sys.exit()
                 elif len(song) == 2:

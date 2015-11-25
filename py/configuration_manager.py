@@ -15,7 +15,6 @@ manage these configuration files.
 
 import ConfigParser
 import ast
-# import csv
 import datetime
 import fcntl
 import logging
@@ -47,7 +46,7 @@ def _as_list(list_str, delimiter=','):
     :return: string converted to a list
     :rtype: list
     """
-    return [str.strip(item) for item in list_str.split(delimiter)]
+    return [str.strip(item).rstrip() for item in list_str.split(delimiter)]
 
 
 class Configuration(object):
