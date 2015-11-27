@@ -52,7 +52,7 @@ from googlevoice import Voice
 from googlevoice.util import LoginError, ValidationError
 
 import configuration_manager
-# import commands
+ import commands
 
 cm = configuration_manager.Configuration(True)
 parser = argparse.ArgumentParser()
@@ -80,8 +80,6 @@ levels = {'DEBUG': logging.DEBUG,
 
 level = levels.get(parser.parse_args().log.upper())
 logging.getLogger().setLevel(level)
-
-import commands
 
 # First check to make sure SMS is enabled
 if not cm.enable:
