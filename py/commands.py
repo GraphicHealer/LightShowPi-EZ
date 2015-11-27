@@ -31,11 +31,6 @@ import logging
 import re
 import subprocess
 
-import configuration_manager as cm
-
-
-_CONFIG = cm.sms()
-_CMD_NAMES = _CONFIG['commands']
 
 # The base command class. The class keeps track of all commands instantiated, so to install a new
 # command, simply instantiate a new instance of it.
@@ -104,7 +99,7 @@ def execute(command, user):
             args = command[len(command_name):]
         else:
             try:
-                for command_alias in _CONFIG[command_name + '_aliases']:
+                for command_alias in cm.get(command_name + '_aliases'):
                     if bool(re.match(command_alias, command, re.I)):
                         name = command_name
                         args = command[len(command_alias):]
@@ -117,7 +112,7 @@ def execute(command, user):
 
     # If no command found, assume we're executing the default command
     if not name:
-        name = _CONFIG['default_command']
+        name = cm.default_command
         args = command
 
     # Verify this command is installed
@@ -128,11 +123,11 @@ def execute(command, user):
 
     # Verify the user has permission to execute this command
     if not cm.has_permission(user, name):
-        return _CONFIG['unauthorized_response'].format(cmd=name, user=user)
+        return cm.unauthorized_response.format(cmd=name, user=user)
 
     # Check to see if the command issued should be throttled
     if cm.is_throttle_exceeded(name, user):
-        return _CONFIG['throttle_limit_reached_response'].format(cmd=name, user=user)
+        return cm.throttle_limit_reached_response.format(cmd=name, user=user)
 
     # Execute the command
     return Command.commands[name].execute(user, args.strip())
@@ -153,15 +148,13 @@ def cmd_help(*args):
 
     for cmd in _CMD_NAMES:
         if cm.has_permission(user, cmd):
-            cmd_description = cm.sms()[cmd + '_description']
+            cmd_description = cm.get(cmd + '_description')
 
             if cmd_description:
                 help_msg += cmd_description + "\n"
 
     return help_msg
 
-
-Command('help', cmd_help)
 
 # TODO(todd): Add paging support for large playlist (Issue #22)
 def cmd_list(*args):
@@ -177,7 +170,7 @@ def cmd_list(*args):
     division = 0
     index = 1
 
-    for song in cm.songs():
+    for song in cm.playlist:
         songlist[division] += str(index) + ' - ' + song[0] + '\n'
         index += 1
 
@@ -186,9 +179,6 @@ def cmd_list(*args):
             songlist.append('')
 
     return songlist
-
-
-Command('list', cmd_list)
 
 
 def cmd_play(*args):
@@ -209,15 +199,12 @@ def cmd_play(*args):
     else:
         song = int(args)
 
-        if song < 1 or song > len(cm.songs()):
+        if song < 1 or song > len(cm.playlist):
             return 'Sorry, the song you requested ' + args + ' is out of range :('
         else:
             cm.update_state('play_now', song)
 
-            return '"' + cm.songs()[song - 1][0] + '" coming right up!'
-
-
-Command('play', cmd_play)
+            return '"' + cm.playlist[song - 1][0] + '" coming right up!'
 
 
 def cmd_volume(*args):
@@ -243,10 +230,10 @@ def cmd_volume(*args):
             return 'volume must be between 0 and 100'
         sanitized_cmd = str(vol)
     else:
-        return cm.sms()['volume_description']
+        return cm.volume_description
 
     # Execute the sanitized command and handle result
-    volscript = cm.HOME_DIR + '/bin/vol'
+    volscript = cm.home_dir + '/bin/vol'
     output, error = subprocess.Popen(volscript + ' ' + sanitized_cmd,
                                      shell=True, stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE).communicate()
@@ -256,9 +243,6 @@ def cmd_volume(*args):
         return 'volume request failed'
     else:
         return 'volume = ' + str(output)
-
-
-Command('volume', cmd_volume)
 
 
 def cmd_vote(*args):
@@ -276,15 +260,28 @@ def cmd_vote(*args):
     if args.isdigit():
         song_num = int(args)
 
-        if user != 'Me' and 0 < song_num <= len(cm.songs()):
-            song = cm.songs()[song_num - 1]
+        if user != 'Me' and 0 < song_num <= len(cm.playlist):
+            song = cm.playlist[song_num - 1]
             song[2].add(user)
             logging.info('Song requested: ' + str(song))
 
             return 'Thank you for requesting "' + song[0] \
                    + '", we\'ll notify you when it starts!'
     else:
-        return cm.sms()['unknown_command_response']
+        return cm.unknown_command_response
 
 
-Command('vote', cmd_vote)
+def start(config):
+    global cm, _CMD_NAMES
+    cm = config
+    _CMD_NAMES = cm.commands
+        
+    Command('help', cmd_help)
+    Command('list', cmd_list)
+    Command('play', cmd_play)
+    Command('volume', cmd_volume)
+    Command('vote', cmd_vote)
+
+
+if __name__ == "__main__":
+    pass
