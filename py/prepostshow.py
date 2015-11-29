@@ -58,7 +58,7 @@ class PrePostShow(object):
             self.hc = __import__('hardware_controller')
             self.hc.initialize()
 
-        self.config = self.hc.cm.get(show)
+        self.config = self.hc.cm.lightshow.get(show)
         self.show = show
         self.audio = None
 

@@ -24,6 +24,8 @@ import sys
 import warnings
 import json
 
+from collections import defaultdict
+
 # The home directory and configuration directory for the application.
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 if not HOME_DIR:
@@ -83,15 +85,17 @@ class Configuration(object):
         # synchronized_lights and check_sms both use configuration_manager
         # let them only use the parts they need, saving a little memory and time.
         if not sms:
-            self.hardware = dict()
-            self.lightshow = dict()
-            self.audio_processing = dict()
+            self.hardware = None
+            self.lightshow = None
+            self.audio_processing = None
+            self.network = None
 
             self.set_hardware()
             self.set_lightshow()
             self.set_audio_processing()
+            self.set_network()
         else:
-            self.sms = dict()
+            self.sms = None
             self.who_can = dict()
             self.throttlestate = dict()
             self.set_sms()
@@ -177,60 +181,84 @@ class Configuration(object):
         """
         Retrieves the hardware configuration parsing it from the Config Parser as necessary.
         """
+        hrdwr = dict()
         devices = dict()
         try:
             devices = json.loads(self.config.get('hardware', 'devices'))
         except Exception as error:
             logging.error("devices not defined or not in JSON format." + str(error))
-        self.hardware["devices"] = devices
+        hrdwr["devices"] = devices
 
-        for device_type, settings in self.hardware["devices"].iteritems():
+        for device_type, settings in hrdwr["devices"].iteritems():
             for count in range(len(settings)):
                 for k, v in settings[count].iteritems():
                     settings[count][k] = v if not isinstance(v, str) else int(v, 16)
 
-        self.hardware["gpio_pins"] = map(int, self.config.get('hardware', 'gpio_pins').split(","))
-        self.gpio_len = len(self.hardware["gpio_pins"])
-
+        hrdwr["gpio_pins"] = map(int, self.config.get('hardware', 'gpio_pins').split(","))
+        self.gpio_len = len(hrdwr["gpio_pins"])
+        
+        hrdwr["gpio_len"] = len(hrdwr["gpio_pins"])
+        
         temp = self.config.get('hardware', 'pin_modes').split(",")
         if len(temp) != 1:
-            self.hardware["pin_modes"] = temp
+            hrdwr["pin_modes"] = temp
         else:
-            self.hardware["pin_modes"] = [temp[0] for _ in range(self.gpio_len)]
+            hrdwr["pin_modes"] = [temp[0] for _ in range(self.gpio_len)]
 
-        self.hardware["pwm_range"] = int(self.config.get('hardware', 'pwm_range'))
-        self.hardware["active_low_mode"] = self.config.getboolean('hardware', 'active_low_mode')
-        self.hardware["export_pins"] = self.config.getboolean('hardware', 'export_pins')
-        self.hardware["gpio_utility_path"] = self.config.get('hardware', 'gpio_utility_path')
+        hrdwr["pwm_range"] = int(self.config.get('hardware', 'pwm_range'))
+        hrdwr["active_low_mode"] = self.config.getboolean('hardware', 'active_low_mode')
+        
+        self.hardware = Section(hrdwr)
 
-        self.set_values(self.hardware)
+    def set_network(self):
+        """
+        Retrieves the network configuration parsing it from the Config Parser as necessary.
+        """
+        ntwrk = dict()
+        ntwrk["networking"] = self.config.get('network', 'networking')
+        ntwrk["port"] = self.config.getint('network', 'port')
+        ntwrk["buffer"] = self.config.getint('network', 'buffer')
+
+        if len(self.config.get('network', 'channels')) == 0:
+            channels = [_ for _ in range(self.gpio_len)]
+        else:
+            channels = map(int, self.config.get('network', 'channels').split(","))
+
+        temp = defaultdict()
+        for channel in range(len(channels)):
+            temp[channels[channel]] = channel
+
+        ntwrk["channels"] = temp
+
+        self.network = Section(ntwrk)
 
     def set_lightshow(self):
         """
         Retrieve the lightshow configuration loading and parsing it from a file as necessary.
         """
+        lghtshw = dict()
         ls = 'lightshow'
-        self.lightshow["mode"] = self.config.get(ls, 'mode')
-        self.lightshow["audio_in_card"] = self.config.get(ls, 'audio_in_card')
-        self.lightshow["audio_out_card"] = self.config.get(ls, 'audio_out_card')
-        self.lightshow["audio_in_channels"] = self.config.getint(ls, 'audio_in_channels')
-        self.lightshow["audio_in_sample_rate"] = self.config.getint(ls, 'audio_in_sample_rate')
+        lghtshw["mode"] = self.config.get(ls, 'mode')
+        lghtshw["audio_in_card"] = self.config.get(ls, 'audio_in_card')
+        lghtshw["audio_out_card"] = self.config.get(ls, 'audio_out_card')
+        lghtshw["audio_in_channels"] = self.config.getint(ls, 'audio_in_channels')
+        lghtshw["audio_in_sample_rate"] = self.config.getint(ls, 'audio_in_sample_rate')
 
         playlist_path = self.config.get(ls, 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
         if playlist_path:
-            self.lightshow["playlist_path"] = playlist_path
+            lghtshw["playlist_path"] = playlist_path
         else:
-            self.lightshow["playlist_path"] = "/home/pi/music/.playlist"
+            lghtshw["playlist_path"] = "/home/pi/music/.playlist"
 
-        self.lightshow["randomize_playlist"] = self.config.getboolean(ls, 'randomize_playlist')
+        lghtshw["randomize_playlist"] = self.config.getboolean(ls, 'randomize_playlist')
 
         onc = "always_on_channels"
-        self.lightshow[onc] = map(int, self.config.get(ls, onc).split(","))
+        lghtshw[onc] = map(int, self.config.get(ls, onc).split(","))
         offc = "always_off_channels"
-        self.lightshow[offc] = map(int, self.config.get(ls, offc).split(","))
+        lghtshw[offc] = map(int, self.config.get(ls, offc).split(","))
         ic = "invert_channels"
-        self.lightshow[ic] = map(int, self.config.get(ls, ic).split(","))
+        lghtshw[ic] = map(int, self.config.get(ls, ic).split(","))
 
         # setup up preshow
         preshow = None
@@ -247,7 +275,7 @@ class Configuration(object):
             if os.path.isfile(preshow_script):
                 preshow = preshow_script
 
-        self.lightshow['preshow'] = preshow
+        lghtshw['preshow'] = preshow
 
         # setup postshow
         postshow = None
@@ -264,78 +292,80 @@ class Configuration(object):
             if os.path.isfile(postshow_script):
                 postshow = postshow_script
 
-        self.lightshow['postshow'] = postshow
+        lghtshw['postshow'] = postshow
 
-        self.set_values(self.lightshow)
+        self.lightshow = Section(lghtshw)
 
     def set_audio_processing(self):
         """
         Retrieve the audio processing configuration loading and parsing it from a file as necessary.
         """
-        self.audio_processing["fm"] = self.config.getboolean('audio_processing', 'fm')
-        self.audio_processing["frequency"] = self.config.get('audio_processing', 'frequency')
-        self.audio_processing["min_frequency"] = \
+        audio_prcssng = dict()
+        audio_prcssng["fm"] = self.config.getboolean('audio_processing', 'fm')
+        audio_prcssng["frequency"] = self.config.get('audio_processing', 'frequency')
+        audio_prcssng["min_frequency"] = \
             self.config.getfloat('audio_processing', 'min_frequency')
-        self.audio_processing["max_frequency"] = \
+        audio_prcssng["max_frequency"] = \
             self.config.getfloat('audio_processing', 'max_frequency')
         temp = self.config.get('audio_processing', 'custom_channel_mapping')
-        self.audio_processing["custom_channel_mapping"] = \
+        audio_prcssng["custom_channel_mapping"] = \
             map(int, temp.split(',')) if temp else 0
         temp = self.config.get('audio_processing', 'custom_channel_frequencies')
-        self.audio_processing["custom_channel_frequencies"] = \
+        audio_prcssng["custom_channel_frequencies"] = \
             map(int, temp.split(',')) if temp else 0
 
-        self.set_values(self.audio_processing)
+        self.audio_processing = Section(audio_prcssng)
 
     def set_sms(self):
         """
         Retrieves and validates sms configuration loading and parsing it from a file as necessary.
         """
-        self.sms = dict(self.config.items('sms'))
+        shrtmssgsrvc = dict()
+        shrtmssgsrvc = dict(self.config.items('sms'))
         self.who_can["all"] = set()
-        self.sms['commands'] = _as_list(self.config.get('sms', 'commands'))
-        self.sms['throttle_time_limit_seconds'] = int(
+        shrtmssgsrvc['commands'] = _as_list(self.config.get('sms', 'commands'))
+        shrtmssgsrvc['throttle_time_limit_seconds'] = int(
             self.config.get('sms', 'throttle_time_limit_seconds'))
-        self.sms['enable'] = self.config.getboolean('sms', 'enable')
-        self.sms['groups'] = _as_list(self.config.get('sms', 'groups'))
-        self.sms['blacklist'] = _as_list(self.config.get('sms', 'blacklist'))
-        self.sms['unknown_command_response'] = self.config.get('sms', 'unknown_command_response')
+        shrtmssgsrvc['enable'] = self.config.getboolean('sms', 'enable')
+        shrtmssgsrvc['groups'] = _as_list(self.config.get('sms', 'groups'))
+        shrtmssgsrvc['blacklist'] = _as_list(self.config.get('sms', 'blacklist'))
+        shrtmssgsrvc['unknown_command_response'] = self.config.get('sms', 'unknown_command_response')
 
         playlist_path = self.config.get('lightshow', 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
         if playlist_path:
-            self.sms["playlist_path"] = playlist_path
+            shrtmssgsrvc["playlist_path"] = playlist_path
         else:
-            self.sms["playlist_path"] = "/home/pi/music/.playlist"
+            shrtmssgsrvc["playlist_path"] = "/home/pi/music/.playlist"
 
         # Commands
-        for cmd in self.sms['commands']:
+        for cmd in shrtmssgsrvc['commands']:
             try:
-                self.sms[cmd + '_aliases'] = _as_list(self.sms[cmd + '_aliases'])
+                shrtmssgsrvc[cmd + '_aliases'] = _as_list(shrtmssgsrvc[cmd + '_aliases'])
             except KeyError:
-                self.sms[cmd + '_aliases'] = []
+                shrtmssgsrvc[cmd + '_aliases'] = []
             self.who_can[cmd] = set()
 
         # Groups / Permissions
-        self.sms['throttled_groups'] = dict()
-        for group in self.sms['groups']:
+        shrtmssgsrvc['throttled_groups'] = dict()
+        for group in shrtmssgsrvc['groups']:
             try:
-                self.sms[group + '_users'] = _as_list(self.sms[group + '_users'])
+                shrtmssgsrvc[group + '_users'] = _as_list(shrtmssgsrvc[group + '_users'])
             except KeyError:
-                self.sms[group + '_users'] = []
+                shrtmssgsrvc[group + '_users'] = []
 
             try:
-                self.sms[group + '_commands'] = _as_list(self.sms[group + '_commands'])
+                shrtmssgsrvc[group + '_commands'] = _as_list(shrtmssgsrvc[group + '_commands'])
             except KeyError:
-                self.sms[group + '_commands'] = []
+                shrtmssgsrvc[group + '_commands'] = []
 
-            for cmd in self.sms[group + '_commands']:
-                for user in self.sms[group + '_users']:
+            for cmd in shrtmssgsrvc[group + '_commands']:
+                for user in shrtmssgsrvc[group + '_users']:
                     self.who_can[cmd].add(user)
 
             # Throttle
             try:
-                throttled_group_definitions = _as_list(self.sms[group + '_throttle'])
+                throttled_group_definitions = _as_list(shrtmssgsrvc[group + '_throttle'])
                 throttled_group = dict()
 
                 for definition in throttled_group_definitions:
@@ -350,13 +380,13 @@ class Configuration(object):
                     throttle_limit = int(definition[1])
                     throttled_group[throttle_command] = throttle_limit
 
-                self.sms['throttled_groups'][group] = throttled_group
+                shrtmssgsrvc['throttled_groups'][group] = throttled_group
             except KeyError:
                 warnings.warn(
                     "Throttle definition either does not exist or is configured" +
                     "incorrectly for group: " + group)
 
-        self.set_values(self.sms)
+        self.sms = Section(shrtmssgsrvc)
 
     def get_playlist(self):
         """Retrieve the song list
@@ -387,7 +417,7 @@ class Configuration(object):
         :return: user has permission
         :rtype: bool
         """
-        blacklisted = user in self.blacklist
+        blacklisted = user in self.sms.blacklist
         return not blacklisted and (user in self.who_can['all']
                                     or 'all' in self.who_can[cmd]
                                     or user in self.who_can[cmd])
@@ -411,7 +441,7 @@ class Configuration(object):
 
         # Analyze throttle timing
         currenttimestamp = datetime.datetime.now()
-        throttletimelimit = self.throttle_time_limit_seconds
+        throttletimelimit = self.sms.throttle_time_limit_seconds
 
         if "throttle_timestamp_start" in self.throttlestate:
             throttlestarttime = datetime.datetime.strptime(
@@ -438,16 +468,16 @@ class Configuration(object):
         # Check to see what group belongs to starting with the first 
         # group declared
         throttled_group = None
-        for group in self.sms['groups']:
-            userlist = self.sms[group + "_users"]
+        for group in self.sms.groups:
+            userlist = self.sms.get(group + "_users")
 
             if user in userlist:
                 # The user belongs to this group, check if there are any 
                 # throttle definitions
-                if group in self.sms['throttled_groups']:
+                if group in self.sms.throttled_groups:
                     # The group has throttle commands defined, now check if 
                     # the command is defined
-                    throttledcommands = self.sms['throttled_groups'][group]
+                    throttledcommands = self.sms.throttled_groups[group]
 
                     # Check if all command exists
                     if "all" in throttledcommands:
@@ -514,6 +544,42 @@ class Configuration(object):
 
         return processcommandflag
 
+class Section(object):
+    
+    def __init__(self, config):
+        self.config = config
+        self.set_values(self.config)
+    
+    def set_config(self, config):
+        self.config = config
+        self.set_values(self.config)
+        
+    def get_config(self):
+        return self.config
+        
+    def set_value(self,key, value):
+        setattr(self, key, value)
+        
+    def set_values(self, dict_of_items):
+        """Create class instance variables from key, value pairs
+
+        :param dict_of_items: a dict containing key, value pairs to set
+        :type dict_of_items: dict
+        """
+        for key, value in dict_of_items.iteritems():
+            setattr(self, key, value)
+
+    def get(self, item):
+        """Get class instance variables from string
+
+        :param item:
+        :type item: str
+
+        :return: object of item type
+        :rtype: object
+        """
+        return getattr(self, item)
+
 
 if __name__ == "__main__":
     # prints the current configuration
@@ -524,20 +590,20 @@ if __name__ == "__main__":
     print "Logs directory set:", LOG_DIR
 
     print "\nHardware Configuration"
-    for hkey, hvalue in cm.hardware.iteritems():
+    for hkey, hvalue in cm.hardware.config.iteritems():
         print hkey, "=", hvalue
 
     print "\nLightshow Configuration"
-    for lkey, lvalue in cm.lightshow.iteritems():
+    for lkey, lvalue in cm.lightshow.config.iteritems():
         print lkey, "=", lvalue
 
     print "\nAudio Processing Configuration"
-    for akey, avalue in cm.audio_processing.iteritems():
+    for akey, avalue in cm.audio_processing.config.iteritems():
         print akey, "=", avalue
 
     print "\nSMS Configuration"
-    for skey, svalue in sms_cm.sms.iteritems():
+    for skey, svalue in sms_cm.sms.config.iteritems():
         print skey, "=", svalue
 
-    for wckey, wcvalue in sms_cm.who_can.iteritems():
+    for wckey, wcvalue in sms_cm.who_can.config.iteritems():
         print wckey, "=", wcvalue

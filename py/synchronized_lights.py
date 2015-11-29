@@ -74,24 +74,48 @@ import sys
 import wave
 import alsaaudio as aa
 import json
-
+import signal
+import socket
 import decoder
 import numpy as np
-
+import cPickle
+import time
 import fft
 from prepostshow import PrePostShow
 import RunningStats
 
 
 CHUNK_SIZE = 2048  # Use a multiple of 8 (move this to config)
+stream = None
+fm_process = None
 
 
 def end_early():
     """atexit function"""
+    print "stopping"
+    if hc.networking == 'server':
+        hc.broadcast('Waiting for data' + ' ' * 50)
+
+        hc.set_playing()
+        hc.broadcast([0. for pin in range(hc.GPIOLEN)])
+        time.sleep(1)
+        hc.unset_playing()
+        
     hc.clean_up()
+
+    if _usefm:
+        fm_process.kill()
+
+    if stream:
+        stream.close()
+
+    print
 
 
 atexit.register(end_early)
+
+# Remove traceback on Ctrl-C
+signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 
 
 def update_lights(matrix, mean, std):
@@ -109,38 +133,32 @@ def update_lights(matrix, mean, std):
     :param std: standard deviation of fft values
     :type std: list
     """
-    for pin in range(0, hc.GPIOLEN):
-        # Calculate output pwm, where off is at some portion of the std below
-        # the mean and full on is at some portion of the std above the mean.
-        brightness = matrix[pin] - mean[pin] + 0.5 * std[pin]
-        brightness /= 1.25 * std[pin]
-        if brightness > 1.0:
-            brightness = 1.0
+    brightness = matrix - mean + (std * 0.5)
+    brightness = brightness / (std * 1.25)
 
-        if brightness < 0:
-            brightness = 0
+    # insure that the brightness levels are in the correct range
+    brightness = np.clip(brightness, 0.0, 1.0)
+    brightness = np.round(brightness, decimals=3)
 
-        if not hc.is_pin_pwm[pin]:
-            # If pin is on / off mode we'll turn on at 1/2 brightness
-            if brightness > 0.5:
-                hc.turn_on_light(pin, True)
-            else:
-                hc.turn_off_light(pin, True)
-        else:
-            hc.turn_on_light(pin, True, brightness)
+    # broadcast to clients if in server mode
+    if hc.networking == "server":
+        hc.broadcast(brightness)
+
+    for blevel, pin in zip(brightness, range(hc.GPIOLEN)):
+        hc.turn_on_light(pin, True, blevel)
 
 
 def audio_in():
     """Control the lightshow from audio coming in from a USB audio card"""
-    sample_rate = cm.audio_in_sample_rate
-    input_channels = cm.audio_in_channels
+    sample_rate = cm.lightshow.audio_in_sample_rate
+    input_channels = cm.lightshow.audio_in_channels
 
     # Open the input stream from default input device
-    stream = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NORMAL, cm.audio_in_card)
-    stream.setchannels(input_channels)
-    stream.setformat(aa.PCM_FORMAT_S16_LE)  # Expose in config if needed
-    stream.setrate(sample_rate)
-    stream.setperiodsize(CHUNK_SIZE)
+    streaming = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NORMAL, cm.lightshow.audio_in_card)
+    streaming.setchannels(input_channels)
+    streaming.setformat(aa.PCM_FORMAT_S16_LE)  # Expose in config if needed
+    streaming.setrate(sample_rate)
+    streaming.setperiodsize(CHUNK_SIZE)
 
     log.debug("Running in audio-in mode - will run until Ctrl+C is pressed")
     print "Running in audio-in mode, use Ctrl+C to stop"
@@ -156,21 +174,23 @@ def audio_in():
     # preload running_stats to avoid errors, and give us a show that looks
     # good right from the start
     running_stats.preload(mean, std, count)
-
     try:
         hc.initialize()
         fft_calc = fft.FFT(CHUNK_SIZE,
                            sample_rate,
                            hc.GPIOLEN,
-                           cm.min_frequency,
-                           cm.max_frequency,
-                           cm.custom_channel_mapping,
-                           cm.custom_channel_frequencies,
+                           cm.audio_processing.min_frequency,
+                           cm.audio_processing.max_frequency,
+                           cm.audio_processing.custom_channel_mapping,
+                           cm.audio_processing.custom_channel_frequencies,
                            input_channels)
+
+        if hc.networking == "server":
+            hc.set_playing()
 
         # Listen on the audio input device until CTRL-C is pressed
         while True:
-            length, data = stream.read()
+            length, data = streaming.read()
             if length > 0:
                 # if the maximum of the absolute value of all samples in
                 # data is below a threshold we will disreguard it
@@ -290,7 +310,7 @@ def load_custom_config(config_filename):
                         if os.path.isfile(preshow_script):
                             preshow = preshow_script
 
-                    cm.preshow = preshow
+                    cm.lightshow.preshow = preshow
 
                 # setup postshow
                 has_postshow_configuration = config.has_option(lsc, 'postshow_configuration')
@@ -311,22 +331,22 @@ def load_custom_config(config_filename):
                         if os.path.isfile(postshow_script):
                             postshow = postshow_script
 
-                    cm.postshow = postshow
+                    cm.lightshow.postshow = postshow
 
             if config.has_section('custom_audio_processing'):
                 if config.has_option('custom_audio_processing', 'min_frequency'):
-                    cm.min_frequency = config.getfloat('custom_audio_processing', 'min_frequency')
+                    cm.audio_processing.min_frequency = config.getfloat('custom_audio_processing', 'min_frequency')
 
                 if config.has_option('custom_audio_processing', 'max_frequency'):
-                    cm.max_frequency = config.getfloat('custom_audio_processing', 'max_frequency')
+                    cm.audio_processing.max_frequency = config.getfloat('custom_audio_processing', 'max_frequency')
 
                 if config.has_option('custom_audio_processing', 'custom_channel_mapping'):
                     temp = config.get('custom_audio_processing', 'custom_channel_mapping')
-                    cm.custom_channel_mapping = map(int, temp.split(',')) if temp else 0
+                    cm.audio_processing.custom_channel_mapping = map(int, temp.split(',')) if temp else 0
 
                 if config.has_option('custom_audio_processing', 'custom_channel_frequencies'):
                     temp = config.get('custom_audio_processing', 'custom_channel_frequencies')
-                    cm.custom_channel_frequencies = map(int, temp.split(',')) if temp else 0
+                    cm.audio_processing.custom_channel_frequencies = map(int, temp.split(',')) if temp else 0
 
 
 def setup_audio(song_filename):
@@ -340,11 +360,15 @@ def setup_audio(song_filename):
     :return: output, fm_process, fft_calc, music_file
     :rtype tuple: lambda, subprocess, fft.FFT, decoder
     """
+    global fm_process
+    
     # Set up audio
-    if song_filename.endswith('.wav'):
-        music_file = wave.open(song_filename, 'r')
-    else:
-        music_file = decoder.open(song_filename)
+    force_header = False
+    
+    if any([ax for ax in [".mp4", ".m4a", ".m4b"] if ax in song_filename]):
+        force_header = True
+    
+    music_file = decoder.open(song_filename, force_header)
 
     sample_rate = music_file.getframerate()
     num_channels = music_file.getnchannels()
@@ -352,10 +376,10 @@ def setup_audio(song_filename):
     fft_calc = fft.FFT(CHUNK_SIZE,
                        sample_rate,
                        hc.GPIOLEN,
-                       cm.min_frequency,
-                       cm.max_frequency,
-                       cm.custom_channel_mapping,
-                       cm.custom_channel_frequencies)
+                       cm.audio_processing.min_frequency,
+                       cm.audio_processing.max_frequency,
+                       cm.audio_processing.custom_channel_mapping,
+                       cm.audio_processing.custom_channel_frequencies)
 
     # setup output device
     if _usefm:
@@ -366,7 +390,7 @@ def setup_audio(song_filename):
             fm_process = subprocess.Popen(["sudo",
                                            cm.home_dir + "/bin/pifm",
                                            "-",
-                                           cm.frequency,
+                                           cm.audio_processing.frequency,
                                            "44100",
                                            "stereo"],
                                           stdin=music_pipe_r,
@@ -374,7 +398,7 @@ def setup_audio(song_filename):
         output = lambda data: os.write(music_pipe_w, data)
     else:
         fm_process = None
-        output_device = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL, cm.audio_out_card)
+        output_device = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL, cm.lightshow.audio_out_card)
         output_device.setchannels(num_channels)
         output_device.setrate(sample_rate)
         output_device.setformat(aa.PCM_FORMAT_S16_LE)
@@ -384,8 +408,11 @@ def setup_audio(song_filename):
     # Output a bit about what we're about to play to the logs
     nframes = str(music_file.getnframes() / sample_rate)
     log.info("Playing: " + song_filename + " (" + nframes + " sec)")
+    # send song file name to clients for logging
+    if hc.networking == 'server':
+        hc.broadcast(song_filename)
 
-    return output, fm_process, fft_calc, music_file
+    return output, fft_calc, music_file
 
 
 def setup_cache(cache_filename, fft_calc):
@@ -411,8 +438,8 @@ def setup_cache(cache_filename, fft_calc):
     # The values 12 and 1.5 are good estimates for first time playing back
     # (i.e. before we have the actual mean and standard deviations
     # calculated for each channel).
-    mean = [12.0 for _ in range(hc.GPIOLEN)]
-    std = [1.5 for _ in range(hc.GPIOLEN)]
+    mean = np.array([12.0 for _ in range(hc.GPIOLEN)], dtype='float64')
+    std = np.array([1.5 for _ in range(hc.GPIOLEN)], dtype='float64')
 
     if args.readcache:
         # Read in cached fft
@@ -504,7 +531,7 @@ def get_song():
             for song in playlist:
                 if len(song) < 2 or len(song) > 4:
                     log.error('Invalid playlist.  Each line should be in the form: '
-                                  '<song name><tab><path to song>')
+                              '<song name><tab><path to song>')
                     sys.exit()
                 elif len(song) == 2:
                     song.append(set())
@@ -541,7 +568,7 @@ def get_song():
             if 0 < play_now <= len(songs):
                 current_song = songs[play_now - 1]
             # Get random song
-            elif cm.randomize_playlist:
+            elif cm.lightshow.randomize_playlist:
                 current_song = songs[random.randrange(0, len(songs))]
             # Play next song in the lineup
             else:
@@ -580,10 +607,15 @@ def play_song():
     load_custom_config(config_filename)
 
     # Initialize Lights
+    hc.set_playing()
     hc.initialize()
 
     # Handle the pre/post show
     play_now = int(cm.get_state('play_now', "0"))
+
+    hc.unset_playing()
+    if hc.networking == 'server':
+        hc.broadcast('preshow ' + ' ' * 50)
 
     if not play_now:
         result = PrePostShow('preshow', hc).execute()
@@ -591,13 +623,15 @@ def play_song():
         if result == PrePostShow.play_now_interrupt:
             play_now = int(cm.get_state('play_now', "0"))
 
+    hc.set_playing()
+
     # Ensure play_now is reset before beginning playback
     if play_now:
         cm.update_state('play_now', "0")
         play_now = 0
 
     # setup audio file and output device
-    output, fm_process, fft_calc, music_file = setup_audio(song_filename)
+    output, fft_calc, music_file = setup_audio(song_filename)
 
     # setup our cache_matrix, std, mean
     cache_found, cache_matrix, std, mean = setup_cache(cache_filename, fft_calc)
@@ -640,19 +674,94 @@ def play_song():
         save_cache(cache_matrix, cache_filename, fft_calc)
 
     # Cleanup the pifm process
-    if cm.fm:
+    if cm.audio_processing.fm:
         fm_process.kill()
 
     # check for postshow
+    hc.unset_playing()
+    if hc.networking == 'server':
+        hc.broadcast('postshow' + ' ' * 50)
+
     if not play_now:
         PrePostShow('postshow', hc).execute()
+
+    if hc.networking == 'server':
+        hc.broadcast('Waiting for data' + ' ' * 50)
 
     # We're done, turn it all off and clean up things ;)
     hc.clean_up()
 
 
+def network_client():
+    """Network client support
+
+    If in client mode, ignore everything else and just
+    read data from the network and blink the lights
+    """
+    global stream
+    hc.set_playing()
+    log.info("Network client mode starting")
+    print "Network client mode starting..."
+    try:
+        stream = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        stream.bind(('', hc.port))
+
+        print "listening on port: " + str(hc.port)
+
+        log.info("client channels mapped as\n" + str(hc.channels))
+        log.info("listening on port: " + str(hc.port))
+    except socket.error, msg:
+        log.error('Failed create socket or bind. Error code: ' +
+                  str(msg[0]) + ' : ' + msg[1])
+        hc.stream.close()
+        sys.exit(0)
+
+    print "press CTRL<C> to end"
+    hc.initialize()
+    print
+    song = "Waiting for data"
+    try:
+        channel_keys = hc.channels.keys()
+        channels = hc.channels
+
+        while True:
+            try:
+                sys.stdout.write("\rReceiving data for: " + song)
+                sys.stdout.flush()
+
+                data, address = stream.recvfrom(hc.network_buffer)
+                data = cPickle.loads(data)
+                if isinstance(data[0], int):
+                    pin = data[0]
+                    if pin in channel_keys:
+                        hc.turn_on_light(channels[pin], True, float(data[1]))
+                    continue
+
+                elif isinstance(data[0], basestring):
+                    song = data[0].split("/")[-1]
+                    log.info("playing " + data[0])
+                    continue
+
+                elif isinstance(data[0], np.ndarray):
+                    blevels = data[0]
+
+                else:
+                    continue
+
+            except (IndexError, cPickle.PickleError):
+                blevels = [0 for _ in range(hc.GPIOLEN)]
+
+            for pin in channel_keys:
+                hc.turn_on_light(channels[pin], True, blevels[pin])
+    except KeyboardInterrupt:
+        log.info("CTRL<C> pressed, stopping")
+        print "stopping"
+        stream.close()
+        hc.clean_up()
+
+
 if __name__ == "__main__":
-    # Make sure SYNCHRONIZED_LIGHTS_HOME environment variable is set
+    # Make sure SYNCHRONIZED_LIGHTS_HOME_N environment variable is set
     HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
     if not HOME_DIR:
         print("Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme")
@@ -693,7 +802,7 @@ if __name__ == "__main__":
     # get copy of configuration manager
     cm = hc.cm
 
-    parser.set_defaults(playlist=cm.playlist_path)
+    parser.set_defaults(playlist=cm.lightshow.playlist_path)
     args = parser.parse_args()
 
     # Make sure one of --playlist or --file was specified
@@ -701,12 +810,14 @@ if __name__ == "__main__":
         print "One of --playlist or --file must be specified"
         sys.exit()
 
-    _usefm = cm.fm
+    _usefm = cm.audio_processing.fm
 
     if _usefm:
         music_pipe_r, music_pipe_w = os.pipe()
 
-    if cm.mode == 'audio-in':
+    if cm.lightshow.mode == 'audio-in':
         audio_in()
+    elif cm.network.networking == "client":
+        network_client()
     else:
         play_song()
