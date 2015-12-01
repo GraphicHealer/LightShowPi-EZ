@@ -4,14 +4,15 @@
 INSTALL_COMMAND="pacman -S --noconfirm"
 
 ## Python dependencies to be installed
-PYTHON_DEPS=(mutagen numpy pyalsaaudio wiringpi2 Beautifulsoup simplejson pygooglevoice)
+PYTHON_DEPS=(Beautifulsoup mutagen pyalsaaudio simplejson wiringpi2)
 
 ## System packages to be installed
-SYSTEM_DEPS=(ffmpeg flac gcc git lame make unzip vorbis-tools faad2 python2-setuptools wiringpi)
+SYSTEM_DEPS=(faad2 ffmpeg flac gcc git lame make python2-numpy python2-setuptools \
+             unzip vorbis-tools wiringpi)
 
 ## Miscellaneous checks before installation continues
 
-# Install Python 2.7 and create some symlinks
+# Install Python 2.7 and pip
 if [ ! -x /usr/bin/python2 ]; then
     echo -e "\e[0;31mNOTE:\e[m Installing Python2..." >&2
     $INSTALL_COMMAND python2

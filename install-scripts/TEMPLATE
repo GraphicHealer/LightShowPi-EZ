@@ -23,7 +23,7 @@
 INSTALL_COMMAND=
 
 ## Python dependencies to be installed
-PYTHON_DEPS=(mutagen numpy pyalsaaudio wiringpi2 Beautifulsoup simplejson pygooglevoice)
+PYTHON_DEPS=(mutagen pyalsaaudio wiringpi2 Beautifulsoup simplejson pygooglevoice)
 
 ## System packages to be installed
 # Include at a minimum:
@@ -38,7 +38,8 @@ PYTHON_DEPS=(mutagen numpy pyalsaaudio wiringpi2 Beautifulsoup simplejson pygoog
 # - make
 # - unzip
 # - wiringpi
-SYSTEM_DEPS=(ffmpeg flac gcc git lame make unzip vorbis-tools faad python-pip python-setuptools python-dev python-alsaaudio wiringpi)
+# - Python 2 numpy - faster than using PyPi repositories
+SYSTEM_DEPS=(ffmpeg flac gcc git lame make unzip vorbis-tools faad python-pip python-setuptools python-dev python-alsaaudio wiringpi python-numpy)
 
 
 ## Miscellaneous other routines

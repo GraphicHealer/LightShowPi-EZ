@@ -96,7 +96,7 @@ pkginstall() {
 pipinstall() {
     log Installing $1 via pip...
     if [ $1 == "numpy" ]; then echo -e "\e[1;33mWARNING:\e[m numpy installation may take up to 30 minutes"; fi
-    /usr/bin/yes | pip install --allow-all-external --allow-unverified $1 $1
+    /usr/bin/yes | pip install $1
     verify "Installation of Python package '$1' failed"
 }
 
@@ -112,14 +112,8 @@ for _dep in ${SYSTEM_DEPS[@]}; do
 done
 
 # Install decoder
-# TODO figure out how to install this from PyPi repos
 log Installing decoder...
-curl -s http://www.brailleweb.com/downloads/decoder-1.5XB-Unix.zip > decoder-1.5XB-Unix.zip && \
-    unzip -qq decoder-1.5XB-Unix.zip && \
-    cp decoder-1.5XB-Unix/decoder.py \
-         decoder-1.5XB-Unix/codecs.pdc \
-         decoder-1.5XB-Unix/fileinfo.py \
-         /usr/lib/python2.7
+pip install git+https://tom_slick@bitbucket.org/tom_slick/decoder.py.git
 verify "Installation of decoder-1.5XB-Unix failed"
 
 # Install Python dependencies
@@ -127,6 +121,14 @@ log Preparing to install ${#PYTHON_DEPS[@]} python packages on your system...
 for _dep in ${PYTHON_DEPS[@]}; do
     pipinstall $_dep;
 done
+
+# Install pygooglevoice. DO NOT use the outdated version in PyPi mirrors
+log Installing patched pygooglevoice...
+cd $BUILD_DIR
+curl -s https://kkleidal-pygooglevoiceupdate.googlecode.com/archive/450e372008a2d81aab4061fd387ee74e7797e030.tar.gz | \
+    tar xzf - && cd kkleidal-pygooglevoiceupdate-* && \
+    python setup.py install
+verify "Installation of pygooglevoice from googlecode failed"
 
 # Optionally add a line to /etc/sudoers
 if [ -f /etc/sudoers ]; then
