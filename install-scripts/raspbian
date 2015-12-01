@@ -1,0 +1,19 @@
+#!/bin/bash
+
+## Package manager installation command
+INSTALL_COMMAND="apt-get install -q=2 -y"
+
+## Python dependencies to be installed
+PYTHON_DEPS=(mutagen numpy pyalsaaudio wiringpi2 Beautifulsoup simplejson pygooglevoice)
+
+## System packages to be installed
+SYSTEM_DEPS=(ffmpeg flac gcc git lame make unzip vorbis-tools faad python-pip python-setuptools python-dev python-alsaaudio wiringpi)
+
+## Miscellaneous checks
+
+# The ffmpeg library changed starting with Debian 8
+DEBIAN_VERSION=`awk -F\" '$1=/VERSION_ID=/ {print $2}' /etc/os-release`
+if [ $DEBIAN_VERSION -gt 7 ]; then
+    SYSTEM_DEPS[0]=libav-tools
+    ln -fs /usr/bin/avconv /usr/bin/ffmpeg
+fi

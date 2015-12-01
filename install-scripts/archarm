@@ -1,0 +1,23 @@
+#!/bin/bash
+
+## Package manager installation command
+INSTALL_COMMAND="pacman -S --noconfirm"
+
+## Python dependencies to be installed
+PYTHON_DEPS=(mutagen numpy pyalsaaudio wiringpi2 Beautifulsoup simplejson pygooglevoice)
+
+## System packages to be installed
+SYSTEM_DEPS=(ffmpeg flac gcc git lame make unzip vorbis-tools faad2 python2-setuptools wiringpi)
+
+## Miscellaneous checks before installation continues
+
+# Install Python 2.7 and create some symlinks
+if [ ! -x /usr/bin/python2 ]; then
+    echo -e "\e[0;31mNOTE:\e[m Installing Python2..." >&2
+    $INSTALL_COMMAND python2
+fi
+
+if [ ! -x /usr/bin/pip2 ]; then
+    echo -e "\e[0;31mNOTE:\e[m Installing pip for Python 2..." >&2
+    $INSTALL_COMMAND python2-pip
+fi
