@@ -159,7 +159,6 @@ def cmd_help(*args):
 
 def cmd_list(*args):
     """Lists all the songs from the current playlist.
-    global cm
 
     :param args: [specified user, arguments for command]
     :type args: list
@@ -170,28 +169,26 @@ def cmd_list(*args):
 
     per_sms = cm.sms['list_songs_per_sms']
     per_page = cm.sms['list_songs_per_page']
-    newline = '\r\n'
     pages = int(math.ceil(float(len(cm.playlist)) / per_sms))
     page = 1
 
     if len(args) > 1 and args[1].isdigit():
         page = int(args[1])
-    if page > pages:
+    if page < 1 or page > pages:
         return 'page # must be between 1 and ' + str(pages)
 
-    response = ['Vote by texting the song #:' + newline]
+    response = ['Vote by texting the song #:\n']
     if page == 1:
-        response[0] += '(Showing 1-' + str(per_page) + ' of ' + str(len(cm.playlist)) + ')' + newline
+        response[0] += '(Showing 1-' + str(per_page) + ' of ' + str(len(cm.playlist)) + ')\n'
 
     i_sms = 0
     i_song = per_page * (page-1)
     for song in cm.playlist[per_page*(page-1):per_page*page]:
         if i_sms > len(response)-1:
-        #if i_sms == len(response):
             response.append('')
-        response[i_sms] += str(1+i_song) + ': ' + song[0] + newline
+        response[i_sms] += str(1+i_song) + ': ' + song[0] + '\n'
         i_song += 1
-        if 0 == (i_song % per_sms):
+        if i_song % per_sms == 0:
             i_sms += 1
 
     if page < pages:
