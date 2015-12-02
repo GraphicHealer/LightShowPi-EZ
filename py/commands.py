@@ -28,6 +28,7 @@ need to define all commands in this file).
 """
 
 import logging
+import math
 import re
 import subprocess
 
@@ -156,29 +157,46 @@ def cmd_help(*args):
     return help_msg
 
 
-# TODO(todd): Add paging support for large playlist (Issue #22)
 def cmd_list(*args):
     """Lists all the songs from the current playlist.
+    global cm
 
-    :param args: Not used but left in for compatibility
+    :param args: [specified user, arguments for command]
     :type args: list
 
     :return: list of songs
     :rtype: list
     """
-    songlist = ['Vote by texting the song #:\n']
-    division = 0
-    index = 1
 
-    for song in cm.playlist:
-        songlist[division] += str(index) + ' - ' + song[0] + '\n'
-        index += 1
+    per_sms = cm.sms['list_songs_per_sms']
+    per_page = cm.sms['list_songs_per_page']
+    newline = '\r\n'
+    pages = int(math.ceil(float(len(cm.playlist)) / per_sms))
+    page = 1
 
-        if (index - 1) % 4 == 0:
-            division += 1
-            songlist.append('')
+    if len(args) > 1 and args[1].isdigit():
+        page = int(args[1])
+    if page > pages:
+        return 'page # must be between 1 and ' + str(pages)
 
-    return songlist
+    response = ['Vote by texting the song #:' + newline]
+    if page == 1:
+        response[0] += '(Showing 1-' + str(per_page) + ' of ' + str(len(cm.playlist)) + ')' + newline
+
+    i_sms = 0
+    i_song = per_page * (page-1)
+    for song in cm.playlist[per_page*(page-1):per_page*page]:
+        if i_sms > len(response)-1:
+        #if i_sms == len(response):
+            response.append('')
+        response[i_sms] += str(1+i_song) + ': ' + song[0] + newline
+        i_song += 1
+        if 0 == (i_song % per_sms):
+            i_sms += 1
+
+    if page < pages:
+        response[len(response)-1] += '(Text "list ' + str(1+page) + '" for more songs)'
+    return response
 
 
 def cmd_play(*args):
