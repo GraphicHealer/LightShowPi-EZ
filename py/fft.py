@@ -24,7 +24,7 @@ import ConfigParser
 import logging
 import os.path
 from numpy import *
-
+import math
 
 class FFT(object):
     def __init__(self,
@@ -95,6 +95,7 @@ class FFT(object):
             for a in range(len(self.piff)):
                 if self.piff[a][0] == self.piff[a][1]:
                     self.piff[a][1] += 1
+
 
         # create a numpy array, taking just the left channel if stereo
         data_stereo = frombuffer(data, dtype="int16")

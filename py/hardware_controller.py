@@ -381,13 +381,12 @@ def light_on(pins, override=False, brightness=1.0):
 
     if len(pins) == 0:
         return
-    
+
     for pin in pins:
         if is_pin_pwm[pin]:
             brightness = float(brightness)
         else:
             brightness = 1
-        #print pin, override, brightness    
         turn_on_light(pin, use_overrides=override, brightness=brightness)
 
 
@@ -400,13 +399,12 @@ def light_off(pins, override=False, brightness=0.0):
 
     if len(pins) == 0:
         return
-    
+
     for pin in pins:
         if is_pin_pwm[pin]:
             brightness = float(brightness) if is_pin_pwm[pin] else 0
         else:
             brightness = 0
-        #print pin, override, brightness    
         turn_on_light(pin, use_overrides=override, brightness=brightness)
 
 
@@ -428,7 +426,7 @@ def fade():
                             light_on(light, False, float(brightness) / _PWM_MAX)
                             time.sleep(sleep / _PWM_MAX)
                 else:
-                   print "channel %s not set to pwm mode" % light
+                    print "channel %s not set to pwm mode" % light
 
         except KeyboardInterrupt:
             print "\nstopped"
@@ -471,7 +469,7 @@ def cylon():
         try:
             # here we just loop over the gpio pins and do something with them
             # except the last one
-            for light in range(len(lights)-1):
+            for light in range(len(lights) - 1):
                 # turn off all the lights
                 for l in lights:
                     light_off(l)
@@ -488,7 +486,7 @@ def cylon():
             light_on(light + 1)
 
             # this loop walks it back the other way
-            for light in range(len(lights)-1, 0, -1):
+            for light in range(len(lights) - 1, 0, -1):
                 # turn off all the lights
                 for l in lights:
                     light_off(l)
@@ -508,7 +506,8 @@ def cylon():
             for light in lights:
                 light_off(light)
             break
-    
+
+
 def random_pattern():
     channels = dict.fromkeys(range(0, len(lights)), [True, time.time()])
 
@@ -537,7 +536,7 @@ def random_pattern():
                         light_on(light)
 
             # count the number of channels that are off
-            off = [k for (k, v) in channels.iteritems() if v.count(1) == False]
+            off = [k for (k, v) in channels.iteritems() if not v.count(1)]
 
             # if less then out max count of light that we chose
             # we can turn one off
@@ -555,7 +554,7 @@ def random_pattern():
                     # and turn that light off then continue with the main loop
                     # and do it all over again
                     light_off(choice)
-        except:
+        except KeyboardInterrupt:
             print "\nstopped"
             for light in lights:
                 light_off(light)
@@ -570,11 +569,11 @@ def dance():
     """
     # the gpio pins in reversed order
     lights2 = lights[::-1]
-    
+
     # get _PWM_MAX from the hc module
     # this is the max value for the pwm channels
     pwm_max = _PWM_MAX
-    
+
     # working loop, we will do this sequence 10 times then end
     while True:
         try:
@@ -583,29 +582,29 @@ def dance():
             for light in range(int(len(lights) / 2)):
                 for brightness in range(0, pwm_max):
                     # fade in
-                    light_on(lights[light], 0, brightness=float(brightness)/pwm_max)
-                    light_on(lights2[light], brightness=float(brightness)/pwm_max)
+                    light_on(lights[light], 0, brightness=float(brightness) / pwm_max)
+                    light_on(lights2[light], brightness=float(brightness) / pwm_max)
                     time.sleep(.1 / pwm_max)
 
                 for brightness in range(pwm_max - 1, -1, -1):
                     # fade out
-                    light_on(lights[light], brightness=float(brightness)/pwm_max)
-                    light_on(lights2[light], brightness=float(brightness)/pwm_max)
+                    light_on(lights[light], brightness=float(brightness) / pwm_max)
+                    light_on(lights2[light], brightness=float(brightness) / pwm_max)
                     time.sleep(.1 / pwm_max)
 
-            for light in range(int(len(lights) / 2)-1, -1, -1):
+            for light in range(int(len(lights) / 2) - 1, -1, -1):
                 for brightness in range(0, pwm_max):
                     # fade in
-                    light_on(lights[light], brightness=float(brightness)/pwm_max)
-                    light_on(lights2[light], brightness=float(brightness)/pwm_max)
+                    light_on(lights[light], brightness=float(brightness) / pwm_max)
+                    light_on(lights2[light], brightness=float(brightness) / pwm_max)
                     time.sleep(.1 / pwm_max)
 
                 for brightness in range(pwm_max - 1, -1, -1):
                     # fade out
-                    light_on(lights[light], brightness=float(brightness)/pwm_max)
-                    light_on(lights2[light], brightness=float(brightness)/pwm_max)
+                    light_on(lights[light], brightness=float(brightness) / pwm_max)
+                    light_on(lights2[light], brightness=float(brightness) / pwm_max)
                     time.sleep(.1 / pwm_max)
-        except:
+        except KeyboardInterrupt:
             print "\nstopped"
             for light in lights:
                 light_off(light)
@@ -666,14 +665,14 @@ def main():
     else:
         parser.print_help()
 
-    
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--state', choices=["off", 
-                                            "on", 
-                                            "flash", 
-                                            "fade", 
-                                            "random_pattern", 
+    parser.add_argument('--state', choices=["off",
+                                            "on",
+                                            "flash",
+                                            "fade",
+                                            "random_pattern",
                                             "cylon",
                                             "dance",
                                             "step",
@@ -689,16 +688,17 @@ if __name__ == "__main__":
     state = args.state
     sleep = float(args.sleep)
     flashes = int(args.flashes)
-    
+
     ccm = False
     lights = [int(light) for light in args.light.split(',')]
-    
+
     if -1 in lights:
         lights = range(0, cm.hardware.gpio_len)
-    
-        if cm.audio_processing.custom_channel_mapping != 0 and len(cm.audio_processing.custom_channel_mapping) == cm.hardware.gpio_len:
+
+        if cm.audio_processing.custom_channel_mapping != 0 and len(
+                cm.audio_processing.custom_channel_mapping) == cm.hardware.gpio_len:
             ccm = True
-            cc = [x-1 for x in cm.audio_processing.custom_channel_mapping]
+            cc = [x - 1 for x in cm.audio_processing.custom_channel_mapping]
             ccm_map = dict()
 
             for light in lights:

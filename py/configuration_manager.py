@@ -106,26 +106,6 @@ class Configuration(object):
         self.config.read([self.config_dir + '/overrides.cfg', '/home/pi/.lights.cfg',
                           os.path.expanduser('~/.lights.cfg')])
 
-    def set_values(self, dict_of_items):
-        """Create class instance variables from key, value pairs
-
-        :param dict_of_items: a dict containing key, value pairs to set
-        :type dict_of_items: dict
-        """
-        for key, value in dict_of_items.iteritems():
-            setattr(self, key, value)
-
-    def get(self, item):
-        """Get class instance variables from string
-
-        :param item:
-        :type item: str
-
-        :return: object of item type
-        :rtype: object
-        """
-        return getattr(self, item)
-
     # handle the program state / next 3 methods
     def load_state(self):
         """Force the state to be reloaded form disk."""
@@ -196,9 +176,9 @@ class Configuration(object):
 
         hrdwr["gpio_pins"] = map(int, self.config.get('hardware', 'gpio_pins').split(","))
         self.gpio_len = len(hrdwr["gpio_pins"])
-        
+
         hrdwr["gpio_len"] = len(hrdwr["gpio_pins"])
-        
+
         temp = self.config.get('hardware', 'pin_modes').split(",")
         if len(temp) != 1:
             hrdwr["pin_modes"] = temp
@@ -207,7 +187,7 @@ class Configuration(object):
 
         hrdwr["pwm_range"] = int(self.config.get('hardware', 'pwm_range'))
         hrdwr["active_low_mode"] = self.config.getboolean('hardware', 'active_low_mode')
-        
+
         self.hardware = Section(hrdwr)
 
     def set_network(self):
@@ -320,7 +300,6 @@ class Configuration(object):
         """
         Retrieves and validates sms configuration loading and parsing it from a file as necessary.
         """
-        shrtmssgsrvc = dict()
         shrtmssgsrvc = dict(self.config.items('sms'))
         self.who_can["all"] = set()
         shrtmssgsrvc['commands'] = _as_list(self.config.get('sms', 'commands'))
@@ -329,10 +308,14 @@ class Configuration(object):
         shrtmssgsrvc['enable'] = self.config.getboolean('sms', 'enable')
         shrtmssgsrvc['groups'] = _as_list(self.config.get('sms', 'groups'))
         shrtmssgsrvc['blacklist'] = _as_list(self.config.get('sms', 'blacklist'))
-        shrtmssgsrvc['unknown_command_response'] = self.config.get('sms', 'unknown_command_response')
+        shrtmssgsrvc['unknown_command_response'] = self.config.get('sms',
+                                                                   'unknown_command_response')
+        shrtmssgsrvc['list_songs_per_sms'] = self.config.getint('sms', 'list_songs_per_sms')
+        shrtmssgsrvc['list_songs_per_page'] = self.config.getint('sms', 'list_songs_per_page')
 
         playlist_path = self.config.get('lightshow', 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
+        
         if playlist_path:
             shrtmssgsrvc["playlist_path"] = playlist_path
         else:
@@ -544,22 +527,22 @@ class Configuration(object):
 
         return processcommandflag
 
+
 class Section(object):
-    
     def __init__(self, config):
         self.config = config
         self.set_values(self.config)
-    
+
     def set_config(self, config):
         self.config = config
         self.set_values(self.config)
-        
+
     def get_config(self):
         return self.config
-        
-    def set_value(self,key, value):
+
+    def set_value(self, key, value):
         setattr(self, key, value)
-        
+
     def set_values(self, dict_of_items):
         """Create class instance variables from key, value pairs
 
@@ -605,5 +588,5 @@ if __name__ == "__main__":
     for skey, svalue in sms_cm.sms.config.iteritems():
         print skey, "=", svalue
 
-    for wckey, wcvalue in sms_cm.who_can.config.iteritems():
+    for wckey, wcvalue in sms_cm.who_can.iteritems():
         print wckey, "=", wcvalue

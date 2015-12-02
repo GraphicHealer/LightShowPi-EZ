@@ -197,7 +197,7 @@ def audio_in():
                 audio_max = audioop.max(data, 2)
                 if audio_max < 250:
                     # we will fill the matrix with zeros and turn the lights off
-                    matrix = np.zeros(hc.GPIOLEN, dtype="float64")
+                    matrix = np.zeros(hc.GPIOLEN, dtype="float32")
                     log.debug("below threshold: '" + str(audio_max) + "', turning the lights off")
                 else:
                     matrix = fft_calc.calculate_levels(data)

@@ -52,7 +52,7 @@ from googlevoice import Voice
 from googlevoice.util import LoginError, ValidationError
 
 import configuration_manager
- import commands
+import commands
 
 cm = configuration_manager.Configuration(True)
 parser = argparse.ArgumentParser()
@@ -229,8 +229,9 @@ def main():
                             VOICE.send_sms(msg['from'], str(part))
                             time.sleep(2)
                 except ValidationError as v_error:
-                    logging.warn(str(v_error) + ': Error sending sms response (command still executed)',
-                                 exc_info=1)
+                    logging.warn(
+                        str(v_error) + ': Error sending sms response (command still executed)',
+                        exc_info=1)
 
                 logging.info('Response: "' + str(response) + '"')
             else:
