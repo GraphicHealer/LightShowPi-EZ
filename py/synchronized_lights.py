@@ -92,7 +92,6 @@ fm_process = None
 
 def end_early():
     """atexit function"""
-    print "stopping"
     if hc.networking == 'server':
         hc.broadcast('Waiting for data' + ' ' * 50)
 
@@ -109,7 +108,6 @@ def end_early():
     if stream:
         stream.close()
 
-    print
 
 
 atexit.register(end_early)
