@@ -7,21 +7,14 @@ INSTALL_COMMAND="apt-get install -q=2 -y"
 PYTHON_DEPS=(Beautifulsoup mutagen simplejson wiringpi2)
 
 ## System packages to be installed
-SYSTEM_DEPS=(curl faad flac gcc git lame make python-alsaaudio python-dev \
+SYSTEM_DEPS=(curl faad ffmpeg flac gcc git lame make python-alsaaudio python-dev \
              python-numpy python-pip python-setuptools unzip vorbis-tools wiringpi)
 
 ## Miscellaneous checks
 
 # The ffmpeg library changed starting with Debian 8
-# Try to install ffmpeg first, then libav-tools
-echo -ne "\e[0;31mNOTE:\e[m " >&2
-echo "Installing ffmpeg..."
-$INSTALL_COMMAND ffmpeg || \
-    (echo -ne "\e[0;31mNOTE:\e[m " >&2 && echo "Installation failed, trying libav-tools..." && \
-     $INSTALL_COMMAND libav-tools && ln -fs /usr/bin/avconv /usr/bin/ffmpeg)
-
-if [ $? -ne 0 ]; then
-    echo -ne "\e[1;31mERROR:\e[m " >&2
-    echo "A problem occurred while installing ffmpeg."
-    exit 1
+DEBIAN_VERSION=`awk -F\" '$1=/VERSION_ID=/ {print $2}' /etc/os-release`
+if [ $DEBIAN_VERSION -gt 7 ]; then
+    SYSTEM_DEPS[0]="libav-tools"
+    ln -fs /usr/bin/avconv /usr/bin/ffmpeg
 fi
