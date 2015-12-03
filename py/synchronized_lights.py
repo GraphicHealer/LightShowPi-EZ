@@ -75,7 +75,6 @@ import wave
 import alsaaudio as aa
 import json
 import signal
-import socket
 import decoder
 import numpy as np
 import cPickle
@@ -92,22 +91,19 @@ fm_process = None
 
 def end_early():
     """atexit function"""
-    if hc.networking == 'server':
-        hc.broadcast('Waiting for data' + ' ' * 50)
-
-        hc.set_playing()
-        hc.broadcast([0. for pin in range(hc.GPIOLEN)])
+    if server:
+        network.set_playing()
+        network.broadcast([0. for pin in range(hc.GPIOLEN)])
         time.sleep(1)
-        hc.unset_playing()
+        network.unset_playing()
         
     hc.clean_up()
 
     if _usefm:
         fm_process.kill()
 
-    if stream:
-        stream.close()
-
+    if network.network_stream:
+        network.close_connection()
 
 
 atexit.register(end_early)
@@ -139,11 +135,11 @@ def update_lights(matrix, mean, std):
     brightness = np.round(brightness, decimals=3)
 
     # broadcast to clients if in server mode
-    if hc.networking == "server":
-        hc.broadcast(brightness)
+    if server:
+        network.broadcast(brightness)
 
     for blevel, pin in zip(brightness, range(hc.GPIOLEN)):
-        hc.turn_on_light(pin, True, blevel)
+        hc.set_light(pin, True, blevel)
 
 
 def audio_in():
@@ -163,8 +159,8 @@ def audio_in():
 
     # Start with these as our initial guesses - will calculate a rolling mean / std 
     # as we get input data.
-    mean = np.array([12.0 for _ in range(hc.GPIOLEN)], dtype='float64')
-    std = np.array([1.5 for _ in range(hc.GPIOLEN)], dtype='float64')
+    mean = np.array([12.0 for _ in range(hc.GPIOLEN)], dtype='float32')
+    std = np.array([1.5 for _ in range(hc.GPIOLEN)], dtype='float32')
     count = 2
 
     running_stats = RunningStats.Stats(hc.GPIOLEN)
@@ -183,8 +179,8 @@ def audio_in():
                            cm.audio_processing.custom_channel_frequencies,
                            input_channels)
 
-        if hc.networking == "server":
-            hc.set_playing()
+        if server:
+            network.network.set_playing()
 
         # Listen on the audio input device until CTRL-C is pressed
         while True:
@@ -406,9 +402,6 @@ def setup_audio(song_filename):
     # Output a bit about what we're about to play to the logs
     nframes = str(music_file.getnframes() / sample_rate)
     log.info("Playing: " + song_filename + " (" + nframes + " sec)")
-    # send song file name to clients for logging
-    if hc.networking == 'server':
-        hc.broadcast(song_filename)
 
     return output, fft_calc, music_file
 
@@ -436,8 +429,8 @@ def setup_cache(cache_filename, fft_calc):
     # The values 12 and 1.5 are good estimates for first time playing back
     # (i.e. before we have the actual mean and standard deviations
     # calculated for each channel).
-    mean = np.array([12.0 for _ in range(hc.GPIOLEN)], dtype='float64')
-    std = np.array([1.5 for _ in range(hc.GPIOLEN)], dtype='float64')
+    mean = np.array([12.0 for _ in range(hc.GPIOLEN)], dtype='float32')
+    std = np.array([1.5 for _ in range(hc.GPIOLEN)], dtype='float32')
 
     if args.readcache:
         # Read in cached fft
@@ -485,8 +478,8 @@ def save_cache(cache_matrix, cache_filename, fft_calc):
     :type fft_calc: fft.FFT
     """
     # Compute the standard deviation and mean values for the cache
-    mean = np.empty(hc.GPIOLEN, dtype='float64')
-    std = np.empty(hc.GPIOLEN, dtype='float64')
+    mean = np.empty(hc.GPIOLEN, dtype='float32')
+    std = np.empty(hc.GPIOLEN, dtype='float32')
 
     for i in range(0, hc.GPIOLEN):
         std[i] = np.std([item for item in cache_matrix[:, i] if item > 0])
@@ -605,15 +598,13 @@ def play_song():
     load_custom_config(config_filename)
 
     # Initialize Lights
-    hc.set_playing()
+    network.set_playing()
     hc.initialize()
 
     # Handle the pre/post show
     play_now = int(cm.get_state('play_now', "0"))
 
-    hc.unset_playing()
-    if hc.networking == 'server':
-        hc.broadcast('preshow ' + ' ' * 50)
+    network.unset_playing()
 
     if not play_now:
         result = PrePostShow('preshow', hc).execute()
@@ -621,7 +612,7 @@ def play_song():
         if result == PrePostShow.play_now_interrupt:
             play_now = int(cm.get_state('play_now', "0"))
 
-    hc.set_playing()
+    network.set_playing()
 
     # Ensure play_now is reset before beginning playback
     if play_now:
@@ -676,15 +667,10 @@ def play_song():
         fm_process.kill()
 
     # check for postshow
-    hc.unset_playing()
-    if hc.networking == 'server':
-        hc.broadcast('postshow' + ' ' * 50)
+    network.unset_playing()
 
     if not play_now:
         PrePostShow('postshow', hc).execute()
-
-    if hc.networking == 'server':
-        hc.broadcast('Waiting for data' + ' ' * 50)
 
     # We're done, turn it all off and clean up things ;)
     hc.clean_up()
@@ -696,70 +682,46 @@ def network_client():
     If in client mode, ignore everything else and just
     read data from the network and blink the lights
     """
-    global stream
-    hc.set_playing()
     log.info("Network client mode starting")
     print "Network client mode starting..."
-    try:
-        stream = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        stream.bind(('', hc.port))
-
-        print "listening on port: " + str(hc.port)
-
-        log.info("client channels mapped as\n" + str(hc.channels))
-        log.info("listening on port: " + str(hc.port))
-    except socket.error, msg:
-        log.error('Failed create socket or bind. Error code: ' +
-                  str(msg[0]) + ' : ' + msg[1])
-        hc.stream.close()
-        sys.exit(0)
-
     print "press CTRL<C> to end"
+
     hc.initialize()
+
     print
-    song = "Waiting for data"
+
     try:
-        channel_keys = hc.channels.keys()
-        channels = hc.channels
+        channels = network.channels
+        channel_keys = channels.keys()
 
         while True:
-            try:
-                sys.stdout.write("\rReceiving data for: " + song)
-                sys.stdout.flush()
+            data = network.receive()
 
-                data, address = stream.recvfrom(hc.network_buffer)
-                data = cPickle.loads(data)
-                if isinstance(data[0], int):
-                    pin = data[0]
-                    if pin in channel_keys:
-                        hc.turn_on_light(channels[pin], True, float(data[1]))
-                    continue
+            if isinstance(data[0], int):
+                pin = data[0]
+                if pin in channel_keys:
+                    hc.set_light(channels[pin], True, float(data[1]))
+                continue
 
-                elif isinstance(data[0], basestring):
-                    song = data[0].split("/")[-1]
-                    log.info("playing " + data[0])
-                    continue
+            elif isinstance(data[0], np.ndarray):
+                blevels = data[0]
 
-                elif isinstance(data[0], np.ndarray):
-                    blevels = data[0]
-
-                else:
-                    continue
-
-            except (IndexError, cPickle.PickleError):
-                blevels = [0 for _ in range(hc.GPIOLEN)]
+            else:
+                continue
 
             for pin in channel_keys:
-                hc.turn_on_light(channels[pin], True, blevels[pin])
+                hc.set_light(channels[pin], True, blevels[pin])
+                
     except KeyboardInterrupt:
         log.info("CTRL<C> pressed, stopping")
         print "stopping"
-        stream.close()
+        
+        network.close_connection()
         hc.clean_up()
 
 
 if __name__ == "__main__":
-    # Make sure SYNCHRONIZED_LIGHTS_HOME_N environment variable is set
+    # Make sure SYNCHRONIZED_LIGHTS_HOME environment variable is set
     HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
     if not HOME_DIR:
         print("Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, see readme")
@@ -809,13 +771,16 @@ if __name__ == "__main__":
         sys.exit()
 
     _usefm = cm.audio_processing.fm
+    network = hc.network
+    server = network.networking == 'server'
+    client = network.networking == "client"
 
     if _usefm:
         music_pipe_r, music_pipe_w = os.pipe()
 
     if cm.lightshow.mode == 'audio-in':
         audio_in()
-    elif cm.network.networking == "client":
+    elif client:
         network_client()
     else:
         play_song()

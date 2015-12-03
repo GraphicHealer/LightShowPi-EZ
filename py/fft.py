@@ -124,7 +124,7 @@ class FFT(object):
         # Calculate the power spectrum
         power = abs(fourier) ** 2
 
-        cache_matrix = empty(self.num_bins, dtype='float64')
+        cache_matrix = empty(self.num_bins, dtype='float32')
 
         for pin in range(self.num_bins):
             # Get the sum of the power array index corresponding to a 

@@ -117,9 +117,9 @@ class PrePostShow(object):
 
                             for channel in channels:
                                 if mode == 'on':
-                                    self.hc.turn_on_light(int(channel) - 1, True, 1)
+                                    self.hc.set_light(int(channel) - 1, True, 1)
                                 elif mode == 'off':
-                                    self.hc.turn_off_light(int(channel) - 1, True)
+                                    self.hc.set_light(int(channel) - 1, True, 0)
                                 else:
                                     logging.error("Unrecognized channel_control mode "
                                                   "defined in preshow_configuration "

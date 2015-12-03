@@ -29,9 +29,9 @@ import random
 
 import configuration_manager
 
-import socket
-import cPickle
 from collections import defaultdict
+
+import networking
 
 cm = configuration_manager.Configuration()
 
@@ -82,80 +82,8 @@ else:
 # left in for compatibility with external scripts
 _GPIO_PINS = cm.hardware.gpio_pins
 
-networking = cm.network.networking
-port = cm.network.port
-network_buffer = cm.network.buffer
-channels = cm.network.channels
-playing = False
-
 
 # Functions
-def set_playing():
-    """Set a flag for playing,
-
-    Setting this flag allows for synchronized_lights.py to broadcast
-    the matrix, std, and mean.
-
-    If this flag is set to False the turn_off_light/turn_on_light methods
-    will broadcast the pin number and brightness.  Usefull if you want
-    to broadcast the pre/post show data to your clients without codding
-    the pre/post shows config or scripts to broadcast. Allowing then to
-    remain unchanged
-    """
-    global playing
-    playing = True
-
-
-def unset_playing():
-    """Unset the playing flag."""
-    global playing
-    playing = False
-
-
-def setup_network():
-    """Setup network broadcast stream if this RPi is to be serving data"""
-
-    print "streaming on port: " + str(cm.network.port)
-    try:
-        stream = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        stream.bind(('', 0))
-        stream.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        logging.info("streaming on port: " + str(cm.network.port))
-        return stream
-    except socket.error, msg:
-        logging.error('Failed create socket or bind. Error code: ' +
-                      str(msg[0]) + ' : ' + msg[1])
-        print "error creating and binding socket for broadcast"
-        sys.exit()
-
-# if in broadcast mode, setup socket
-if cm.network.networking == "server":
-    streaming = setup_network()
-
-
-def broadcast(*args):
-    """Broadcast data over the network
-
-    args will be pickled before being sent
-
-    :param args: (list of lists) to broadcast clients channel data
-
-                    (tuple) pin, brightness pair
-
-                    (str) a song filename
-
-    :type args: list | tuple | str
-    """
-    if cm.network.networking == "server":
-        try:
-            data = cPickle.dumps(args)
-            streaming.sendto(data, ('<broadcast>', port))
-        except socket.error, msg:
-            if msg[0] != 9:
-                logging.error(str(msg[0]) + ' ' + msg[1])
-                print str(msg[0]) + ' ' + msg[1]
-
-
 def enable_device():
     """enable the specified device """
     try:
@@ -280,9 +208,11 @@ def turn_off_lights(use_always_onoff=False):
     :type use_always_onoff: bool
     """
     for pin in range(GPIOLEN):
-        turn_off_light(pin, use_always_onoff)
+        set_light(pin, use_always_onoff, 0)
 
 
+# turn_off_light and turn_on_light are left in for compatibility 
+# with external scripts and will be removed in future versions
 def turn_off_light(pin, use_overrides=False):
     """
     Turn off the specified light
@@ -295,7 +225,22 @@ def turn_off_light(pin, use_overrides=False):
     :param use_overrides: should overrides be used
     :type use_overrides: bool
     """
-    turn_on_light(pin, use_overrides, 0)
+    set_light(pin, use_overrides, 0)
+
+
+def turn_on_light(pin, use_overrides=False, brightness=1.0):
+    """
+    Turn off the specified light
+
+    Taking into account various overrides if specified.
+
+    :param pin: index of pin in cm.hardware.gpio_pins
+    :type pin: int
+
+    :param use_overrides: should overrides be used
+    :type use_overrides: bool
+    """
+    set_light(pin, use_overrides, brightness)
 
 
 def turn_on_lights(use_always_onoff=False):
@@ -308,13 +253,19 @@ def turn_on_lights(use_always_onoff=False):
     :type use_always_onoff: bool
     """
     for pin in range(GPIOLEN):
-        turn_on_light(pin, use_always_onoff)
+        set_light(pin, use_always_onoff)
 
 
-def turn_on_light(pin, use_overrides=False, brightness=1.0):
-    """Turn on the specified light
-
+def set_light(pin, use_overrides=False, brightness=1.0):
+    """Set the birghtness of the specified light
+    
     Taking into account various overrides if specified.
+    The default is full on (1.0)
+    To turn a light off pass 0 for brightness
+    If brightness is a float between 0 and 1.0 that level 
+    will be set.
+    
+    This function replaces turn_on_light and turn_off_light
 
     :param pin: index of pin in cm.hardware.gpio_pins
     :type pin: int
@@ -340,8 +291,8 @@ def turn_on_light(pin, use_overrides=False, brightness=1.0):
         if pin + 1 in inverted_channels:
             brightness = 1 - brightness
 
-    if not playing and networking == "server":
-        broadcast(cm.hardware.gpio_pins.index(cm.hardware.gpio_pins[pin]), brightness)
+    if not network.playing and server:
+        network.broadcast(cm.hardware.gpio_pins.index(cm.hardware.gpio_pins[pin]), brightness)
 
     if is_pin_pwm[pin]:
         wiringpi.softPwmWrite(cm.hardware.gpio_pins[pin], int(brightness * _PWM_MAX))
@@ -355,7 +306,7 @@ def clean_up():
 
     Turn off all lights and set the pins as inputs
     """
-    unset_playing()
+    network.unset_playing()
     turn_off_lights()
     set_pins_as_inputs()
     try:
@@ -372,7 +323,11 @@ def initialize():
 
     turn_off_lights()
 
+# network setup if used
+network = networking.networking(cm, set_light)
+server = network.networking == "server"
 
+# test functions
 def light_on(pins, override=False, brightness=1.0):
     if ccm:
         pins = ccm_map[pins]
@@ -383,11 +338,10 @@ def light_on(pins, override=False, brightness=1.0):
         return
 
     for pin in pins:
-        if is_pin_pwm[pin]:
-            brightness = float(brightness)
-        else:
+        if not is_pin_pwm[pin]:
             brightness = 1
-        turn_on_light(pin, use_overrides=override, brightness=brightness)
+
+        set_light(pin, use_overrides=override, brightness=brightness)
 
 
 def light_off(pins, override=False, brightness=0.0):
@@ -401,11 +355,7 @@ def light_off(pins, override=False, brightness=0.0):
         return
 
     for pin in pins:
-        if is_pin_pwm[pin]:
-            brightness = float(brightness) if is_pin_pwm[pin] else 0
-        else:
-            brightness = 0
-        turn_on_light(pin, use_overrides=override, brightness=brightness)
+        set_light(pin, use_overrides=override, brightness=brightness)
 
 
 def fade():
@@ -563,7 +513,7 @@ def random_pattern():
 
 def dance():
     """
-    danceing pair
+    dancing pair
 
     Start at each end and dance to the other using pwm
     """
@@ -580,30 +530,45 @@ def dance():
             # here we just loop over the gpio pins and turn them on and off
             # with the pwm feature of lightshowpi
             for light in range(int(len(lights) / 2)):
-                for brightness in range(0, pwm_max):
-                    # fade in
-                    light_on(lights[light], 0, brightness=float(brightness) / pwm_max)
-                    light_on(lights2[light], brightness=float(brightness) / pwm_max)
-                    time.sleep(.1 / pwm_max)
+                if is_pin_pwm[light]:
+                    for brightness in range(0, pwm_max):
+                        # fade in
+                        light_on(lights[light], 0, brightness=float(brightness) / pwm_max)
+                        light_on(lights2[light], brightness=float(brightness) / pwm_max)
+                        time.sleep(.1 / pwm_max)
 
-                for brightness in range(pwm_max - 1, -1, -1):
-                    # fade out
-                    light_on(lights[light], brightness=float(brightness) / pwm_max)
-                    light_on(lights2[light], brightness=float(brightness) / pwm_max)
-                    time.sleep(.1 / pwm_max)
-
+                    for brightness in range(pwm_max - 1, -1, -1):
+                        # fade out
+                        light_on(lights[light], brightness=float(brightness) / pwm_max)
+                        light_on(lights2[light], brightness=float(brightness) / pwm_max)
+                        time.sleep(.1 / pwm_max)
+                else:
+                    light_on(lights[light], 1)
+                    light_on(lights2[light], 1)
+                    time.sleep(.5)
+                    light_off(lights[light], 0)
+                    light_off(lights2[light], 0)
+                    
             for light in range(int(len(lights) / 2) - 1, -1, -1):
-                for brightness in range(0, pwm_max):
-                    # fade in
-                    light_on(lights[light], brightness=float(brightness) / pwm_max)
-                    light_on(lights2[light], brightness=float(brightness) / pwm_max)
-                    time.sleep(.1 / pwm_max)
+                if is_pin_pwm[light]:
+                    for brightness in range(0, pwm_max):
+                        # fade in
+                        light_on(lights[light], brightness=float(brightness) / pwm_max)
+                        light_on(lights2[light], brightness=float(brightness) / pwm_max)
+                        time.sleep(.1 / pwm_max)
 
-                for brightness in range(pwm_max - 1, -1, -1):
-                    # fade out
-                    light_on(lights[light], brightness=float(brightness) / pwm_max)
-                    light_on(lights2[light], brightness=float(brightness) / pwm_max)
-                    time.sleep(.1 / pwm_max)
+                    for brightness in range(pwm_max - 1, -1, -1):
+                        # fade out
+                        light_on(lights[light], brightness=float(brightness) / pwm_max)
+                        light_on(lights2[light], brightness=float(brightness) / pwm_max)
+                        time.sleep(.1 / pwm_max)
+                else:
+                    light_on(lights[light], 1)
+                    light_on(lights2[light], 1)
+                    time.sleep(.5)
+                    light_off(lights[light], 0)
+                    light_off(lights2[light], 0)
+
         except KeyboardInterrupt:
             print "\nstopped"
             for light in lights:
@@ -640,7 +605,7 @@ def step():
 def main():
     """main"""
     initialize()
-    unset_playing()
+    network.unset_playing()
 
     if state == "cleanup":
         clean_up()
