@@ -305,7 +305,17 @@ class Configuration(object):
         shrtmssgsrvc['commands'] = _as_list(self.config.get('sms', 'commands'))
         shrtmssgsrvc['throttle_time_limit_seconds'] = int(
             self.config.get('sms', 'throttle_time_limit_seconds'))
-        playlist_path = self.config.get('lightshow', 'playlist_path')
+
+
+
+
+
+
+
+
+
+
+playlist_path = self.config.get('lightshow', 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
         
         if playlist_path:
