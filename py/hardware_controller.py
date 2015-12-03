@@ -309,11 +309,7 @@ def clean_up():
     network.unset_playing()
     turn_off_lights()
     set_pins_as_inputs()
-    try:
-        streaming.close()
-    except (AttributeError, socket.error, NameError):
-        pass
-
+    network.close_connection()
 
 def initialize():
     """Set pins as outputs and start all lights in the off state."""
