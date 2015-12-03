@@ -305,11 +305,6 @@ class Configuration(object):
         shrtmssgsrvc['commands'] = _as_list(self.config.get('sms', 'commands'))
         shrtmssgsrvc['throttle_time_limit_seconds'] = int(
             self.config.get('sms', 'throttle_time_limit_seconds'))
-        shrtmssgsrvc['enable'] = self.config.getboolean('sms', 'enable')
-        shrtmssgsrvc['groups'] = _as_list(self.config.get('sms', 'groups'))
-        shrtmssgsrvc['blacklist'] = _as_list(self.config.get('sms', 'blacklist'))
-        shrtmssgsrvc['unknown_command_response'] = self.config.get('sms',
-                                                                   'unknown_command_response')
         playlist_path = self.config.get('lightshow', 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
         
