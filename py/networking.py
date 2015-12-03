@@ -38,7 +38,7 @@ class networking(object):
         self.setup()
         
     def setup(self):
-        """"""
+        """Setup as either server or client"""
         # if in broadcast mode, setup socket
         if self.networking == "server":
             self.setup_server()
@@ -85,12 +85,16 @@ class networking(object):
             self.network_stream = None
 
     def receive(self):
-        """"""
+        """Receive the data sent from the server and decode it
+        
+        :return: data
+        :rtype tuple: np.array | tuple
+        """
         try:
             data, address = self.network_stream.recvfrom(self.network_buffer)
             data = cPickle.loads(data)
         except (IndexError, cPickle.PickleError):
-            data = np.array([0 for _ in range(hc.GPIOLEN)])
+            data = tuple(np.array([0 for _ in range(hc.GPIOLEN)]))
         
         
         return data

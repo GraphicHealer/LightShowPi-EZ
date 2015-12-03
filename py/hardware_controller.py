@@ -329,6 +329,7 @@ server = network.networking == "server"
 
 # test functions
 def light_on(pins, override=False, brightness=1.0):
+    """work around to make custom channel mapping work with hardware tests"""
     if ccm:
         pins = ccm_map[pins]
     else:
@@ -345,6 +346,7 @@ def light_on(pins, override=False, brightness=1.0):
 
 
 def light_off(pins, override=False, brightness=0.0):
+    """work around to make custom channel mapping work with hardware tests"""
     if ccm:
         print ccm
         pins = ccm_map[pins]
@@ -359,6 +361,7 @@ def light_off(pins, override=False, brightness=0.0):
 
 
 def fade():
+    """Fade lights in and out in sequence"""
     # Test fading in and out for each light configured in pwm mode
     print "Press <CTRL>-C to stop"
     while True:
@@ -386,6 +389,7 @@ def fade():
 
 
 def flash():
+    """Flash lights in sequence"""
     print "Press <CTRL>-C to stop"
     while True:
         try:
@@ -404,8 +408,7 @@ def flash():
 
 
 def cylon():
-    """
-    cylon
+    """Cylon
 
     Lights one channel at a time in order
     Then backs down to the first rapidly
@@ -459,10 +462,11 @@ def cylon():
 
 
 def random_pattern():
+    """Flash your lights in a random pattern"""
     channels = dict.fromkeys(range(0, len(lights)), [True, time.time()])
 
-    # get a number that is about 40% the length of your gpio's
-    # this will be use to make sure that no more then 40% of
+    # get a number that is about 50% the length of your gpio's
+    # this will be use to make sure that no more then 50% of
     # the light will be off at any one time
     max_off = int(round(len(channels) * .5))
 
@@ -515,7 +519,7 @@ def dance():
     """
     dancing pair
 
-    Start at each end and dance to the other using pwm
+    Start at each end and dance to the other using pwm or onoff
     """
     # the gpio pins in reversed order
     lights2 = lights[::-1]
@@ -592,7 +596,10 @@ def step():
                 print "channel %s " % light
                 for brightness in range(_PWM_MAX - 1, -1, -1):
                     # fade out
-                    light_on(light, False, float(brightness) / _PWM_MAX)
+                    if is_pin_pwm[light]:
+                        light_on(light, False, float(brightness) / _PWM_MAX)
+                    else:
+                        light_off(light, False, 0)
                     time.sleep(sleep / _PWM_MAX)
 
         except KeyboardInterrupt:
