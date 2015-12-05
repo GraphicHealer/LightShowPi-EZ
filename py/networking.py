@@ -20,7 +20,7 @@ import socket
 from collections import defaultdict
 import numpy as np
 import sys
-import wiringpi2 as wiringpi
+
 
 class networking(object):
     
