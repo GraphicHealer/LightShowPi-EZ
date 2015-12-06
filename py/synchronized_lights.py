@@ -82,6 +82,7 @@ import fft
 from prepostshow import PrePostShow
 import RunningStats
 
+from collections import deque
 
 CHUNK_SIZE = 2048  # Use a multiple of 8 (move this to config)
 
@@ -128,6 +129,116 @@ def update_lights(matrix, mean, std):
                 hc.turn_off_light(pin, True)
         else:
             hc.turn_on_light(pin, True, brightness)
+
+
+def stream_in():
+    '''Control the lightshow from audio coming in from stream process'''
+    stream_in_url = cm.stream_in_url
+    sample_rate = cm.stream_in_sample_rate
+    light_delay = cm.stream_in_light_delay
+    num_channels = 2
+
+    if cm.fm == 'pifm' or cm.fm == 'True':
+       
+        log.info("Sending output as fm transmission (pifm)")
+
+        with open(os.devnull, "w") as dev_null:
+            fm_process = subprocess.Popen(["sudo",
+                                           cm.home_dir + "/bin/pifm",
+                                           "-",
+                                           cm.frequency,
+                                           "44100",
+                                           "stereo"],
+                                          stdin=music_pipe_r,
+                                          stdout=dev_null)
+        output = lambda data: os.write(music_pipe_w, data)
+    elif cm.fm == 'pi_fm_rds':
+       
+        log.info("Sending output as fm transmission (pi_fm_rds)")
+
+        with open(os.devnull, "w") as dev_null:
+            fm_process = subprocess.Popen(["sudo",
+                                           cm.home_dir + "/bin/pi_fm_rds",
+                                           "-audio",
+                                           "-",
+                                           "-freq",
+                                           cm.frequency,
+                                           "-srate",
+                                           "44100",
+                                           "-nochan",
+                                           "2"],
+                                          stdin=music_pipe_r,
+                                          stdout=dev_null)
+        output = lambda data: os.write(music_pipe_w, data)
+    else:
+        fm_process = None
+        output_device = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL, cm.audio_out_card)
+        output_device.setchannels(num_channels)
+        output_device.setrate(sample_rate)
+        output_device.setformat(aa.PCM_FORMAT_S16_LE)
+        output_device.setperiodsize(CHUNK_SIZE)
+        output = lambda data: output_device.write(data)
+
+    m = deque([],1000)
+    log.debug("Running in stream-in mode - will run until Ctrl+C is pressed")
+    print "Running in stream-in mode, use Ctrl+C to stop"
+    try:
+        hc.initialize()
+        fft_calc = fft.FFT(CHUNK_SIZE,
+                           sample_rate,
+                           hc.GPIOLEN,
+                           cm.min_frequency,
+                           cm.max_frequency,
+                           cm.custom_channel_mapping,
+                           cm.custom_channel_frequencies,
+                           num_channels)
+
+        # Start with these as our initial guesses - will calculate a rolling mean / std
+        # as we get input data.
+        mean = np.array([12.0 for _ in range(hc.GPIOLEN)], dtype='float64')
+        std = np.array([1.5 for _ in range(hc.GPIOLEN)], dtype='float64')
+        num_samples = 0
+
+        # Open the input stream from mpg123 url assuming two channels (stereo)
+        stream_in_process = subprocess.Popen(['mpg123','--stdout',stream_in_url],stdout=subprocess.PIPE)
+
+        # Listen on the audio stream until CTRL-C is pressed
+        while True:
+            data = stream_in_process.stdout.read(CHUNK_SIZE)
+
+            output(data)
+
+            if len(data):
+                try:
+                    matrix = fft_calc.calculate_levels(data)
+                except ValueError as e:
+                    log.debug("skipping update: " + str(e))
+                    continue
+
+                m.appendleft(matrix)
+
+                if len(m) > light_delay:
+                    matrix = m[light_delay]
+                    update_lights(matrix, mean, std)
+
+                if num_samples >= 250:
+                    num_samples = 0;
+                    for i in range(0, hc.GPIOLEN):
+                        recent_samples = [item for item in np.array(m)[0:800,i] if item > 0]
+                        mean[i] = np.mean(recent_samples)
+                        std[i] = np.std(recent_samples)
+                else:
+                    num_samples += 1;
+
+
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print "\nStopping"
+        stream_in_process.terminate()
+        if cm.fm != 'False':
+            fm_process.kill()
+        hc.clean_up()
 
 
 def audio_in():
@@ -358,9 +469,9 @@ def setup_audio(song_filename):
                        cm.custom_channel_frequencies)
 
     # setup output device
-    if _usefm:
+    if cm.fm == 'pifm' or cm.fm == 'True':
        
-        log.info("Sending output as fm transmission")
+        log.info("Sending output as fm transmission (pifm)")
 
         with open(os.devnull, "w") as dev_null:
             fm_process = subprocess.Popen(["sudo",
@@ -369,6 +480,24 @@ def setup_audio(song_filename):
                                            cm.frequency,
                                            "44100",
                                            "stereo"],
+                                          stdin=music_pipe_r,
+                                          stdout=dev_null)
+        output = lambda data: os.write(music_pipe_w, data)
+    elif cm.fm == 'pi_fm_rds':
+       
+        log.info("Sending output as fm transmission (pi_fm_rds)")
+
+        with open(os.devnull, "w") as dev_null:
+            fm_process = subprocess.Popen(["sudo",
+                                           cm.home_dir + "/bin/pi_fm_rds",
+                                           "-audio",
+                                           "-",
+                                           "-freq",
+                                           cm.frequency,
+                                           "-srate",
+                                           "44100",
+                                           "-nochan",
+                                           "2"],
                                           stdin=music_pipe_r,
                                           stdout=dev_null)
         output = lambda data: os.write(music_pipe_w, data)
@@ -640,7 +769,7 @@ def play_song():
         save_cache(cache_matrix, cache_filename, fft_calc)
 
     # Cleanup the pifm process
-    if cm.fm:
+    if cm.fm != 'False':
         fm_process.kill()
 
     # check for postshow
@@ -701,12 +830,12 @@ if __name__ == "__main__":
         print "One of --playlist or --file must be specified"
         sys.exit()
 
-    _usefm = cm.fm
-
-    if _usefm:
+    if cm.fm != 'False':
         music_pipe_r, music_pipe_w = os.pipe()
 
     if cm.mode == 'audio-in':
         audio_in()
+    elif cm.mode == 'stream-in':
+        stream_in()
     else:
         play_song()

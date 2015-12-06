@@ -215,6 +215,9 @@ class Configuration(object):
         self.lightshow["audio_out_card"] = self.config.get(ls, 'audio_out_card')
         self.lightshow["audio_in_channels"] = self.config.getint(ls, 'audio_in_channels')
         self.lightshow["audio_in_sample_rate"] = self.config.getint(ls, 'audio_in_sample_rate')
+        self.lightshow["stream_in_url"] = self.config.get(ls, 'stream_in_url')
+        self.lightshow["stream_in_sample_rate"] = self.config.getint(ls, 'stream_in_sample_rate')
+        self.lightshow["stream_in_light_delay"] = self.config.getint(ls, 'stream_in_light_delay')
 
         playlist_path = self.config.get(ls, 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
@@ -272,7 +275,7 @@ class Configuration(object):
         """
         Retrieve the audio processing configuration loading and parsing it from a file as necessary.
         """
-        self.audio_processing["fm"] = self.config.getboolean('audio_processing', 'fm')
+        self.audio_processing["fm"] = self.config.get('audio_processing', 'fm')
         self.audio_processing["frequency"] = self.config.get('audio_processing', 'frequency')
         self.audio_processing["min_frequency"] = \
             self.config.getfloat('audio_processing', 'min_frequency')
