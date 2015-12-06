@@ -153,7 +153,7 @@ def stream_in():
         output_device.setperiodsize(CHUNK_SIZE)
         output = lambda data: output_device.write(data)
 
-    m = deque([],1000)
+    matrix_buffer = deque([],1000)
     log.debug("Running in stream-in mode - will run until Ctrl+C is pressed")
     print "Running in stream-in mode, use Ctrl+C to stop"
     try:
@@ -202,10 +202,10 @@ def stream_in():
                     mean = running_stats.mean()
                     std = running_stats.std()
 
-                m.appendleft(matrix)
+                matrix_buffer.appendleft(matrix)
 
-                if len(m) > light_delay:
-                    matrix = m[light_delay]
+                if len(matrix_buffer) > light_delay:
+                    matrix = matrix_buffer[light_delay]
                     update_lights(matrix, mean, std)
 
     except KeyboardInterrupt:
