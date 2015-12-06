@@ -197,7 +197,13 @@ def stream_in():
         # as we get input data.
         mean = np.array([12.0 for _ in range(hc.GPIOLEN)], dtype='float64')
         std = np.array([1.5 for _ in range(hc.GPIOLEN)], dtype='float64')
-        num_samples = 0
+        count = 2
+
+        running_stats = RunningStats.Stats(hc.GPIOLEN)
+
+        # preload running_stats to avoid errors, and give us a show that looks
+        # good right from the start
+        running_stats.preload(mean, std, count)
 
         # Open the input stream from mpg123 url assuming two channels (stereo)
         stream_in_process = subprocess.Popen(['mpg123','--stdout',stream_in_url],stdout=subprocess.PIPE)
@@ -209,27 +215,24 @@ def stream_in():
             output(data)
 
             if len(data):
-                try:
+                # if the maximum of the absolute value of all samples in
+                # data is below a threshold we will disreguard it
+                audio_max = audioop.max(data, 2)
+                if audio_max < 250:
+                    # we will fill the matrix with zeros and turn the lights off
+                    matrix = np.zeros(hc.GPIOLEN, dtype="float64")
+                    log.debug("below threshold: '" + str(audio_max) + "', turning the lights off")
+                else:
                     matrix = fft_calc.calculate_levels(data)
-                except ValueError as e:
-                    log.debug("skipping update: " + str(e))
-                    continue
+                    running_stats.push(matrix)
+                    mean = running_stats.mean()
+                    std = running_stats.std()
 
                 m.appendleft(matrix)
 
                 if len(m) > light_delay:
                     matrix = m[light_delay]
                     update_lights(matrix, mean, std)
-
-                if num_samples >= 250:
-                    num_samples = 0;
-                    for i in range(0, hc.GPIOLEN):
-                        recent_samples = [item for item in np.array(m)[0:800,i] if item > 0]
-                        mean[i] = np.mean(recent_samples)
-                        std[i] = np.std(recent_samples)
-                else:
-                    num_samples += 1;
-
 
     except KeyboardInterrupt:
         pass
