@@ -275,7 +275,7 @@ class Configuration(object):
         """
         Retrieve the audio processing configuration loading and parsing it from a file as necessary.
         """
-        self.audio_processing["fm"] = self.config.get('audio_processing', 'fm')
+        self.audio_processing["fm"] = self.config.getboolean('audio_processing', 'fm')
         self.audio_processing["frequency"] = self.config.get('audio_processing', 'frequency')
         self.audio_processing["min_frequency"] = \
             self.config.getfloat('audio_processing', 'min_frequency')

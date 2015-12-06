@@ -83,6 +83,7 @@ from prepostshow import PrePostShow
 import RunningStats
 
 from collections import deque
+import Platform
 
 CHUNK_SIZE = 2048  # Use a multiple of 8 (move this to config)
 
@@ -138,40 +139,13 @@ def stream_in():
     light_delay = cm.stream_in_light_delay
     num_channels = 2
 
-    if cm.fm == 'pifm' or cm.fm == 'True':
-       
-        log.info("Sending output as fm transmission (pifm)")
+    if cm.fm:
+        log.info("Sending output as fm transmission")
 
         with open(os.devnull, "w") as dev_null:
-            fm_process = subprocess.Popen(["sudo",
-                                           cm.home_dir + "/bin/pifm",
-                                           "-",
-                                           cm.frequency,
-                                           "44100",
-                                           "stereo"],
-                                          stdin=music_pipe_r,
-                                          stdout=dev_null)
-        output = lambda data: os.write(music_pipe_w, data)
-    elif cm.fm == 'pi_fm_rds':
-       
-        log.info("Sending output as fm transmission (pi_fm_rds)")
-
-        with open(os.devnull, "w") as dev_null:
-            fm_process = subprocess.Popen(["sudo",
-                                           cm.home_dir + "/bin/pi_fm_rds",
-                                           "-audio",
-                                           "-",
-                                           "-freq",
-                                           cm.frequency,
-                                           "-srate",
-                                           "44100",
-                                           "-nochan",
-                                           "2"],
-                                          stdin=music_pipe_r,
-                                          stdout=dev_null)
+            fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
         output = lambda data: os.write(music_pipe_w, data)
     else:
-        fm_process = None
         output_device = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL, cm.audio_out_card)
         output_device.setchannels(num_channels)
         output_device.setrate(sample_rate)
@@ -239,7 +213,7 @@ def stream_in():
     finally:
         print "\nStopping"
         stream_in_process.terminate()
-        if cm.fm != 'False':
+        if cm.fm:
             fm_process.kill()
         hc.clean_up()
 
@@ -472,37 +446,11 @@ def setup_audio(song_filename):
                        cm.custom_channel_frequencies)
 
     # setup output device
-    if cm.fm == 'pifm' or cm.fm == 'True':
-       
-        log.info("Sending output as fm transmission (pifm)")
+    if cm.fm:
+        log.info("Sending output as fm transmission")
 
         with open(os.devnull, "w") as dev_null:
-            fm_process = subprocess.Popen(["sudo",
-                                           cm.home_dir + "/bin/pifm",
-                                           "-",
-                                           cm.frequency,
-                                           "44100",
-                                           "stereo"],
-                                          stdin=music_pipe_r,
-                                          stdout=dev_null)
-        output = lambda data: os.write(music_pipe_w, data)
-    elif cm.fm == 'pi_fm_rds':
-       
-        log.info("Sending output as fm transmission (pi_fm_rds)")
-
-        with open(os.devnull, "w") as dev_null:
-            fm_process = subprocess.Popen(["sudo",
-                                           cm.home_dir + "/bin/pi_fm_rds",
-                                           "-audio",
-                                           "-",
-                                           "-freq",
-                                           cm.frequency,
-                                           "-srate",
-                                           "44100",
-                                           "-nochan",
-                                           "2"],
-                                          stdin=music_pipe_r,
-                                          stdout=dev_null)
+            fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
         output = lambda data: os.write(music_pipe_w, data)
     else:
         fm_process = None
@@ -772,7 +720,7 @@ def play_song():
         save_cache(cache_matrix, cache_filename, fft_calc)
 
     # Cleanup the pifm process
-    if cm.fm != 'False':
+    if cm.fm:
         fm_process.kill()
 
     # check for postshow
@@ -833,8 +781,14 @@ if __name__ == "__main__":
         print "One of --playlist or --file must be specified"
         sys.exit()
 
-    if cm.fm != 'False':
+    if cm.fm:
         music_pipe_r, music_pipe_w = os.pipe()
+        if Platform.pi_version() == 1:
+            fm_command = ["sudo", cm.home_dir + "/bin/pifm", "-", cm.frequency, "44100", "stereo"]
+        elif Platform.pi_version() == 2:
+            fm_command = ["sudo", cm.home_dir + "/bin/pi_fm_rds", "-audio", "-", "-freq", cm.frequency, "-srate", "44100", "-nochan", "2"]
+        else:
+            cm.fm = False
 
     if cm.mode == 'audio-in':
         audio_in()
