@@ -79,6 +79,8 @@ import decoder
 import numpy as np
 import cPickle
 import time
+from collections import deque
+import Platform
 import fft
 from prepostshow import PrePostShow
 import RunningStats
@@ -99,7 +101,7 @@ def end_early():
         
     hc.clean_up()
 
-    if _usefm:
+    if cm.audio_processing.fm:
         fm_process.kill()
 
     if network.network_stream:
@@ -143,19 +145,49 @@ def update_lights(matrix, mean, std):
 
 
 def audio_in():
-    """Control the lightshow from audio coming in from a USB audio card"""
-    sample_rate = cm.lightshow.audio_in_sample_rate
-    input_channels = cm.lightshow.audio_in_channels
+    """Control the lightshow from audio coming in from a realtime audio"""
+    if cm.lightshow.mode == 'audio-in':
+        sample_rate = cm.lightshow.audio_in_sample_rate
+        num_channels = cm.lightshow.audio_in_channels
 
-    # Open the input stream from default input device
-    streaming = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NORMAL, cm.lightshow.audio_in_card)
-    streaming.setchannels(input_channels)
-    streaming.setformat(aa.PCM_FORMAT_S16_LE)  # Expose in config if needed
-    streaming.setrate(sample_rate)
-    streaming.setperiodsize(CHUNK_SIZE)
+        # Open the input stream from default input device
+        streaming = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NORMAL, cm.lightshow.audio_in_card)
+        streaming.setchannels(num_channels)
+        streaming.setformat(aa.PCM_FORMAT_S16_LE)  # Expose in config if needed
+        streaming.setrate(sample_rate)
+        streaming.setperiodsize(CHUNK_SIZE)
 
-    log.debug("Running in audio-in mode - will run until Ctrl+C is pressed")
-    print "Running in audio-in mode, use Ctrl+C to stop"
+        log.debug("Running in audio-in mode - will run until Ctrl+C is pressed")
+        print "Running in audio-in mode, use Ctrl+C to stop"
+
+    elif cm.lightshow.mode == 'stream-in':
+        sample_rate = cm.lightshow.stream_in_sample_rate
+        num_channels = 2
+
+        # Open the input stream from mpg123 url assuming two channels (stereo)
+        stream_in_process = subprocess.Popen(['mpg123','--stdout',cm.lightshow.stream_in_url],stdout=subprocess.PIPE)
+
+        log.debug("Running in stream-in mode - will run until Ctrl+C is pressed")
+        print "Running in stream-in mode, use Ctrl+C to stop"
+
+    if cm.audio_processing.fm:
+        log.info("Sending output as fm transmission")
+
+        with open(os.devnull, "w") as dev_null:
+            fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
+        output = lambda data: os.write(music_pipe_w, data)
+    elif cm.lightshow.audio_out_card is not '':
+        output_device = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL, cm.lightshow.audio_out_card)
+        output_device.setchannels(num_channels)
+        output_device.setrate(sample_rate)
+        output_device.setformat(aa.PCM_FORMAT_S16_LE)
+        output_device.setperiodsize(CHUNK_SIZE)
+        output = lambda data: output_device.write(data)
+    else:
+        output = None
+
+    # using 88.2 chunks per second at 44100/16
+    light_delay = int(cm.audio_processing.light_delay * 88.2)
 
     # Start with these as our initial guesses - will calculate a rolling mean / std 
     # as we get input data.
@@ -168,6 +200,9 @@ def audio_in():
     # preload running_stats to avoid errors, and give us a show that looks
     # good right from the start
     running_stats.preload(mean, std, count)
+
+    matrix_buffer = deque([],1000)
+
     try:
         hc.initialize()
         fft_calc = fft.FFT(CHUNK_SIZE,
@@ -177,15 +212,22 @@ def audio_in():
                            cm.audio_processing.max_frequency,
                            cm.audio_processing.custom_channel_mapping,
                            cm.audio_processing.custom_channel_frequencies,
-                           input_channels)
+                           num_channels)
 
         if server:
             network.network.set_playing()
 
         # Listen on the audio input device until CTRL-C is pressed
         while True:
-            length, data = streaming.read()
-            if length > 0:
+            if cm.lightshow.mode == 'audio-in':
+                length, data = streaming.read()
+            elif cm.lightshow.mode == 'stream-in':
+                data = stream_in_process.stdout.read(CHUNK_SIZE)
+
+            if output is not None:
+                output(data)
+
+            if len(data):
                 # if the maximum of the absolute value of all samples in
                 # data is below a threshold we will disreguard it
                 audio_max = audioop.max(data, 2)
@@ -199,13 +241,21 @@ def audio_in():
                     mean = running_stats.mean()
                     std = running_stats.std()
 
-                update_lights(matrix, mean, std)
+                matrix_buffer.appendleft(matrix)
+
+                if len(matrix_buffer) > light_delay:
+                    matrix = matrix_buffer[light_delay]
+                    update_lights(matrix, mean, std)
 
     except KeyboardInterrupt:
         pass
 
     finally:
         print "\nStopping"
+        if cm.lightshow.mode == 'stream-in':
+            stream_in_process.terminate()
+        if cm.audio_processing.fm:
+            fm_process.kill()
         hc.clean_up()
 
 
@@ -376,19 +426,12 @@ def setup_audio(song_filename):
                        cm.audio_processing.custom_channel_frequencies)
 
     # setup output device
-    if _usefm:
+    if cm.audio_processing.fm:
        
         log.info("Sending output as fm transmission")
 
         with open(os.devnull, "w") as dev_null:
-            fm_process = subprocess.Popen(["sudo",
-                                           cm.home_dir + "/bin/pifm",
-                                           "-",
-                                           cm.audio_processing.frequency,
-                                           "44100",
-                                           "stereo"],
-                                          stdin=music_pipe_r,
-                                          stdout=dev_null)
+            fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
         output = lambda data: os.write(music_pipe_w, data)
     else:
         fm_process = None
@@ -625,6 +668,10 @@ def play_song():
     # setup our cache_matrix, std, mean
     cache_found, cache_matrix, std, mean = setup_cache(cache_filename, fft_calc)
 
+    # using 88.2 chunks per second at 44100/16
+    light_delay = int(cm.audio_processing.light_delay * 88.2)
+    matrix_buffer = deque([],1000)
+
     # Process audio song_filename
     row = 0
     data = music_file.readframes(CHUNK_SIZE)
@@ -649,7 +696,11 @@ def play_song():
             # Add the matrix to the end of the cache 
             cache_matrix = np.vstack([cache_matrix, matrix])
 
-        update_lights(matrix, mean, std)
+        matrix_buffer.appendleft(matrix)
+
+        if len(matrix_buffer) > light_delay:
+            matrix = matrix_buffer[light_delay]
+            update_lights(matrix, mean, std)
 
         # Read next chunk of data from music song_filename
         data = music_file.readframes(CHUNK_SIZE)
@@ -770,15 +821,20 @@ if __name__ == "__main__":
         print "One of --playlist or --file must be specified"
         sys.exit()
 
-    _usefm = cm.audio_processing.fm
     network = hc.network
     server = network.networking == 'server'
     client = network.networking == "client"
 
-    if _usefm:
+    if cm.audio_processing.fm:
         music_pipe_r, music_pipe_w = os.pipe()
+        if Platform.pi_version() == 1:
+            fm_command = ["sudo", cm.home_dir + "/bin/pifm", "-", cm.audio_processing.frequency, "44100", "stereo"]
+        elif Platform.pi_version() == 2:
+            fm_command = ["sudo", cm.home_dir + "/bin/pi_fm_rds", "-audio", "-", "-freq", cm.audio_processing.frequency, "-srate", "44100", "-nochan", "2"]
+        else:
+            cm.audio_processing.fm = False
 
-    if cm.lightshow.mode == 'audio-in':
+    if cm.lightshow.mode == 'audio-in' or cm.lightshow.mode == 'stream-in':
         audio_in()
     elif client:
         network_client()
