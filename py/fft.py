@@ -24,7 +24,7 @@ import ConfigParser
 import logging
 import os.path
 from numpy import *
-
+import math
 
 class FFT(object):
     def __init__(self,
@@ -96,6 +96,7 @@ class FFT(object):
                 if self.piff[a][0] == self.piff[a][1]:
                     self.piff[a][1] += 1
 
+
         # create a numpy array, taking just the left channel if stereo
         data_stereo = frombuffer(data, dtype="int16")
 
@@ -123,7 +124,7 @@ class FFT(object):
         # Calculate the power spectrum
         power = abs(fourier) ** 2
 
-        cache_matrix = empty(self.num_bins, dtype='float64')
+        cache_matrix = empty(self.num_bins, dtype='float32')
 
         for pin in range(self.num_bins):
             # Get the sum of the power array index corresponding to a 
