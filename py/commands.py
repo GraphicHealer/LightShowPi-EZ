@@ -100,7 +100,7 @@ def execute(command, user):
             args = command[len(command_name):]
         else:
             try:
-                for command_alias in cm.get(command_name + '_aliases'):
+                for command_alias in cm.sms.get(command_name + '_aliases'):
                     if bool(re.match(command_alias, command, re.I)):
                         name = command_name
                         args = command[len(command_alias):]
@@ -113,7 +113,7 @@ def execute(command, user):
 
     # If no command found, assume we're executing the default command
     if not name:
-        name = cm.default_command
+        name = cm.sms.default_command
         args = command
 
     # Verify this command is installed
@@ -124,11 +124,11 @@ def execute(command, user):
 
     # Verify the user has permission to execute this command
     if not cm.has_permission(user, name):
-        return cm.unauthorized_response.format(cmd=name, user=user)
+        return cm.sms.unauthorized_response.format(cmd=name, user=user)
 
     # Check to see if the command issued should be throttled
     if cm.is_throttle_exceeded(name, user):
-        return cm.throttle_limit_reached_response.format(cmd=name, user=user)
+        return cm.sms.throttle_limit_reached_response.format(cmd=name, user=user)
 
     # Execute the command
     return Command.commands[name].execute(user, args.strip())
@@ -149,7 +149,7 @@ def cmd_help(*args):
 
     for cmd in _CMD_NAMES:
         if cm.has_permission(user, cmd):
-            cmd_description = cm.get(cmd + '_description')
+            cmd_description = cm.sms.get(cmd + '_description')
 
             if cmd_description:
                 help_msg += cmd_description + "\n"
@@ -167,8 +167,8 @@ def cmd_list(*args):
     :rtype: list
     """
 
-    per_sms = cm.sms['list_songs_per_sms']
-    per_page = cm.sms['list_songs_per_page']
+    per_sms = cm.sms.list_songs_per_sms
+    per_page = cm.sms.list_songs_per_page
     pages = int(math.ceil(float(len(cm.playlist)) / per_sms))
     page = 1
 
@@ -183,16 +183,16 @@ def cmd_list(*args):
 
     i_sms = 0
     i_song = per_page * (page-1)
-    for song in cm.playlist[per_page*(page-1):per_page*page]:
-        if i_sms > len(response)-1:
+    for song in cm.playlist[per_page * (page - 1):per_page * page]:
+        if i_sms > len(response) - 1:
             response.append('')
-        response[i_sms] += str(1+i_song) + ': ' + song[0] + '\n'
+        response[i_sms] += str(1 + i_song) + ': ' + song[0] + '\n'
         i_song += 1
         if i_song % per_sms == 0:
             i_sms += 1
 
     if page < pages:
-        response[len(response)-1] += '(Text "list ' + str(1+page) + '" for more songs)'
+        response[len(response) - 1] += '(Text "list ' + str(1 + page) + '" for more songs)'
     return response
 
 
@@ -245,7 +245,7 @@ def cmd_volume(*args):
             return 'volume must be between 0 and 100'
         sanitized_cmd = str(vol)
     else:
-        return cm.volume_description
+        return cm.sms.volume_description
 
     # Execute the sanitized command and handle result
     volscript = cm.home_dir + '/bin/vol'
@@ -283,13 +283,13 @@ def cmd_vote(*args):
             return 'Thank you for requesting "' + song[0] \
                    + '", we\'ll notify you when it starts!'
     else:
-        return cm.unknown_command_response
+        return cm.sms.unknown_command_response
 
 
 def start(config):
     global cm, _CMD_NAMES
     cm = config
-    _CMD_NAMES = cm.commands
+    _CMD_NAMES = cm.sms.commands
         
     Command('help', cmd_help)
     Command('list', cmd_list)
