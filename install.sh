@@ -170,13 +170,10 @@ if [ $? -ne 0 ]; then
 fi
 
 # Install fixed version of googlevoice
-wget -O kkleidal-pygooglevoiceupdate.tar.gz https://kkleidal-pygooglevoiceupdate.googlecode.com/archive/450e372008a2d81aab4061fd387ee74e7797e030.tar.gz
-tar xvzf kkleidal-pygooglevoiceupdate.tar.gz
-cd kkleidal-pygooglevoiceupdate-450e372008a2
-python setup.py install
+pip install git+https://tom_slick@bitbucket.org/tom_slick/pygooglevoice.git --upgrade
 
 if [ $? -ne 0 ]; then
-    errchk "Installing pygooglevoiceupdate" $?
+    errchk "Installing pygooglevoice" $?
 fi
 
 # install beautiful soup
