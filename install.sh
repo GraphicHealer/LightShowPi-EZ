@@ -124,10 +124,7 @@ done
 
 # Install pygooglevoice. DO NOT use the outdated version in PyPi mirrors
 log Installing patched pygooglevoice...
-cd $BUILD_DIR
-curl -s https://kkleidal-pygooglevoiceupdate.googlecode.com/archive/450e372008a2d81aab4061fd387ee74e7797e030.tar.gz | \
-    tar xzf - && cd kkleidal-pygooglevoiceupdate-* && \
-    python setup.py install
+pip install git+https://tom_slick@bitbucket.org/tom_slick/pygooglevoice.git --upgrade
 verify "Installation of pygooglevoice from googlecode failed"
 
 # Optionally add a line to /etc/sudoers

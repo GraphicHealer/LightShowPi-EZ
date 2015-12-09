@@ -57,7 +57,7 @@ import commands
 cm = configuration_manager.Configuration(True)
 parser = argparse.ArgumentParser()
 parser.add_argument('--playlist',
-                    default=cm.playlist_path,
+                    default=cm.sms.playlist_path,
                     help='filename with the song playlist, one song per line in the format: '
                          '<song name><tab><path to song>')
 parser.add_argument('--setup', default=False,
@@ -82,7 +82,7 @@ level = levels.get(parser.parse_args().log.upper())
 logging.getLogger().setLevel(level)
 
 # First check to make sure SMS is enabled
-if not cm.enable:
+if not cm.sms.enable:
     sys.exit()
 
 VOICE = Voice()
@@ -229,13 +229,14 @@ def main():
                             VOICE.send_sms(msg['from'], str(part))
                             time.sleep(2)
                 except ValidationError as v_error:
-                    logging.warn(str(v_error) + ': Error sending sms response (command still executed)',
-                                 exc_info=1)
+                    logging.warn(
+                        str(v_error) + ': Error sending sms response (command still executed)',
+                        exc_info=1)
 
                 logging.info('Response: "' + str(response) + '"')
             else:
                 logging.info('Unknown request: "' + msg['text'] + '" from ' + msg['from'])
-                VOICE.send_sms(msg['from'], cm.unknown_command_response)
+                VOICE.send_sms(msg['from'], cm.sms.unknown_command_response)
 
         # Update playlist with latest votes
         with open(args.playlist, 'wb') as playlist_fp:
