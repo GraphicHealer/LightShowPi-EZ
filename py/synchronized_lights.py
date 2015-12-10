@@ -186,8 +186,8 @@ def audio_in():
     else:
         output = None
 
-    # using 88.2 chunks per second at 44100/16
-    light_delay = int(cm.audio_processing.light_delay * 88.2)
+    chunks_per_sec = ((16 * num_channels * sample_rate) / 8) / CHUNK_SIZE
+    light_delay = int(cm.audio_processing.light_delay * chunks_per_sec)
 
     # Start with these as our initial guesses - will calculate a rolling mean / std 
     # as we get input data.
@@ -442,11 +442,14 @@ def setup_audio(song_filename):
         output_device.setperiodsize(CHUNK_SIZE)
         output = lambda data: output_device.write(data)
 
+    chunks_per_sec = ((16 * num_channels * sample_rate) / 8) / CHUNK_SIZE
+    light_delay = int(cm.audio_processing.light_delay * chunks_per_sec)
+
     # Output a bit about what we're about to play to the logs
     nframes = str(music_file.getnframes() / sample_rate)
     log.info("Playing: " + song_filename + " (" + nframes + " sec)")
 
-    return output, fft_calc, music_file
+    return output, fft_calc, music_file, light_delay
 
 
 def setup_cache(cache_filename, fft_calc):
@@ -663,13 +666,11 @@ def play_song():
         play_now = 0
 
     # setup audio file and output device
-    output, fft_calc, music_file = setup_audio(song_filename)
+    output, fft_calc, music_file, light_delay = setup_audio(song_filename)
 
     # setup our cache_matrix, std, mean
     cache_found, cache_matrix, std, mean = setup_cache(cache_filename, fft_calc)
 
-    # using 88.2 chunks per second at 44100/16
-    light_delay = int(cm.audio_processing.light_delay * 88.2)
     matrix_buffer = deque([],1000)
 
     # Process audio song_filename
