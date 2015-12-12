@@ -174,8 +174,8 @@ def audio_in():
         log.info("Sending output as fm transmission")
 
         with open(os.devnull, "w") as dev_null:
-            fm_command[fm_command_srate_idx] = str(sample_rate * 0.5 * num_channels)
-            fm_command[fm_command_chan_idx] = fm_command_chan_val[num_channels]
+            fm_command[fm_command.index("SRATE")] = str(int(sample_rate / (1 if num_channels > 1 else 2)))
+            fm_command[fm_command.index("NOCHAN")] = fm_command_chan_val[(2 if num_channels > 1 else 1)]
             fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
         output = lambda data: os.write(music_pipe_w, data)
     elif cm.lightshow.audio_out_card is not '':
@@ -433,8 +433,8 @@ def setup_audio(song_filename):
         log.info("Sending output as fm transmission")
 
         with open(os.devnull, "w") as dev_null:
-            fm_command[fm_command_srate_idx] = str(sample_rate * 0.5 * num_channels)
-            fm_command[fm_command_chan_idx] = fm_command_chan_val[num_channels]
+            fm_command[fm_command.index("SRATE")] = str(int(sample_rate / (1 if num_channels > 1 else 2)))
+            fm_command[fm_command.index("NOCHAN")] = fm_command_chan_val[(2 if num_channels > 1 else 1)]
             fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
         output = lambda data: os.write(music_pipe_w, data)
     else:
@@ -833,14 +833,10 @@ if __name__ == "__main__":
     if cm.audio_processing.fm:
         music_pipe_r, music_pipe_w = os.pipe()
         if Platform.pi_version() == 1:
-            fm_command = ["sudo", cm.home_dir + "/bin/pifm", "-", cm.audio_processing.frequency, "44100", "stereo"]
-            fm_command_srate_idx = 4;
-            fm_command_chan_idx = 5;
+            fm_command = ["sudo", cm.home_dir + "/bin/pifm", "-", cm.audio_processing.frequency, "SRATE", "NOCHAN"]
             fm_command_chan_val = [ "0","mono","stereo" ]
         elif Platform.pi_version() == 2:
-            fm_command = ["sudo", cm.home_dir + "/bin/pi_fm_rds", "-audio", "-", "-freq", cm.audio_processing.frequency, "-srate", "44100", "-nochan", "2"]
-            fm_command_srate_idx = 7;
-            fm_command_chan_idx = 9;
+            fm_command = ["sudo", cm.home_dir + "/bin/pi_fm_rds", "-audio", "-", "-freq", cm.audio_processing.frequency, "-srate", "SRATE", "-nochan", "NOCHAN"]
             fm_command_chan_val = [ "0","1","2" ]
         else:
             cm.audio_processing.fm = False
