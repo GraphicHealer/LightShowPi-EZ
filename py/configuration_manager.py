@@ -223,6 +223,8 @@ class Configuration(object):
         lghtshw["audio_out_card"] = self.config.get(ls, 'audio_out_card')
         lghtshw["audio_in_channels"] = self.config.getint(ls, 'audio_in_channels')
         lghtshw["audio_in_sample_rate"] = self.config.getint(ls, 'audio_in_sample_rate')
+        lghtshw["stream_in_url"] = self.config.get(ls, 'stream_in_url')
+        lghtshw["stream_in_sample_rate"] = self.config.getint(ls, 'stream_in_sample_rate')
 
         playlist_path = self.config.get(ls, 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
@@ -283,6 +285,7 @@ class Configuration(object):
         audio_prcssng = dict()
         audio_prcssng["fm"] = self.config.getboolean('audio_processing', 'fm')
         audio_prcssng["frequency"] = self.config.get('audio_processing', 'frequency')
+        audio_prcssng["light_delay"] = self.config.getfloat('audio_processing', 'light_delay')
         audio_prcssng["min_frequency"] = \
             self.config.getfloat('audio_processing', 'min_frequency')
         audio_prcssng["max_frequency"] = \

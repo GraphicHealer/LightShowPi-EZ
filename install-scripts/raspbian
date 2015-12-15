@@ -7,7 +7,7 @@ INSTALL_COMMAND="apt-get install -q=2 -y"
 PYTHON_DEPS=(Beautifulsoup mutagen simplejson wiringpi2)
 
 ## System packages to be installed
-SYSTEM_DEPS=(curl faad flac gcc git lame make python-alsaaudio python-dev \
+SYSTEM_DEPS=(curl faad flac gcc git lame mpg123 make python-alsaaudio python-dev \
              python-numpy python-pip python-setuptools unzip vorbis-tools wiringpi)
 
 ## Miscellaneous checks
