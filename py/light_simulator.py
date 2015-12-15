@@ -34,7 +34,7 @@ Note:
       set everything up correctly.
 
       Audio-in might be a problem on some distros.  For example the audioop module
-      is not part on my version of openSuse.  But it is in Debian and Ubuntu so
+      is not part of my version of openSuse.  But it is in Debian and Ubuntu so
       it will work with them.
 """
 
