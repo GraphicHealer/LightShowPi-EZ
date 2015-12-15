@@ -4,7 +4,39 @@
 # http://www.lightshowpi.com/
 #
 # Author: Tom Enos
-"""Simple Gui to see what the lightshow is doing"""
+"""Simple Gui to see what the lightshow is doing
+
+The is a development tool made so that you do not need to keep setting up your
+RPI with a breadboard and leds.  It allows you to edit and run the code right
+on you linux desktop.
+
+Setup:
+      You will need to install the dependencies for lightshowpi on you computer
+      look at the install scripts to see what is needed.
+      
+Usage:
+      Open 2 terminals, in both export your SYNCHRONIZED_LIGHTS_HOME variable
+      or you can export it globaly and not do this all the time.  But if your
+      working with differnt versions in different directorys you might not want
+      to do that.  Next edit (or create)overrides.cfg and under [network] set 
+      networking = server In one of the terminals start this sim.  You will not
+      see anything yet.  In the second terminal start synchronized_lights.py as
+      a regular user with out sudo (you don't need access to the gpio pins so
+      you don't need to run as root
+      
+      When the show starts a Tkinter window will open up and you can see what
+      lightshowpi is doing.  Just leave the Tkinter window running.  Every time
+      you run synchronized_lights it will respond.
+      
+Note:
+      Also note if you do globaly set SYNCHRONIZED_LIGHTS_HOME the scripts in
+      the bin folder should also work with this as well as the sms code if you 
+      set everything up correctly.
+
+      Audio-in might be a problem on some distros.  For example the audioop module
+      is not part on my version of openSuse.  But it is on Debian and Ubuntu so
+      it will work with them.
+"""
 
 from math import ceil
 import Tkinter
