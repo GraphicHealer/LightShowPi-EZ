@@ -46,7 +46,10 @@ from Tkinter import Canvas
 import math
 
 CM = hc.cm
-
+CM.network.networking = "client"
+hc.network = hc.networking.networking(CM)
+hc.server = hc.network.networking == "server"
+network = hc.network
 
 class Gui(Canvas):
     """Simple Gui to see what the lightshow is doing"""
@@ -56,7 +59,7 @@ class Gui(Canvas):
         self.gpio_pins = CM.hardware.gpio_pins
         self.gpiolen = CM.hardware.gpio_len
         self.pwm_max = CM.hardware.pwm_range
-        self.gpioactive = hc.GPIOACTIVE
+        self.gpioactive = hc._GPIOACTIVE
         self.is_pin_pwm = hc.is_pin_pwm
         self.gpio = list()
         self.state = list()
@@ -104,10 +107,10 @@ class Gui(Canvas):
         width = (row_length * spacing) + int((rad * 1.75))
         height = (rows * spacing) + int(rad * 1.75)
 
-        self.parent.geometry('{0:d}column{1:d}+{2:d}+{3:d}'.format(width,
-                                                                   height,
-                                                                   screen_x,
-                                                                   screen_y))
+        self.parent.geometry('{0:d}x{1:d}+{2:d}+{3:d}'.format(width,
+                                                              height,
+                                                              screen_x,
+                                                              screen_y))
         self.parent.title("Lights")
         self.parent.protocol("WM_DELETE_WINDOW", self.quit)
         column_worker, row_worker = column, row
@@ -197,7 +200,7 @@ class Gui(Canvas):
         if math.isnan(brightness):
             brightness = 0.0
 
-        if hc.ACTIVE_LOW_MODE:
+        if hc._ACTIVE_LOW_MODE:
             brightness = 1.0 - brightness
 
         if use_overrides:
