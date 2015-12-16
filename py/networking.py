@@ -26,7 +26,7 @@ class networking(object):
     to send or receive data to/from lightshowpi network enabled raspberry pi(s).
     """
 
-    def __init__(self):
+    def __init__(self, cm):
         self.cm = cm
 
         self.networking = cm.network.networking
