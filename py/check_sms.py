@@ -187,7 +187,8 @@ def main():
                 if len(song) < 2 or len(song) > 4:
                     logging.error('Invalid playlist.  Each line should be in the form: '
                                   '<song name><tab><path to song>')
-                    sys.exit()
+                    log.warning('Removing invalid entry')
+                    continue
                 elif len(song) == 2:
                     song.append(set())
                 elif len(song) >= 3:
