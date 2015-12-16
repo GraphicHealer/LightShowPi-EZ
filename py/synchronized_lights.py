@@ -574,6 +574,8 @@ def get_song():
                     log.error('Invalid playlist.  Each line should be in the form: '
                               '<song name><tab><path to song>')
                     log.warning('Removing invalid entry')
+                    print "Error found in playlist"
+                    print "Deleting entry:", song
                     continue
                 elif len(song) == 2:
                     song.append(set())
