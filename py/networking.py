@@ -14,20 +14,21 @@ to send or receive data to/from lightshowpi network enabled raspberry pi(s).
 
 import cPickle
 import logging as log
-import math
-import signal
 import socket
-from collections import defaultdict
 import numpy as np
 import sys
 
 
 class networking(object):
-    
-    def __init__(self, cm, set_light):
+    """Control the raspberry pi network.
+
+    The network controller handles all interaction with the raspberry pi
+    to send or receive data to/from lightshowpi network enabled raspberry pi(s).
+    """
+
+    def __init__(self):
         self.cm = cm
-        self.set_light = set_light
-        
+
         self.networking = cm.network.networking
         self.port = cm.network.port
         self.network_buffer = cm.network.buffer
@@ -36,10 +37,9 @@ class networking(object):
         
         self.network_stream = None
         self.setup()
-        
+
     def setup(self):
         """Setup as either server or client"""
-        # if in broadcast mode, setup socket
         if self.networking == "server":
             self.setup_server()
         elif self.networking == "client":
@@ -86,7 +86,7 @@ class networking(object):
 
     def receive(self):
         """Receive the data sent from the server and decode it
-        
+
         :return: data
         :rtype tuple: np.array | tuple
         """
@@ -94,11 +94,9 @@ class networking(object):
             data, address = self.network_stream.recvfrom(self.network_buffer)
             data = cPickle.loads(data)
         except (IndexError, cPickle.PickleError):
-            data = tuple(np.array([0 for _ in range(hc.GPIOLEN)]))
-        
-        
+            data = tuple(np.array([0 for _ in range(cm.hardware.gpio_len)]))
+
         return data
-        
 
     def broadcast(self, *args):
         """Broadcast data over the network

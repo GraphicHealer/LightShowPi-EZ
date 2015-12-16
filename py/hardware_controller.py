@@ -319,7 +319,7 @@ def initialize():
     turn_off_lights()
 
 # network setup if used
-network = networking.networking(cm, set_light)
+network = networking.networking(cm)
 server = network.networking == "server"
 
 # test functions
