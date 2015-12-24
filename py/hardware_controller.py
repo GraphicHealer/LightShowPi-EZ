@@ -43,8 +43,7 @@ def end_early():
     if state == "random_pattern":
         exit_event.set()
         time.sleep(3)
-        
-    turn_off_lights()
+        turn_off_lights()
     sys.exit(0)
 
 atexit.register(end_early)
