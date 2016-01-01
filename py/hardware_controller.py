@@ -49,7 +49,7 @@ def end_early():
 atexit.register(end_early)
 
 # Remove traceback on Ctrl-C
-#signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 
 cm = configuration_manager.Configuration()
 
