@@ -49,7 +49,7 @@ def end_early():
 atexit.register(end_early)
 
 # Remove traceback on Ctrl-C
-signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+#signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 
 cm = configuration_manager.Configuration()
 
@@ -675,7 +675,7 @@ def test():
                 print "Make sure you are using the correct pins as listed above"
                 
                 if ccm:
-                    print "Disable custom channle mapping to help with debugging your config"
+                    print "Disable custom channel mapping to help with debugging your config"
                     
                 print "After you have made these corrections please rerun this test\n\n"
                 
