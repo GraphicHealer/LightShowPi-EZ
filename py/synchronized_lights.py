@@ -136,6 +136,12 @@ def update_lights(matrix, mean, std):
     brightness = np.clip(brightness, 0.0, 1.0)
     brightness = np.round(brightness, decimals=3)
 
+    if decay_factor > 0:
+        global decay 
+        decay = np.where(decay <= brightness, brightness, decay)
+        brightness = np.where(decay - decay_factor > 0, decay - decay_factor, brightness)
+        decay = np.where(decay - decay_factor > 0, decay - decay_factor, decay)
+
     # broadcast to clients if in server mode
     if server:
         network.broadcast(brightness)
@@ -832,6 +838,10 @@ if __name__ == "__main__":
     network = hc.network
     server = network.networking == 'server'
     client = network.networking == "client"
+
+    decay_factor = cm.lightshow.decay_factor
+    if decay_factor > 0:
+        decay = np.zeros(cm.hardware.gpio_len, dtype='float32')
 
     if cm.audio_processing.fm:
         music_pipe_r, music_pipe_w = os.pipe()
