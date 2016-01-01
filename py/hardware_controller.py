@@ -44,7 +44,6 @@ def end_early():
         exit_event.set()
         time.sleep(3)
         turn_off_lights()
-    sys.exit(0)
 
 atexit.register(end_early)
 
