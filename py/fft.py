@@ -26,6 +26,8 @@ import os.path
 from numpy import *
 import math
 
+from rpi_audio_levels import AudioLevels
+
 class FFT(object):
     def __init__(self,
                  chunk_size,
@@ -77,6 +79,7 @@ class FFT(object):
         self.frequency_limits = self.calculate_channel_frequency()
         self.config = ConfigParser.RawConfigParser(allow_no_value=True)
         self.config_filename = ""
+        self.audio_levels = AudioLevels(math.log(chunk_size / 2, 2), num_bins)
 
     def calculate_levels(self, data):
         """Calculate frequency response for each channel defined in frequency_limits
@@ -114,32 +117,10 @@ class FFT(object):
             self.window = hanning(len(data))
 
         data = data * self.window
-
+        
         # Apply FFT - real data
-        fourier = fft.rfft(data)
-
-        # Remove last element in array to make it the same size as chunk_size
-        fourier.resize(len(fourier) - 1)
-
         # Calculate the power spectrum
-        power = abs(fourier) ** 2
-
-        cache_matrix = empty(self.num_bins, dtype='float32')
-
-        for pin in range(self.num_bins):
-            # Get the sum of the power array index corresponding to a 
-            # particular frequency.
-            cache_matrix[pin] = sum(power[self.piff[pin][0]:self.piff[pin][1]])
-
-        # take the log10 of the resulting sum to approximate how human ears 
-        # perceive sound levels
-        if all(cache_matrix == 0.0):
-            return cache_matrix
-
-        with errstate(divide='ignore'):
-            cache_matrix = where(cache_matrix > 0.0, log10(cache_matrix), 0)
-
-        return cache_matrix
+        return array(self.audio_levels.compute(data.astype(float32), self.piff.tolist())[0])
 
     def calculate_channel_frequency(self):
         """Calculate frequency values
@@ -261,6 +242,9 @@ class FFT(object):
             has_config = False
             logging.warn("Cached config data does not match")
 
+        if has_config:
+            self.audio_levels = None
+            
         return has_config
 
     def save_config(self):
