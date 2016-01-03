@@ -174,8 +174,8 @@ def audio_in():
             log.info("Sending output as fm transmission")
 
             with open(os.devnull, "w") as dev_null:
-                fm_command[fm_command.index("SRATE")] = str(int(sample_rate / (1 if num_channels > 1 else 2)))
-                fm_command[fm_command.index("NOCHAN")] = fm_command_chan_val[(2 if num_channels > 1 else 1)]
+                fm_command[fm_command.index("SRATE")] = str(int(sample_rate))
+                fm_command[fm_command.index("NOCHAN")] = fm_command_chan_val[2]
                 fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
             output = lambda data: os.write(music_pipe_w, data)
             
