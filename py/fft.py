@@ -71,7 +71,6 @@ class FFT(object):
         self.num_bins = num_bins
         self.input_channels = input_channels
         self.window = hanning(0)
-        self.piff = None
         self.min_frequency = min_frequency
         self.max_frequency = max_frequency
         self.custom_channel_mapping = custom_channel_mapping
@@ -80,7 +79,7 @@ class FFT(object):
         self.config = ConfigParser.RawConfigParser(allow_no_value=True)
         self.config_filename = ""
         self.audio_levels = AudioLevels(math.log(chunk_size / 2, 2), num_bins)
-        
+
         fl = array(self.frequency_limits)
         self.piff = ((fl * self.chunk_size) / self.sample_rate).astype(int)
 
@@ -88,6 +87,7 @@ class FFT(object):
             if self.piff[a][0] == self.piff[a][1]:
                 self.piff[a][1] += 1
         self.piff = self.piff.tolist()
+        
 
     def calculate_levels(self, data):
         """Calculate frequency response for each channel defined in frequency_limits
@@ -98,16 +98,6 @@ class FFT(object):
         :return:
         :rtype: numpy.array
         """
-
-        #if not self.piff:
-            #fl = array(self.frequency_limits)
-            #self.piff = ((fl * self.chunk_size) / self.sample_rate).astype(int)
-
-            #for a in range(len(self.piff)):
-                #if self.piff[a][0] == self.piff[a][1]:
-                    #self.piff[a][1] += 1
-            #self.piff = self.piff.tolist()
-
         # create a numpy array, taking just the left channel if stereo
         data_stereo = frombuffer(data, dtype="int16")
 
@@ -125,7 +115,11 @@ class FFT(object):
             self.window = hanning(len(data)).astype(float32)
 
         data = data * self.window
-        
+
+        # if all zeros in data then there is no need to do the fft 
+        if all(data == 0.0):
+            return zeros(self.num_bins, dtype="float32")
+
         # Apply FFT - real data
         # Calculate the power spectrum
         return array(self.audio_levels.compute(data, self.piff)[0])

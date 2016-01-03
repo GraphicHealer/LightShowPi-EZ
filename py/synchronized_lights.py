@@ -162,7 +162,7 @@ def audio_in():
 
     elif cm.lightshow.mode == 'stream-in':
         sample_rate = cm.lightshow.stream_in_sample_rate
-        num_channels = 2
+        num_channels = 1
 
         # Open the input stream from mpg123 url assuming two channels (stereo)
         stream_in_process = subprocess.Popen(['mpg123','--stdout',cm.lightshow.stream_in_url],stdout=subprocess.PIPE)
@@ -170,23 +170,24 @@ def audio_in():
         log.debug("Running in stream-in mode - will run until Ctrl+C is pressed")
         print "Running in stream-in mode, use Ctrl+C to stop"
 
-    if cm.audio_processing.fm:
-        log.info("Sending output as fm transmission")
+        if cm.audio_processing.fm:
+            log.info("Sending output as fm transmission")
 
-        with open(os.devnull, "w") as dev_null:
-            fm_command[fm_command.index("SRATE")] = str(int(sample_rate / (1 if num_channels > 1 else 2)))
-            fm_command[fm_command.index("NOCHAN")] = fm_command_chan_val[(2 if num_channels > 1 else 1)]
-            fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
-        output = lambda data: os.write(music_pipe_w, data)
-    elif cm.lightshow.audio_out_card is not '':
-        output_device = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL, cm.lightshow.audio_out_card)
-        output_device.setchannels(num_channels)
-        output_device.setrate(sample_rate)
-        output_device.setformat(aa.PCM_FORMAT_S16_LE)
-        output_device.setperiodsize(CHUNK_SIZE)
-        output = lambda data: output_device.write(data)
-    else:
-        output = None
+            with open(os.devnull, "w") as dev_null:
+                fm_command[fm_command.index("SRATE")] = str(int(sample_rate / (1 if num_channels > 1 else 2)))
+                fm_command[fm_command.index("NOCHAN")] = fm_command_chan_val[(2 if num_channels > 1 else 1)]
+                fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
+            output = lambda data: os.write(music_pipe_w, data)
+            
+        elif cm.lightshow.audio_out_card is not '':
+            output_device = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL, cm.lightshow.audio_out_card)
+            output_device.setchannels(2)
+            output_device.setrate(sample_rate)
+            output_device.setformat(aa.PCM_FORMAT_S16_LE)
+            output_device.setperiodsize(CHUNK_SIZE)
+            output = lambda data: output_device.write(data)
+        else:
+            output = None
 
     chunks_per_sec = ((16 * num_channels * sample_rate) / 8) / CHUNK_SIZE
     light_delay = int(cm.audio_processing.light_delay * chunks_per_sec)
