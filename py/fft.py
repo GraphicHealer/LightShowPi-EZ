@@ -71,7 +71,7 @@ class FFT(object):
         self.num_bins = num_bins
         self.input_channels = input_channels
         self.window = hanning(0)
-        self.piff = list()
+        self.piff = None
         self.min_frequency = min_frequency
         self.max_frequency = max_frequency
         self.custom_channel_mapping = custom_channel_mapping
@@ -80,6 +80,14 @@ class FFT(object):
         self.config = ConfigParser.RawConfigParser(allow_no_value=True)
         self.config_filename = ""
         self.audio_levels = AudioLevels(math.log(chunk_size / 2, 2), num_bins)
+        
+        fl = array(self.frequency_limits)
+        self.piff = ((fl * self.chunk_size) / self.sample_rate).astype(int)
+
+        for a in range(len(self.piff)):
+            if self.piff[a][0] == self.piff[a][1]:
+                self.piff[a][1] += 1
+        self.piff = self.piff.tolist()
 
     def calculate_levels(self, data):
         """Calculate frequency response for each channel defined in frequency_limits
@@ -91,14 +99,14 @@ class FFT(object):
         :rtype: numpy.array
         """
 
-        if len(self.piff) < 1:
-            fl = array(self.frequency_limits)
-            self.piff = ((fl * self.chunk_size) / self.sample_rate).astype(int)
+        #if not self.piff:
+            #fl = array(self.frequency_limits)
+            #self.piff = ((fl * self.chunk_size) / self.sample_rate).astype(int)
 
-            for a in range(len(self.piff)):
-                if self.piff[a][0] == self.piff[a][1]:
-                    self.piff[a][1] += 1
-
+            #for a in range(len(self.piff)):
+                #if self.piff[a][0] == self.piff[a][1]:
+                    #self.piff[a][1] += 1
+            #self.piff = self.piff.tolist()
 
         # create a numpy array, taking just the left channel if stereo
         data_stereo = frombuffer(data, dtype="int16")
@@ -114,13 +122,13 @@ class FFT(object):
         # super high frequency cutoffs. Applying a window tapers the edges
         # of each end of the chunk down to zero.
         if len(data) != len(self.window):
-            self.window = hanning(len(data))
+            self.window = hanning(len(data)).astype(float32)
 
         data = data * self.window
         
         # Apply FFT - real data
         # Calculate the power spectrum
-        return array(self.audio_levels.compute(data.astype(float32), self.piff.tolist())[0])
+        return array(self.audio_levels.compute(data, self.piff)[0])
 
     def calculate_channel_frequency(self):
         """Calculate frequency values
