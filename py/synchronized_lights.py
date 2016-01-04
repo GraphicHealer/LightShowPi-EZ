@@ -204,6 +204,18 @@ def audio_in():
     light_delay = int(cm.audio_processing.light_delay * chunks_per_sec)
     matrix_buffer = deque([], 1000)
 
+    # Start with these as our initial guesses - will calculate a rolling mean / std
+    # as we get input data.
+    mean = np.array([12.0 for _ in range(hc.GPIOLEN)], dtype='float32')
+    std = np.array([1.5 for _ in range(hc.GPIOLEN)], dtype='float32')
+    count = 2
+
+    running_stats = RunningStats.Stats(hc.GPIOLEN)
+
+    # preload running_stats to avoid errors, and give us a show that looks
+    # good right from the start
+    running_stats.preload(mean, std, count)
+
     hc.initialize()
     fft_calc = fft.FFT(CHUNK_SIZE,
                        sample_rate,
@@ -232,7 +244,10 @@ def audio_in():
                     matrix = np.zeros(hc.GPIOLEN, dtype="float32")
                     log.debug("below threshold: '" + str(audio_max) + "', turning the lights off")
                 else:
-                    matrix, mean, std = fft_calc.calculate_levels(data)
+                    matrix = fft_calc.calculate_levels(data)
+                    running_stats.push(matrix)
+                    mean = running_stats.mean()
+                    std = running_stats.std()
 
                 matrix_buffer.appendleft(matrix)
 
@@ -691,7 +706,7 @@ def play_song():
 
         if matrix is None:
             # No cache - Compute FFT in this chunk, and cache results
-            matrix = fft_calc.calculate_levels(data)[0]
+            matrix = fft_calc.calculate_levels(data)
 
             # Add the matrix to the end of the cache 
             cache_matrix = np.vstack([cache_matrix, matrix])

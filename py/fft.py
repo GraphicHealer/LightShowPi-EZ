@@ -122,7 +122,7 @@ class FFT(object):
 
         # Apply FFT - real data
         # Calculate the power spectrum
-        return array(self.audio_levels.compute(data, self.piff))
+        return array(self.audio_levels.compute(data, self.piff)[0])
 
     def calculate_channel_frequency(self):
         """Calculate frequency values
