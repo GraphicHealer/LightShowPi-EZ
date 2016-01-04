@@ -312,13 +312,14 @@ class Configuration(object):
         shrtmssgsrvc['enable'] = self.config.getboolean('sms', 'enable')
         shrtmssgsrvc['groups'] = _as_list(self.config.get('sms', 'groups'))
         shrtmssgsrvc['blacklist'] = _as_list(self.config.get('sms', 'blacklist'))
-        shrtmssgsrvc['unknown_command_response'] = self.config.get('sms', 'unknown_command_response')
+        shrtmssgsrvc['unknown_command_response'] = self.config.get('sms',
+                                                                   'unknown_command_response')
         shrtmssgsrvc['list_songs_per_sms'] = self.config.getint('sms', 'list_songs_per_sms')
         shrtmssgsrvc['list_songs_per_page'] = self.config.getint('sms', 'list_songs_per_page')
 
         playlist_path = self.config.get('lightshow', 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
-        
+
         if playlist_path:
             shrtmssgsrvc["playlist_path"] = playlist_path
         else:

@@ -28,6 +28,7 @@ import math
 
 from rpi_audio_levels import AudioLevels
 
+
 class FFT(object):
     def __init__(self,
                  chunk_size,
@@ -88,7 +89,6 @@ class FFT(object):
                 self.piff[a][1] += 1
         self.piff = self.piff.tolist()
         
-
     def calculate_levels(self, data):
         """Calculate frequency response for each channel defined in frequency_limits
 
@@ -122,7 +122,7 @@ class FFT(object):
 
         # Apply FFT - real data
         # Calculate the power spectrum
-        return array(self.audio_levels.compute(data, self.piff)[0])
+        return array(self.audio_levels.compute(data, self.piff))
 
     def calculate_channel_frequency(self):
         """Calculate frequency values
