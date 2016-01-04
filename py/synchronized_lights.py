@@ -154,8 +154,6 @@ def audio_in():
     streaming = None
     output = lambda x: None
     stream_reader = None
-    std = np.ones(hc.GPIOLEN, dtype="float32")
-    mean = np.ones(hc.GPIOLEN, dtype="float32")
 
     if cm.lightshow.mode == 'audio-in':
         # Open the input stream from default input device
