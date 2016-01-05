@@ -95,10 +95,10 @@ def end_early():
     """atexit function"""
     if server:
         network.set_playing()
-        network.broadcast([0. for pin in range(hc.GPIOLEN)])
+        network.broadcast([0. for _ in range(hc.GPIOLEN)])
         time.sleep(1)
         network.unset_playing()
-        
+
     hc.clean_up()
 
     if cm.audio_processing.fm:
@@ -107,6 +107,8 @@ def end_early():
     if network.network_stream:
         network.close_connection()
 
+    if cm.lightshow.mode == 'stream-in':
+        streaming.terminate()
 
 atexit.register(end_early)
 
@@ -152,10 +154,14 @@ def update_lights(matrix, mean, std):
 
 def audio_in():
     """Control the lightshow from audio coming in from a realtime audio"""
-    if cm.lightshow.mode == 'audio-in':
-        sample_rate = cm.lightshow.audio_in_sample_rate
-        num_channels = cm.lightshow.audio_in_channels
+    global fm_process, streaming
+    sample_rate = cm.lightshow.audio_in_sample_rate
+    num_channels = cm.lightshow.audio_in_channels
+    streaming = None
+    output = lambda x: None
+    stream_reader = None
 
+    if cm.lightshow.mode == 'audio-in':
         # Open the input stream from default input device
         streaming = aa.PCM(aa.PCM_CAPTURE, aa.PCM_NORMAL, cm.lightshow.audio_in_card)
         streaming.setchannels(num_channels)
@@ -163,41 +169,46 @@ def audio_in():
         streaming.setrate(sample_rate)
         streaming.setperiodsize(CHUNK_SIZE)
 
-        log.debug("Running in audio-in mode - will run until Ctrl+C is pressed")
-        print "Running in audio-in mode, use Ctrl+C to stop"
+        stream_reader = lambda: streaming.read()[-1]
 
     elif cm.lightshow.mode == 'stream-in':
         sample_rate = cm.lightshow.stream_in_sample_rate
         num_channels = 2
 
         # Open the input stream from mpg123 url assuming two channels (stereo)
-        stream_in_process = subprocess.Popen(['mpg123','--stdout',cm.lightshow.stream_in_url],stdout=subprocess.PIPE)
+        streaming = subprocess.Popen(['mpg123',
+                                      '--stdout',
+                                      cm.lightshow.stream_in_url],
+                                     stdout=subprocess.PIPE)
 
-        log.debug("Running in stream-in mode - will run until Ctrl+C is pressed")
-        print "Running in stream-in mode, use Ctrl+C to stop"
+        stream_reader = lambda: streaming.stdout.read(CHUNK_SIZE)
 
-    if cm.audio_processing.fm:
-        log.info("Sending output as fm transmission")
+        if cm.audio_processing.fm:
+            log.info("Sending output as fm transmission")
 
-        with open(os.devnull, "w") as dev_null:
-            fm_command[fm_command.index("SRATE")] = str(int(sample_rate / (1 if num_channels > 1 else 2)))
-            fm_command[fm_command.index("NOCHAN")] = fm_command_chan_val[(2 if num_channels > 1 else 1)]
-            fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
-        output = lambda data: os.write(music_pipe_w, data)
-    elif cm.lightshow.audio_out_card is not '':
-        output_device = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL, cm.lightshow.audio_out_card)
-        output_device.setchannels(num_channels)
-        output_device.setrate(sample_rate)
-        output_device.setformat(aa.PCM_FORMAT_S16_LE)
-        output_device.setperiodsize(CHUNK_SIZE)
-        output = lambda data: output_device.write(data)
-    else:
-        output = None
+            with open(os.devnull, "w") as dev_null:
+                fm_command[fm_command.index("SRATE")] = str(int(sample_rate))
+                fm_command[fm_command.index("NOCHAN")] = fm_command_chan_val[2]
+                fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
+            output = lambda x: os.write(music_pipe_w, x)
 
+        elif cm.lightshow.audio_out_card is not '':
+            output_device = aa.PCM(aa.PCM_PLAYBACK, aa.PCM_NORMAL, cm.lightshow.audio_out_card)
+            output_device.setchannels(num_channels)
+            output_device.setrate(sample_rate)
+            output_device.setformat(aa.PCM_FORMAT_S16_LE)
+            output_device.setperiodsize(CHUNK_SIZE)
+            output = lambda x: output_device.write(x)
+
+    log.debug("Running in %s mode - will run until Ctrl+C is pressed" % cm.lightshow.mode)
+    print "Running in %s mode, use Ctrl+C to stop" % cm.lightshow.mode
+
+    # setup light_delay.
     chunks_per_sec = ((16 * num_channels * sample_rate) / 8) / CHUNK_SIZE
     light_delay = int(cm.audio_processing.light_delay * chunks_per_sec)
+    matrix_buffer = deque([], 1000)
 
-    # Start with these as our initial guesses - will calculate a rolling mean / std 
+    # Start with these as our initial guesses - will calculate a rolling mean / std
     # as we get input data.
     mean = np.array([12.0 for _ in range(hc.GPIOLEN)], dtype='float32')
     std = np.array([1.5 for _ in range(hc.GPIOLEN)], dtype='float32')
@@ -209,35 +220,28 @@ def audio_in():
     # good right from the start
     running_stats.preload(mean, std, count)
 
-    matrix_buffer = deque([],1000)
+    hc.initialize()
+    fft_calc = fft.FFT(CHUNK_SIZE,
+                       sample_rate,
+                       hc.GPIOLEN,
+                       cm.audio_processing.min_frequency,
+                       cm.audio_processing.max_frequency,
+                       cm.audio_processing.custom_channel_mapping,
+                       cm.audio_processing.custom_channel_frequencies,
+                       1)
+
+    if server:
+        network.network.set_playing()
 
     try:
-        hc.initialize()
-        fft_calc = fft.FFT(CHUNK_SIZE,
-                           sample_rate,
-                           hc.GPIOLEN,
-                           cm.audio_processing.min_frequency,
-                           cm.audio_processing.max_frequency,
-                           cm.audio_processing.custom_channel_mapping,
-                           cm.audio_processing.custom_channel_frequencies,
-                           num_channels)
-
-        if server:
-            network.network.set_playing()
-
         # Listen on the audio input device until CTRL-C is pressed
         while True:
-            if cm.lightshow.mode == 'audio-in':
-                length, data = streaming.read()
-            elif cm.lightshow.mode == 'stream-in':
-                data = stream_in_process.stdout.read(CHUNK_SIZE)
-
-            if output is not None:
-                output(data)
+            data = stream_reader()
+            output(data)
 
             if len(data):
                 # if the maximum of the absolute value of all samples in
-                # data is below a threshold we will disreguard it
+                # data is below a threshold we will disregard it
                 audio_max = audioop.max(data, 2)
                 if audio_max < 250:
                     # we will fill the matrix with zeros and turn the lights off
@@ -260,11 +264,6 @@ def audio_in():
 
     finally:
         print "\nStopping"
-        if cm.lightshow.mode == 'stream-in':
-            stream_in_process.terminate()
-        if cm.audio_processing.fm:
-            fm_process.kill()
-        hc.clean_up()
 
 
 def load_custom_config(config_filename):
@@ -387,18 +386,22 @@ def load_custom_config(config_filename):
 
             if config.has_section('custom_audio_processing'):
                 if config.has_option('custom_audio_processing', 'min_frequency'):
-                    cm.audio_processing.min_frequency = config.getfloat('custom_audio_processing', 'min_frequency')
+                    cm.audio_processing.min_frequency = config.getfloat('custom_audio_processing',
+                                                                        'min_frequency')
 
                 if config.has_option('custom_audio_processing', 'max_frequency'):
-                    cm.audio_processing.max_frequency = config.getfloat('custom_audio_processing', 'max_frequency')
+                    cm.audio_processing.max_frequency = config.getfloat('custom_audio_processing',
+                                                                        'max_frequency')
 
                 if config.has_option('custom_audio_processing', 'custom_channel_mapping'):
                     temp = config.get('custom_audio_processing', 'custom_channel_mapping')
-                    cm.audio_processing.custom_channel_mapping = map(int, temp.split(',')) if temp else 0
+                    cm.audio_processing.custom_channel_mapping = map(int,
+                                                                     temp.split(',')) if temp else 0
 
                 if config.has_option('custom_audio_processing', 'custom_channel_frequencies'):
                     temp = config.get('custom_audio_processing', 'custom_channel_frequencies')
-                    cm.audio_processing.custom_channel_frequencies = map(int, temp.split(',')) if temp else 0
+                    cm.audio_processing.custom_channel_frequencies = map(int, temp.split(
+                        ',')) if temp else 0
 
 
 def setup_audio(song_filename):
@@ -413,13 +416,13 @@ def setup_audio(song_filename):
     :rtype tuple: lambda, subprocess, fft.FFT, decoder
     """
     global fm_process
-    
+
     # Set up audio
     force_header = False
-    
+
     if any([ax for ax in [".mp4", ".m4a", ".m4b"] if ax in song_filename]):
         force_header = True
-    
+
     music_file = decoder.open(song_filename, force_header)
 
     sample_rate = music_file.getframerate()
@@ -435,12 +438,14 @@ def setup_audio(song_filename):
 
     # setup output device
     if cm.audio_processing.fm:
-       
+
         log.info("Sending output as fm transmission")
 
         with open(os.devnull, "w") as dev_null:
-            fm_command[fm_command.index("SRATE")] = str(int(sample_rate / (1 if num_channels > 1 else 2)))
-            fm_command[fm_command.index("NOCHAN")] = fm_command_chan_val[(2 if num_channels > 1 else 1)]
+            fm_command[fm_command.index("SRATE")] = str(
+                int(sample_rate / (1 if num_channels > 1 else 2)))
+            fm_command[fm_command.index("NOCHAN")] = fm_command_chan_val[
+                (2 if num_channels > 1 else 1)]
             fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
         output = lambda data: os.write(music_pipe_w, data)
     else:
@@ -684,7 +689,7 @@ def play_song():
     # setup our cache_matrix, std, mean
     cache_found, cache_matrix, std, mean = setup_cache(cache_filename, fft_calc)
 
-    matrix_buffer = deque([],1000)
+    matrix_buffer = deque([], 1000)
 
     # Process audio song_filename
     row = 0
@@ -776,11 +781,11 @@ def network_client():
 
             for pin in channel_keys:
                 hc.set_light(channels[pin], True, blevels[pin])
-                
+
     except KeyboardInterrupt:
         log.info("CTRL<C> pressed, stopping")
         print "stopping"
-        
+
         network.close_connection()
         hc.clean_up()
 
@@ -846,11 +851,13 @@ if __name__ == "__main__":
     if cm.audio_processing.fm:
         music_pipe_r, music_pipe_w = os.pipe()
         if Platform.pi_version() == 1:
-            fm_command = ["sudo", cm.home_dir + "/bin/pifm", "-", cm.audio_processing.frequency, "SRATE", "NOCHAN"]
-            fm_command_chan_val = [ "0","mono","stereo" ]
+            fm_command = ["sudo", cm.home_dir + "/bin/pifm", "-", cm.audio_processing.frequency,
+                          "SRATE", "NOCHAN"]
+            fm_command_chan_val = ["0", "mono", "stereo"]
         elif Platform.pi_version() == 2:
-            fm_command = ["sudo", cm.home_dir + "/bin/pi_fm_rds", "-audio", "-", "-freq", cm.audio_processing.frequency, "-srate", "SRATE", "-nochan", "NOCHAN"]
-            fm_command_chan_val = [ "0","1","2" ]
+            fm_command = ["sudo", cm.home_dir + "/bin/pi_fm_rds", "-audio", "-", "-freq",
+                          cm.audio_processing.frequency, "-srate", "SRATE", "-nochan", "NOCHAN"]
+            fm_command_chan_val = ["0", "1", "2"]
         else:
             cm.audio_processing.fm = False
 
