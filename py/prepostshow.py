@@ -146,7 +146,7 @@ class PrePostShow(object):
         return return_value
 
     def start_audio(self):
-        """Start audio plaback if there is any"""
+        """Start audio playback if there is any"""
         if "audio_file" in self.config and self.config['audio_file'] is not None:
             audio_file = self.config['audio_file']
             self.audio = subprocess.Popen(["mpg123", "-q", audio_file])
@@ -169,7 +169,7 @@ class PrePostShow(object):
         return PrePostShow.done
 
     def start_script(self):
-        """Start a seperate script to control the lights"""
+        """Start a separate script to control the lights"""
         return_value = PrePostShow.done
         self.hc.turn_off_lights()
 

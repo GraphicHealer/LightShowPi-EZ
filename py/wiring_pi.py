@@ -10,7 +10,7 @@
 """Empty wrapper module for wiringpi
 
 This module is a place holder for virtual hardware to run a simulated lightshow
-an a pc.  This is module is not yet functional.
+an a pc.  This module is not yet functional.
 """
 
 # Setup

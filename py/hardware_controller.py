@@ -61,7 +61,7 @@ if is_a_raspberryPI:
 else:
     # if this is not a RPi you can't run wiringpi so lets load
     # something in its place
-    import wiring_pi_stub as wiringpi
+    import wiring_pi as wiringpi
 
     logging.debug("Not running on a raspberryPI")
 
@@ -276,7 +276,7 @@ def turn_on_lights(use_always_onoff=False):
 
 
 def set_light(pin, use_overrides=False, brightness=1.0):
-    """Set the birghtness of the specified light
+    """Set the brightness of the specified light
     
     Taking into account various overrides if specified.
     The default is full on (1.0)
@@ -339,7 +339,7 @@ def initialize():
     turn_off_lights()
 
 # network setup if used
-network = networking.networking(cm)
+network = networking.Networking(cm)
 server = network.networking == "server"
 
 
@@ -501,21 +501,21 @@ def random_pattern():
     --lights_in_group option (default 1)
     --lights_in_group is the number of lights that you wish to be bound as a group.
     if set to 3, 3 channels will be bound to the first group, and this will continue
-    untill all channels have been use in order of pin assignment with the last
+    until all channels have been use in order of pin assignment with the last
     group containing the all leftover channels in the case of odd assignment.
    
     and you can adjust the speed of fade with the --pwm_speed option (default .5).  
     
     If you wish to alter the pattern delay the --sleep' (default 0.5 seconds) is
-    the minimum between transitions and the msximum is defined as max_pause 
+    the minimum between transitions and the maximum is defined as max_pause
     (default 4 time min_pause) in this function.  This value is a random time
     between the min and max values and not a guarantee of exact time between 
     transitions and will change for every transitions.
 
-    --pwm_speed is the time it takes for full on or full off mesured in seconds.
+    --pwm_speed is the time it takes for full on or full off measured in seconds.
     .5 is half a second and 1 is a full second
 
-    A complete command stirng would look like
+    A complete command string would look like
     sudo python hardware_controller --state=random_pattern --lights_in_group=2 --sleep=.75 --pwm_speed=1.5
     
     Initial implementation Thanks to Russell Pyburn. 
@@ -532,23 +532,23 @@ def random_pattern():
     step_range = [_ for _ in range(_PWM_MAX)]
     step_range.extend([_ for _ in range(_PWM_MAX, -1, -1)])
 
-    def lights(exit_event, lights):
+    def the_lights(exit_e, lits):
         while True:
-            if exit_event.is_set():
+            if exit_e.is_set():
                 break
 
             time.sleep(random.randrange(min_pause, max_pause) * .001)
 
             # activate the lights
-            for step in step_range:
-                for pin in lights:
-                    light_on(pins.index(pin), True, step * .01)
+            for stp in step_range:
+                for pin in lits:
+                    light_on(pins.index(pin), True, stp * .01)
 
                 time.sleep(pwm_speed / float(_PWM_MAX))
 
     # start the threads
     for group in range(0, len(pins), lights_per_group):
-        light_group.append(threading.Thread(target=lights, args=(
+        light_group.append(threading.Thread(target=the_lights, args=(
             exit_event, pins[group:group + lights_per_group],)))
         light_group[-1].setDaemon(True)
         light_group[-1].start()
@@ -768,7 +768,7 @@ if __name__ == "__main__":
     pwm_speed = float(args.pwm_speed)
 
     ccm = False
-    lights = [int(light) for light in args.light.split(',')]
+    lights = [int(lit) for lit in args.light.split(',')]
 
     if -1 in lights:
         lights = range(0, cm.hardware.gpio_len)
@@ -776,11 +776,11 @@ if __name__ == "__main__":
         if cm.audio_processing.custom_channel_mapping != 0 and len(
                 cm.audio_processing.custom_channel_mapping) == cm.hardware.gpio_len:
             ccm = True
-            cc = [x - 1 for x in cm.audio_processing.custom_channel_mapping]
+            cc = [i - 1 for i in cm.audio_processing.custom_channel_mapping]
             ccm_map = dict()
 
-            for light in lights:
-                ccm_map[light] = [idx for idx, pin in enumerate(cc) if pin == light]
+            for lit in lights:
+                ccm_map[lit] = [idx for idx, pin_num in enumerate(cc) if pin_num == lit]
 
             if len(lights) == cm.hardware.gpio_len:
                 lights = range(max(cm.audio_processing.custom_channel_mapping))

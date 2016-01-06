@@ -8,7 +8,7 @@
 
 """Compute a running mean and standard deviation
 
-Recives an numpy array of fft data from lightshowpi and computes a
+Receives an numpy array of fft data from lightshowpi and computes a
 running mean and standard deviation for each element in the array
 
 derived from the work of John D. Cook
@@ -16,7 +16,7 @@ http://www.johndcook.com/blog/standard_deviation/
 
 Third party dependencies:
 
-numpy: for FFT calcuation 
+numpy: for calculation
     http://www.numpy.org/
 """
 import numpy
@@ -30,7 +30,7 @@ class Stats(object):
         :type length: int
         """
         self.length = length
-        self.empty = numpy.zeros(length, dtype='float32')
+        self.empty = numpy.zeros(length, dtype='float64')
         self.clear()
         self.sample_count = 0
         self.old_mean = self.empty
@@ -63,22 +63,19 @@ class Stats(object):
         if len(mean) == self.length and len(
                 std) == self.length and sample_count > 1 and self.sample_count == 0:
             # cast all arrays to numpy just to make sure the data type is correct
-            self.new_mean = numpy.array(mean, dtype='float32')
-            self.new_std = numpy.array(std, dtype='float32')
-            self.old_mean = numpy.array(mean, dtype='float32')
-            self.old_std = numpy.array(std, dtype='float32')
+            self.new_mean = numpy.array(mean, dtype='float64')
+            self.new_std = numpy.array(std, dtype='float64')
+            self.old_mean = numpy.array(mean, dtype='float64')
+            self.old_std = numpy.array(std, dtype='float64')
             self.sample_count = sample_count
 
     def push(self, data):
         """Add a new sample to the running standard deviation and mean
-        
+
+        data should be numpy array the same length as self.length
         :param data: new sample data, this must be a numpy array 
         :type data: numpy array
         """
-        # data should be numpy array the same length as self.length
-        # if not all(numpy.isfinite(data)) or (len(data) != self.length):
-        #    return
-
         self.sample_count += 1
 
         if self.sample_count == 1:

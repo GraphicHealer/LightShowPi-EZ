@@ -23,7 +23,7 @@ import os.path
 import sys
 import warnings
 import json
-
+import shlex
 from collections import defaultdict
 
 # The home directory and configuration directory for the application.
@@ -219,12 +219,19 @@ class Configuration(object):
         lghtshw = dict()
         ls = 'lightshow'
         lghtshw["mode"] = self.config.get(ls, 'mode')
+        lghtshw["use_fifo"] = self.config.getboolean(ls, 'use_fifo')
+        lghtshw["fifo"] = "/tmp/audio"
         lghtshw["audio_in_card"] = self.config.get(ls, 'audio_in_card')
         lghtshw["audio_out_card"] = self.config.get(ls, 'audio_out_card')
-        lghtshw["audio_in_channels"] = self.config.getint(ls, 'audio_in_channels')
-        lghtshw["audio_in_sample_rate"] = self.config.getint(ls, 'audio_in_sample_rate')
-        lghtshw["stream_in_url"] = self.config.get(ls, 'stream_in_url')
-        lghtshw["stream_in_sample_rate"] = self.config.getint(ls, 'stream_in_sample_rate')
+        
+        if lghtshw["use_fifo"]:
+            lghtshw["audio_out_card"] = ""
+            
+        lghtshw["input_channels"] = self.config.getint(ls, 'input_channels')
+        lghtshw["input_sample_rate"] = self.config.getint(ls, 'input_sample_rate')
+
+        command_string = self.config.get(ls, 'stream_command_string')
+        lghtshw["stream_command_string"] = shlex.split(command_string)
 
         playlist_path = self.config.get(ls, 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
@@ -275,7 +282,6 @@ class Configuration(object):
                 postshow = postshow_script
 
         lghtshw['postshow'] = postshow
-
         lghtshw["decay_factor"] = self.config.getfloat(ls, 'decay_factor')
 
         self.lightshow = Section(lghtshw)
@@ -321,7 +327,7 @@ class Configuration(object):
 
         playlist_path = self.config.get('lightshow', 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
-
+        
         if playlist_path:
             shrtmssgsrvc["playlist_path"] = playlist_path
         else:

@@ -6,7 +6,7 @@
 # Author: Todd Giles (todd@lightshowpi.com)
 #
 # Initial commands implemented by Chris Usey (chris.usey@gmail.com)
-"""Commmand definition file.
+"""Command definition file.
 
 Enabled commands must be defined in the configuration file. Each command must also have a
 matching function defined in this file with a name in the form 'def cmd_commandname(user, args)'.

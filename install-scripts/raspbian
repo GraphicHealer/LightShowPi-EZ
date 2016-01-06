@@ -9,7 +9,7 @@ PYTHON_DEPS=(Beautifulsoup mutagen simplejson wiringpi2 pygooglevoice)
 ## System packages to be installed
 SYSTEM_DEPS=(curl faad flac gcc git lame mpg123 make python-alsaaudio python-dev \
              python-numpy python-pip python-setuptools unzip vorbis-tools wiringpi \
-             cython)
+             cython pianobar)
 
 ## Miscellaneous checks
 
