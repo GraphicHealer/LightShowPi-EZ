@@ -7,7 +7,7 @@
 
 """FFT methods for computing / analyzing frequency response of audio.
 
-This is simply a wrapper rpi-audio-level by Colin Guyon.
+This is simply a wrapper around rpi-audio-level by Colin Guyon.
 https://github.com/colin-guyon/rpi-audio-levels
 
 Initial FFT code inspired from the code posted here:

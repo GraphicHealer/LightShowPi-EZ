@@ -185,12 +185,6 @@ atexit.register(end_early)
 signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 
 
-def enqueue_output(out, queue):
-    for line in iter(out.readline, b''):
-        queue.put(line)
-    out.close()
-
-
 def update_lights(matrix, mean, std):
     """Update the state of all the lights
 
@@ -254,11 +248,12 @@ def set_audio_device(sample_rate, num_channels):
                           "2" if num_channels > 1 else "1"]
 
         log.info("Sending output as fm transmission")
-
+        
+        
         with open(os.devnull, "w") as dev_null:
-            fm_process = subprocess.Popen(fm_command, stdin=music_pipe_r, stdout=dev_null)
+            fm_process = subprocess.Popen(fm_command, stdin=subprocess.PIPE, stdout=dev_null)
 
-        return lambda raw_data: os.write(music_pipe_w, raw_data)
+        return lambda raw_data: fm_process.stdin.write(raw_data)
     elif cm.lightshow.audio_out_card is not '':
         if cm.lightshow.mode == 'stream-in':
             num_channels = 2
