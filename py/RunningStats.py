@@ -30,7 +30,7 @@ class Stats(object):
         :type length: int
         """
         self.length = length
-        self.empty = numpy.zeros(length, dtype='float64')
+        self.empty = numpy.zeros(length, dtype='float32')
         self.clear()
         self.sample_count = 0
         self.old_mean = self.empty
@@ -63,10 +63,10 @@ class Stats(object):
         if len(mean) == self.length and len(
                 std) == self.length and sample_count > 1 and self.sample_count == 0:
             # cast all arrays to numpy just to make sure the data type is correct
-            self.new_mean = numpy.array(mean, dtype='float64')
-            self.new_std = numpy.array(std, dtype='float64')
-            self.old_mean = numpy.array(mean, dtype='float64')
-            self.old_std = numpy.array(std, dtype='float64')
+            self.new_mean = numpy.array(mean, dtype='float32')
+            self.new_std = numpy.array(std, dtype='float32')
+            self.old_mean = numpy.array(mean, dtype='float32')
+            self.old_std = numpy.array(std, dtype='float32')
             self.sample_count = sample_count
 
     def push(self, data):
