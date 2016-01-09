@@ -132,7 +132,7 @@ def update_lights(matrix, mean, std):
     :type std: list
     """
     brightness = matrix - mean + (std * 0.5)
-    brightness = brightness / (std * 1.25)
+    brightness = (brightness / (std * 1.25)) * (1.0 - (cm.lightshow.attenuate_pct / 100.0))
 
     # insure that the brightness levels are in the correct range
     brightness = np.clip(brightness, 0.0, 1.0)
