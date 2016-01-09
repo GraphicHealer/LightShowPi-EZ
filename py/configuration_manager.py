@@ -283,6 +283,7 @@ class Configuration(object):
 
         lghtshw['postshow'] = postshow
         lghtshw["decay_factor"] = self.config.getfloat(ls, 'decay_factor')
+        lghtshw["attenuate_pct"] = self.config.getfloat(ls, 'attenuate_pct')
 
         self.lightshow = Section(lghtshw)
 
