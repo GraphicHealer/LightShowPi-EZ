@@ -819,7 +819,7 @@ def play_song():
         cm.load_state()
         play_now = int(cm.get_state('play_now', "0"))
 
-    if not cache_found:
+    if not cache_found and not play_now:
         save_cache(cache_matrix, cache_filename, fft_calc)
 
     # Cleanup the pifm process
