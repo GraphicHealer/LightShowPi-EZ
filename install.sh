@@ -122,7 +122,6 @@ for _dep in ${PYTHON_DEPS[@]}; do
     pipinstall $_dep;
 done
 
-# Install pygooglevoice. DO NOT use the outdated version in PyPi mirrors
 log Installing rpi-audio-levels...
 pip install git+https://tom_slick@bitbucket.org/tom_slick/rpi-audio-levels.git
 verify "Installation of rpi-audio-levels failed"

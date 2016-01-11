@@ -47,9 +47,10 @@ import math
 
 CM = hc.cm
 CM.network.networking = "client"
-hc.network = hc.networking.networking(CM)
+hc.network = hc.networking.Networking(CM)
 hc.server = hc.network.networking == "server"
 network = hc.network
+
 
 class Gui(Canvas):
     """Simple Gui to see what the lightshow is doing"""
@@ -178,7 +179,7 @@ class Gui(Canvas):
         self.parent.after(1, self.tkinter_function)
 
     def set_light(self, pin, use_overrides=False, brightness=1.0):
-        """Set the birghtness of the specified light
+        """Set the brightness of the specified light
 
         Taking into account various overrides if specified.
         The default is full on (1.0)

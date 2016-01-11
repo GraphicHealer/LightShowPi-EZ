@@ -152,9 +152,6 @@ header26 = """A and B models
 
 
 def get_model():
-    model = "unknown"
-    header = None
-    
     with open('/proc/cmdline', 'r') as f:
         line = f.readline()
         m = re.search('bcm2708.boardrev=(0x[0123456789abcdef]*) ', line)

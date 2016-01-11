@@ -8,7 +8,7 @@ PYTHON_DEPS=(Beautifulsoup mutagen pyalsaaudio simplejson wiringpi2 pygooglevoic
 
 ## System packages to be installed
 SYSTEM_DEPS=(faad2 ffmpeg flac gcc git lame mpg123 make python2-numpy python2-setuptools \
-             unzip vorbis-tools wiringpi)
+             unzip vorbis-tools wiringpi pianobar)
 
 ## Miscellaneous checks before installation continues
 

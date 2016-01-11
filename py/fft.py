@@ -7,7 +7,8 @@
 
 """FFT methods for computing / analyzing frequency response of audio.
 
-This is simply a wrapper around FFT support in numpy.
+This is simply a wrapper around rpi-audio-level by Colin Guyon.
+https://github.com/colin-guyon/rpi-audio-levels
 
 Initial FFT code inspired from the code posted here:
 http://www.raspberrypi.org/phpBB3/viewtopic.php?t=35838&p=454041
@@ -17,7 +18,8 @@ http://www.instructables.com/id/Raspberry-Pi-Spectrum-Analyzer-with-RGB-LED-Stri
 
 Third party dependencies:
 
-numpy: for FFT calculation - http://www.numpy.org/
+numpy: for array support - http://www.numpy.org/
+rpi-audio-levels - https://bitbucket.org/tom_slick/rpi-audio-levels (modified for lightshowpi)
 """
 
 import ConfigParser
@@ -122,10 +124,10 @@ class FFT(object):
 
         # Apply FFT - real data
         # Calculate the power spectrum
-        matrix = array(self.audio_levels.compute(data, self.piff)[0])
-        matrix[isinf(matrix)] = 0.0
+        cache_matrix = array(self.audio_levels.compute(data, self.piff)[0])
+        cache_matrix[isinf(cache_matrix)] = 0.0
 
-        return matrix
+        return cache_matrix
 
     def calculate_channel_frequency(self):
         """Calculate frequency values

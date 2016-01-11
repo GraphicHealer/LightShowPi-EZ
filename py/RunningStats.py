@@ -8,7 +8,7 @@
 
 """Compute a running mean and standard deviation
 
-Recives an numpy array of fft data from lightshowpi and computes a
+Receives an numpy array of fft data from lightshowpi and computes a
 running mean and standard deviation for each element in the array
 
 derived from the work of John D. Cook
@@ -16,7 +16,7 @@ http://www.johndcook.com/blog/standard_deviation/
 
 Third party dependencies:
 
-numpy: for FFT calcuation 
+numpy: for calculation
     http://www.numpy.org/
 """
 import numpy
@@ -71,14 +71,11 @@ class Stats(object):
 
     def push(self, data):
         """Add a new sample to the running standard deviation and mean
-        
+
+        data should be numpy array the same length as self.length
         :param data: new sample data, this must be a numpy array 
         :type data: numpy array
         """
-        # data should be numpy array the same length as self.length
-        # if not all(numpy.isfinite(data)) or (len(data) != self.length):
-        #    return
-
         self.sample_count += 1
 
         if self.sample_count == 1:

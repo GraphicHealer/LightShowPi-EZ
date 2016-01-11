@@ -19,7 +19,7 @@ import numpy as np
 import sys
 
 
-class networking(object):
+class Networking(object):
     """Control the raspberry pi network.
 
     The network controller handles all interaction with the raspberry pi
@@ -34,7 +34,7 @@ class networking(object):
         self.network_buffer = cm.network.buffer
         self.channels = cm.network.channels
         self.playing = False
-        
+
         self.network_stream = None
         self.setup()
 
@@ -56,7 +56,7 @@ class networking(object):
             log.info("streaming on port: " + str(self.port))
         except socket.error, msg:
             log.error('Failed create socket or bind. Error code: ' +
-                        str(msg[0]) + ' : ' + msg[1])
+                      str(msg[0]) + ' : ' + msg[1])
             print "error creating and binding socket for broadcast"
             sys.exit(1)
 
@@ -74,7 +74,7 @@ class networking(object):
             log.info("listening on port: " + str(self.port))
         except socket.error, msg:
             log.error('Failed create socket or bind. Error code: ' +
-                    str(msg[0]) + ' : ' + msg[1])
+                      str(msg[0]) + ' : ' + msg[1])
             self.network_stream.close()
             sys.exit(1)
 
@@ -125,7 +125,7 @@ class networking(object):
         the matrix, std, and mean.
 
         If this flag is set to False the turn_off_light/set_light methods
-        will broadcast the pin number and brightness.  Usefull if you want
+        will broadcast the pin number and brightness.  Useful if you want
         to broadcast the pre/post show data to your clients without codding
         the pre/post shows config or scripts to broadcast. Allowing then to
         remain unchanged
