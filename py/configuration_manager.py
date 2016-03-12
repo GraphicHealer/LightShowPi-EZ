@@ -285,6 +285,10 @@ class Configuration(object):
         lghtshw["decay_factor"] = self.config.getfloat(ls, 'decay_factor')
         lghtshw["attenuate_pct"] = self.config.getfloat(ls, 'attenuate_pct')
 
+	# Standard Deviation
+	lghtshw["SD_low"] = self.config.getfloat(ls, 'SD_low')
+	lghtshw["SD_high"] = self.config.getfloat(ls, 'SD_high')
+
         self.lightshow = Section(lghtshw)
 
     def set_audio_processing(self):
