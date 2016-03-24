@@ -448,10 +448,10 @@ def load_custom_config(config_filename):
                     hc.inverted_channels = map(int, config.get(lsc, inverted).split(","))
 
 		if config.has_option(lsc, "SD_low"):
-		   cm.lightshow.SD_low = config.get(lsc, "SD_low")
+		   cm.lightshow.SD_low = config.getfloat(lsc, "SD_low")
 
 		if config.has_option(lsc, "SD_high"):
-		   cm.lightshow.SD_high = config.get(lsc, "SD_high")
+		   cm.lightshow.SD_high = config.getfloat(lsc, "SD_high")
 
                 # setup up custom preshow
                 has_preshow_configuration = config.has_option(lsc, 'preshow_configuration')
