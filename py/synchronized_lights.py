@@ -202,8 +202,8 @@ def update_lights(matrix, mean, std):
     """
     global decay
 
-    brightness = matrix - mean + (std * 0.5)
-    brightness = (brightness / (std * 1.25)) * (1.0 - (cm.lightshow.attenuate_pct / 100.0))
+    brightness = matrix - mean + (std * cm.lightshow.SD_low)
+    brightness = (brightness / (std * (cm.lightshow.SD_low + cm.lightshow.SD_high))) * (1.0 - (cm.lightshow.attenuate_pct / 100.0))
 
     # insure that the brightness levels are in the correct range
     brightness = np.clip(brightness, 0.0, 1.0)
@@ -407,6 +407,8 @@ def load_custom_config(config_filename):
     preshow_script =
     postshow_configuration =
     postshow_script =
+    SD_low =
+    SD_high =
 
     [custom_audio_processing]
     min_frequency =
@@ -444,6 +446,12 @@ def load_custom_config(config_filename):
                 inverted = "invert_channels"
                 if config.has_option(lsc, inverted):
                     hc.inverted_channels = map(int, config.get(lsc, inverted).split(","))
+
+		if config.has_option(lsc, "SD_low"):
+		   cm.lightshow.SD_low = config.getfloat(lsc, "SD_low")
+
+		if config.has_option(lsc, "SD_high"):
+		   cm.lightshow.SD_high = config.getfloat(lsc, "SD_high")
 
                 # setup up custom preshow
                 has_preshow_configuration = config.has_option(lsc, 'preshow_configuration')
