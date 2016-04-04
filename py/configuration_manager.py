@@ -285,9 +285,11 @@ class Configuration(object):
         lghtshw["decay_factor"] = self.config.getfloat(ls, 'decay_factor')
         lghtshw["attenuate_pct"] = self.config.getfloat(ls, 'attenuate_pct')
 
-	# Standard Deviation
-	lghtshw["SD_low"] = self.config.getfloat(ls, 'SD_low')
-	lghtshw["SD_high"] = self.config.getfloat(ls, 'SD_high')
+        lghtshw["log_level"] = self.config.get(ls, 'log_level').upper()
+
+        # Standard Deviation
+        lghtshw["SD_low"] = self.config.getfloat(ls, 'SD_low')
+        lghtshw["SD_high"] = self.config.getfloat(ls, 'SD_high')
 
         self.lightshow = Section(lghtshw)
 
@@ -385,6 +387,8 @@ class Configuration(object):
                 warnings.warn(
                     "Throttle definition either does not exist or is configured" +
                     "incorrectly for group: " + group)
+
+        shrtmssgsrvc["log_level"] = self.config.get('sms', 'log_level').upper()
 
         self.sms = Section(shrtmssgsrvc)
 
