@@ -101,7 +101,7 @@ while not logged_in:
         logging.info("Successfully logged in to Google Voice account")
     except LoginError as error:
         attempts += 1
-        if attempt <= 3:
+        if attempts <= 3:
             time.sleep(30)
         else:
             logging.critical('Unable to login to Google Voice, Exiting SMS.' + error)
