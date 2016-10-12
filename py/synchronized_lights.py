@@ -339,7 +339,7 @@ def audio_in():
                        1)
 
     if server:
-        network.network.set_playing()
+        network.set_playing()
 
     # Listen on the audio input device until CTRL-C is pressed
     while True:
