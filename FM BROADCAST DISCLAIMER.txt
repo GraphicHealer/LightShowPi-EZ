@@ -1,6 +1,6 @@
-Please check your local laws governing low powered radion broadcasts.
-lightshowpi.org is not responsable for any legal action taken against you.
-lightshowpi.org is not responsable for the content you choose to broadcast.
+Please check your local laws governing low powered radio broadcasts.
+LightshowPi is not responsible for any legal action taken against you.
+LightshowPi is not responsible for the content you choose to broadcast.
 
 https://www.fcc.gov/media/radio/low-power-radio-general-information#PART15
 Part 15 Devices
