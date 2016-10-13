@@ -81,6 +81,7 @@ import cPickle
 import time
 import errno
 import stat
+import curses
 
 from collections import deque
 import Platform
@@ -145,6 +146,7 @@ decay = np.zeros(cm.hardware.gpio_len, dtype='float32')
 network = hc.network
 server = network.networking == 'server'
 client = network.networking == "client"
+terminal = network.networking == "terminal"
 
 if cm.lightshow.use_fifo:
     if os.path.exists(cm.lightshow.fifo):
@@ -152,7 +154,6 @@ if cm.lightshow.use_fifo:
     os.mkfifo(cm.lightshow.fifo, 0777)
 
 CHUNK_SIZE = 2048  # Use a multiple of 8 (move this to config)
-
 
 def end_early():
     """atexit function"""
@@ -219,8 +220,22 @@ def update_lights(matrix, mean, std):
     if server:
         network.broadcast(brightness)
 
-    for blevel, pin in zip(brightness, range(hc.GPIOLEN)):
-        hc.set_light(pin, True, blevel)
+    if terminal:
+        index = 0
+        stdscr.clear()
+        wHeight,wWidth = stdscr.getmaxyx()
+        maxVal = wHeight - 3
+	for bright in brightness:
+            dispFloat = "{:5.3f}".format(bright)
+            brightHeight = int ( bright * maxVal )
+            for y in range(brightHeight):
+                stdscr.addstr( maxVal - y, index * 6, "XXXXX")
+            stdscr.addstr( wHeight-1, index * 6, dispFloat )
+            index+=1
+	stdscr.refresh()      
+    else:
+        for blevel, pin in zip(brightness, range(hc.GPIOLEN)):
+            hc.set_light(pin, True, blevel)
 
 
 def set_audio_device(sample_rate, num_channels):
@@ -339,7 +354,7 @@ def audio_in():
                        1)
 
     if server:
-        network.network.set_playing()
+        network.set_playing()
 
     # Listen on the audio input device until CTRL-C is pressed
     while True:
@@ -887,6 +902,20 @@ def network_client():
         network.close_connection()
         hc.clean_up()
 
+def launchCurses(screen):
+    global stdscr
+    stdscr = screen
+    curses.start_color()
+    stdscr.clear()     
+    main()
+
+def main():
+    if "-in" in cm.lightshow.mode:
+        audio_in()
+    elif client:
+        network_client()
+    else:
+        play_song()
 
 if __name__ == "__main__":
     # Make sure one of --playlist or --file was specified
@@ -894,9 +923,11 @@ if __name__ == "__main__":
         print "One of --playlist or --file must be specified"
         sys.exit()
 
-    if "-in" in cm.lightshow.mode:
-        audio_in()
-    elif client:
-        network_client()
+    if terminal:
+        try: 
+            curses.wrapper(launchCurses) 
+        except KeyboardInterrupt: 
+            print "Got KeyboardInterrupt exception. Exiting..." 
+            exit() 
     else:
-        play_song()
+	main()    
