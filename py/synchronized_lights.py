@@ -146,7 +146,9 @@ decay = np.zeros(cm.hardware.gpio_len, dtype='float32')
 network = hc.network
 server = network.networking == 'server'
 client = network.networking == "client"
-terminal = network.networking == "terminal"
+
+terminal = cm.terminal
+terminal = terminal.enabled == "true"
 
 if cm.lightshow.use_fifo:
     if os.path.exists(cm.lightshow.fifo):
@@ -154,6 +156,7 @@ if cm.lightshow.use_fifo:
     os.mkfifo(cm.lightshow.fifo, 0777)
 
 CHUNK_SIZE = 2048  # Use a multiple of 8 (move this to config)
+
 
 def end_early():
     """atexit function"""
@@ -185,6 +188,19 @@ atexit.register(end_early)
 # Remove traceback on Ctrl-C
 signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 
+def cursesRender( brightness ):
+    index = 0
+    stdscr.clear()
+    wHeight,wWidth = stdscr.getmaxyx()
+    maxVal = wHeight - 3
+    for bright in brightness:
+        dispFloat = "{:5.3f}".format(bright)
+        brightHeight = int ( bright * maxVal )
+        for y in range(brightHeight):
+            stdscr.addstr( maxVal - y, index * 6, "XXXXX")
+        stdscr.addstr( wHeight-1, index * 6, dispFloat )
+        index+=1
+    stdscr.refresh()
 
 def update_lights(matrix, mean, std):
     """Update the state of all the lights
@@ -221,18 +237,7 @@ def update_lights(matrix, mean, std):
         network.broadcast(brightness)
 
     if terminal:
-        index = 0
-        stdscr.clear()
-        wHeight,wWidth = stdscr.getmaxyx()
-        maxVal = wHeight - 3
-	for bright in brightness:
-            dispFloat = "{:5.3f}".format(bright)
-            brightHeight = int ( bright * maxVal )
-            for y in range(brightHeight):
-                stdscr.addstr( maxVal - y, index * 6, "XXXXX")
-            stdscr.addstr( wHeight-1, index * 6, dispFloat )
-            index+=1
-	stdscr.refresh()      
+	cursesRender( brightness )
     else:
         for blevel, pin in zip(brightness, range(hc.GPIOLEN)):
             hc.set_light(pin, True, blevel)

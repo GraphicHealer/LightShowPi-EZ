@@ -89,11 +89,13 @@ class Configuration(object):
             self.lightshow = None
             self.audio_processing = None
             self.network = None
+	    self.terminal = None
 
             self.set_hardware()
             self.set_lightshow()
             self.set_audio_processing()
             self.set_network()
+            self.set_terminal()
         else:
             self.sms = None
             self.who_can = dict()
@@ -211,6 +213,14 @@ class Configuration(object):
         ntwrk["channels"] = temp
 
         self.network = Section(ntwrk)
+
+    def set_terminal(self):
+        """
+        Retrieves the terminal configuration parsing it from the Config Parser as necessary.
+        """
+        term = dict()
+        term["enabled"] = self.config.get('terminal', 'enabled')
+        self.terminal = Section(term)
 
     def set_lightshow(self):
         """
