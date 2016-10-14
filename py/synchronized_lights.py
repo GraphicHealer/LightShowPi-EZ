@@ -147,8 +147,7 @@ network = hc.network
 server = network.networking == 'server'
 client = network.networking == "client"
 
-terminal = cm.terminal
-terminal = terminal.enabled == "true"
+terminal = cm.terminal.enabled
 
 if cm.lightshow.use_fifo:
     if os.path.exists(cm.lightshow.fifo):
@@ -193,12 +192,23 @@ def cursesRender( brightness ):
     stdscr.clear()
     wHeight,wWidth = stdscr.getmaxyx()
     maxVal = wHeight - 3
+    cWidth = min ( 6, int ( wWidth / len(brightness)))
+    #if things are getting really tight remove the gap between columns
+    #if we get down to zero width columns then give up
+    if ( cWidth < 3 ):
+        gap = 0
+    else:
+        cWidth -= 1
+        gap = 1
+    formatBright = "{:0" + str(cWidth) + "d}"
+    blockStr = "X" * cWidth
+
     for bright in brightness:
-        dispFloat = "{:5.3f}".format(bright)
+        dispBright = formatBright.format( int( min( 0.999999, bright ) * ( 10 ** cWidth )))
         brightHeight = int ( bright * maxVal )
         for y in range(brightHeight):
-            stdscr.addstr( maxVal - y, index * 6, "XXXXX")
-        stdscr.addstr( wHeight-1, index * 6, dispFloat )
+            stdscr.addstr( maxVal - y, index * ( cWidth + gap ), blockStr )
+        stdscr.addstr( wHeight-1, index * ( cWidth + gap ), dispBright )
         index+=1
     stdscr.refresh()
 

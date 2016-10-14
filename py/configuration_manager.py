@@ -219,7 +219,7 @@ class Configuration(object):
         Retrieves the terminal configuration parsing it from the Config Parser as necessary.
         """
         term = dict()
-        term["enabled"] = self.config.get('terminal', 'enabled')
+	term["enabled"] = self.config.getboolean('terminal', 'enabled')
         self.terminal = Section(term)
 
     def set_lightshow(self):
@@ -617,3 +617,7 @@ if __name__ == "__main__":
 
     for wckey, wcvalue in sms_cm.who_can.iteritems():
         print wckey, "=", wcvalue
+
+    print "\nTerminal Configuration" 
+    for tkey, tvalue in cm.terminal.config.iteritems(): 
+        print tkey, "=", tvalue
