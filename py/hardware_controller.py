@@ -57,7 +57,7 @@ cm = configuration_manager.Configuration()
 is_a_raspberryPI = Platform.platform_detect() == 1
 
 if is_a_raspberryPI:
-    import wiringpi2 as wiringpi
+    import wiringpi
 else:
     # if this is not a RPi you can't run wiringpi so lets load
     # something in its place
