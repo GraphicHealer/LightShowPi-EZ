@@ -44,7 +44,7 @@ class BrightCurses(object):
         self.stdscr.clear()
         wHeight,wWidth = self.stdscr.getmaxyx()
         maxVal = wHeight - 3
-        cWidth = min ( 6, int ( wWidth / len(brightness)))
+        cWidth = min ( 6, int ( ( wWidth - 1 ) / len(brightness)))
         #if things are getting really tight remove the gap between columns
         #if we get down to zero width columns then give up
         if ( cWidth < 3 ):
