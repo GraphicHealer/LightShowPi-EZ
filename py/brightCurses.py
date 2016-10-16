@@ -23,60 +23,59 @@ class BrightCurses(object):
     """Curses based renderer for bright values
     """
 
-    def __init__(self, terminal ):
+    def __init__(self, terminal):
         self.config = terminal
 
-    def init( self, stdscr ):
+    def init(self, stdscr):
         """cache the screen reference, clear the screen and display waiting notice"""
-	self.stdscr = stdscr
-    	curses.start_color()
-	curses.curs_set(0)
-    	curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
-	self.stdscr.clear()
-	wHeight,wWidth = self.stdscr.getmaxyx()
-	self.stdscr.addstr("Waiting for preShow"[:wWidth-1] )
+        self.stdscr = stdscr
+        curses.start_color()
+        curses.curs_set(0)
+        curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        self.stdscr.clear()
+        w_height, w_width = self.stdscr.getmaxyx()
+        self.stdscr.addstr("Waiting for preShow"[:w_width - 1])
         self.stdscr.refresh()
-	self.lastTime = timer()
+        self.last_time = timer()
 
-    def cursesRender( self, brightness ):
+    def curses_render(self, brightness):
         """Main render code"""
         index = 0
         self.stdscr.clear()
-        wHeight,wWidth = self.stdscr.getmaxyx()
-        maxVal = wHeight - 3
-        cWidth = min ( 6, int ( ( wWidth - 1 ) / len(brightness)))
-        #if things are getting really tight remove the gap between columns
-        #if we get down to zero width columns then give up
-        if ( cWidth < 3 ):
+        w_height, w_width = self.stdscr.getmaxyx()
+        max_val = w_height - 3
+        c_width = min(6, int((w_width - 1) / len(brightness)))
+        # if things are getting really tight remove the gap between columns
+        # if we get down to zero width columns then give up
+        if c_width < 3:
             gap = 0
         else:
-            cWidth -= 1
+            c_width -= 1
             gap = 1
-        #Build the format string for the value display and the column body
-        formatBright = "{:0" + str(cWidth) + "d}"
-        blockStr = "X" * cWidth
+        # Build the format string for the value display and the column body
+        format_bright = "{:0" + str(c_width) + "d}"
+        block_str = "X" * c_width
 
-        #Calculate and display interframe ms and frames per second
-	nowTime = timer()
-	frametime = int((nowTime-self.lastTime) * 1000)
-	diag = "T:" + str( frametime ) + "ms FPS:" + str( 1000 / frametime ) 
-        self.stdscr.addstr( 0, 0, diag[:wWidth-1] )
-	self.lastTime = nowTime
-   
-        #render each channel column
+        # Calculate and display interframe ms and frames per second
+        now_time = timer()
+        frame_time = int((now_time - self.last_time) * 1000)
+        diag = "T:" + str(frame_time) + "ms FPS:" + str(1000 / frame_time)
+        self.stdscr.addstr(0, 0, diag[:w_width - 1])
+        self.last_time = now_time
+
+        # render each channel column
         for bright in brightness:
-            dispBright = formatBright.format( int( min( 0.999999, bright ) * ( 10 ** cWidth )))
-            brightHeight = int ( bright * maxVal )
-            #render each column row
-            for y in range(brightHeight):
-                #there is a rounding / aliasing issue with deciding if we are above the threshold
-                #but this should be good enough
-		if ( y > ( maxVal / 2 ) - 1 ):
-                    cPair = 1
+            disp_bright = format_bright.format(int(min(0.999999, bright) * (10 ** c_width)))
+            bright_height = int(bright * max_val)
+            # render each column row
+            for y in range(bright_height):
+                # there is a rounding / aliasing issue with deciding if we are above the threshold
+                # but this should be good enough
+                if y > (max_val / 2) - 1:
+                    c_pair = 1
                 else:
-                    cPair = 0
-                self.stdscr.addstr( maxVal - y, index * ( cWidth + gap ), blockStr, curses.color_pair(cPair)  )
-            self.stdscr.addstr( wHeight-1, index * ( cWidth + gap ), dispBright )
-            index+=1
+                    c_pair = 0
+                self.stdscr.addstr(max_val - y, index * (c_width + gap), block_str, curses.color_pair(c_pair))
+            self.stdscr.addstr(w_height - 1, index * (c_width + gap), disp_bright)
+            index += 1
         self.stdscr.refresh()
-	

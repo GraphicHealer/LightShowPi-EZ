@@ -239,14 +239,12 @@ class Gui(Canvas):
             except:
                 pass
 
-
 def main():
     """main function, start the process"""
     parent = Tkinter.Tk()
     parent.geometry("250x150+300+300")
     Gui(parent)
     parent.mainloop()
-
 
 if __name__ == "__main__":
     main()
