@@ -82,6 +82,7 @@ import time
 import errno
 import stat
 import curses
+import brightCurses
 
 from collections import deque
 import Platform
@@ -147,7 +148,7 @@ network = hc.network
 server = network.networking == 'server'
 client = network.networking == "client"
 
-terminal = cm.terminal.enabled
+terminal = brightCurses.BrightCurses( cm.terminal )
 
 if cm.lightshow.use_fifo:
     if os.path.exists(cm.lightshow.fifo):
@@ -187,31 +188,6 @@ atexit.register(end_early)
 # Remove traceback on Ctrl-C
 signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 
-def cursesRender( brightness ):
-    index = 0
-    stdscr.clear()
-    wHeight,wWidth = stdscr.getmaxyx()
-    maxVal = wHeight - 3
-    cWidth = min ( 6, int ( wWidth / len(brightness)))
-    #if things are getting really tight remove the gap between columns
-    #if we get down to zero width columns then give up
-    if ( cWidth < 3 ):
-        gap = 0
-    else:
-        cWidth -= 1
-        gap = 1
-    formatBright = "{:0" + str(cWidth) + "d}"
-    blockStr = "X" * cWidth
-
-    for bright in brightness:
-        dispBright = formatBright.format( int( min( 0.999999, bright ) * ( 10 ** cWidth )))
-        brightHeight = int ( bright * maxVal )
-        for y in range(brightHeight):
-            stdscr.addstr( maxVal - y, index * ( cWidth + gap ), blockStr )
-        stdscr.addstr( wHeight-1, index * ( cWidth + gap ), dispBright )
-        index+=1
-    stdscr.refresh()
-
 def update_lights(matrix, mean, std):
     """Update the state of all the lights
 
@@ -246,8 +222,8 @@ def update_lights(matrix, mean, std):
     if server:
         network.broadcast(brightness)
 
-    if terminal:
-	cursesRender( brightness )
+    if terminal.config.enabled:
+	terminal.cursesRender( brightness )
     else:
         for blevel, pin in zip(brightness, range(hc.GPIOLEN)):
             hc.set_light(pin, True, blevel)
@@ -918,10 +894,7 @@ def network_client():
         hc.clean_up()
 
 def launchCurses(screen):
-    global stdscr
-    stdscr = screen
-    curses.start_color()
-    stdscr.clear()     
+    terminal.init( screen )
     main()
 
 def main():
@@ -938,7 +911,7 @@ if __name__ == "__main__":
         print "One of --playlist or --file must be specified"
         sys.exit()
 
-    if terminal:
+    if terminal.config.enabled:
         try: 
             curses.wrapper(launchCurses) 
         except KeyboardInterrupt: 
