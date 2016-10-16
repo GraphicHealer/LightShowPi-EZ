@@ -90,7 +90,6 @@ import fft
 from prepostshow import PrePostShow
 import RunningStats
 
-
 # Make sure SYNCHRONIZED_LIGHTS_HOME environment variable is set
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 
@@ -148,7 +147,7 @@ network = hc.network
 server = network.networking == 'server'
 client = network.networking == "client"
 
-terminal = brightCurses.BrightCurses( cm.terminal )
+terminal = brightCurses.BrightCurses(cm.terminal)
 
 if cm.lightshow.use_fifo:
     if os.path.exists(cm.lightshow.fifo):
@@ -188,6 +187,7 @@ atexit.register(end_early)
 # Remove traceback on Ctrl-C
 signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 
+
 def update_lights(matrix, mean, std):
     """Update the state of all the lights
 
@@ -206,7 +206,8 @@ def update_lights(matrix, mean, std):
     global decay
 
     brightness = matrix - mean + (std * cm.lightshow.SD_low)
-    brightness = (brightness / (std * (cm.lightshow.SD_low + cm.lightshow.SD_high))) * (1.0 - (cm.lightshow.attenuate_pct / 100.0))
+    brightness = (brightness / (std * (cm.lightshow.SD_low + cm.lightshow.SD_high))) * (
+    1.0 - (cm.lightshow.attenuate_pct / 100.0))
 
     # insure that the brightness levels are in the correct range
     brightness = np.clip(brightness, 0.0, 1.0)
@@ -223,7 +224,7 @@ def update_lights(matrix, mean, std):
         network.broadcast(brightness)
 
     if terminal.config.enabled:
-	terminal.cursesRender( brightness )
+        terminal.curses_render(brightness)
     else:
         for blevel, pin in zip(brightness, range(hc.GPIOLEN)):
             hc.set_light(pin, True, blevel)
@@ -254,8 +255,7 @@ def set_audio_device(sample_rate, num_channels):
                           "2" if num_channels > 1 else "1"]
 
         log.info("Sending output as fm transmission")
-        
-        
+
         with open(os.devnull, "w") as dev_null:
             fm_process = subprocess.Popen(fm_command, stdin=subprocess.PIPE, stdout=dev_null)
 
@@ -453,11 +453,11 @@ def load_custom_config(config_filename):
                 if config.has_option(lsc, inverted):
                     hc.inverted_channels = map(int, config.get(lsc, inverted).split(","))
 
-		if config.has_option(lsc, "SD_low"):
-		   cm.lightshow.SD_low = config.getfloat(lsc, "SD_low")
+                if config.has_option(lsc, "SD_low"):
+                    cm.lightshow.SD_low = config.getfloat(lsc, "SD_low")
 
-		if config.has_option(lsc, "SD_high"):
-		   cm.lightshow.SD_high = config.getfloat(lsc, "SD_high")
+                if config.has_option(lsc, "SD_high"):
+                    cm.lightshow.SD_high = config.getfloat(lsc, "SD_high")
 
                 # setup up custom preshow
                 has_preshow_configuration = config.has_option(lsc, 'preshow_configuration')
@@ -893,9 +893,11 @@ def network_client():
         network.close_connection()
         hc.clean_up()
 
-def launchCurses(screen):
-    terminal.init( screen )
+
+def launch_curses(screen):
+    terminal.init(screen)
     main()
+
 
 def main():
     if "-in" in cm.lightshow.mode:
@@ -905,6 +907,7 @@ def main():
     else:
         play_song()
 
+
 if __name__ == "__main__":
     # Make sure one of --playlist or --file was specified
     if args.file is None and args.playlist is None:
@@ -912,10 +915,10 @@ if __name__ == "__main__":
         sys.exit()
 
     if terminal.config.enabled:
-        try: 
-            curses.wrapper(launchCurses) 
-        except KeyboardInterrupt: 
-            print "Got KeyboardInterrupt exception. Exiting..." 
-            exit() 
+        try:
+            curses.wrapper(launch_curses)
+        except KeyboardInterrupt:
+            print "Got KeyboardInterrupt exception. Exiting..."
+            exit()
     else:
-	main()    
+        main()
