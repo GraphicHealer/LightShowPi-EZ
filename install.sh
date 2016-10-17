@@ -1,192 +1,160 @@
 #!/bin/bash
 #
-# Licensed under the BSD license.  See full license in LICENSE file.
-# http://www.lightshowpi.com/
+# Installation framework for lightshowPi
 #
-# Syncronized_lights installer
-#
-# Author: Sean Millar sean.millar@gmail.com
-#
-# Install assumes this is a Rasberry Pi and python 2.7 is used.
+# Support for each individual distribution is 
+INSTALL_DIR="$( cd $(dirname $0) ; pwd -P )"
+BUILD_DIR=${INSTALL_DIR}/build_dir
 
+# Globals populated below
+BASE_DISTRO=
+DISTRO=
 
-#TODO(sean): Better Error Handling
-#TODO(sean): Clean this up so it looks pretty
+# Globals populated by distro-specific scripts
+INSTALL_COMMAND=
+PYTHON_DEPS=
+SYSTEM_DEPS=
 
-PATH=$PATH
-export PATH
-exec > >(tee install.log)
+# Set up file-based logging
+exec 1> >(tee install.log)
 
 # Root check
 if [ "$EUID" -ne 0 ]; then
-    echo "This must be run as root. usage sudo $0"
-    echo "Switching to root enter password if asked"
-    sudo su -c "$0 $*"
-    exit 
+    echo 'Install script requires root privileges!'
+    if [ -x /usr/bin/sudo ]; then
+        echo 'Switching now, enter the password for "'$USER'", if prompted.'
+        sudo su -c "$0 $*"
+    else
+        echo 'Switching now, enter the password for "root"!'
+        su root -c "$0 $*"
+    fi
+    exit $?
 fi
 
-# basic error reporting
-function errchk {
-    echo "Houston we have a problem....."
-    echo "$1 failed with exit code $2"
-    exit 1
+#
+# Wrapper for informational logging
+# Args:
+#     All arguments are written to the terminal and log file
+log() {
+    echo -ne "\e[1;34mlightshowpi \e[m" >&2
+    echo -e "[`date`] $@"
 }
 
-# Defaults to install where install.sh is located
-INSTALL_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
-BUILD_DIR=${INSTALL_DIR}/build_dir
-
-mkdir -p $BUILD_DIR
-cd $BUILD_DIR
-
-# update first
-apt-get update
-
-# Check to see if we have git
-git --version > /dev/null
-
-if [ $? -eq 1 ]; then
-	#Nope, install git
-	apt-get install -y git
-	
+#
+# Checks the return value of the last command to run
+# Args:
+#     1 - Message to display on failure
+verify() {
     if [ $? -ne 0 ]; then
-        errchk "Installing git" $?
+        echo "Encountered a fatal error: $@"
+        exit 1
+    fi
+}
+
+#
+# Configure installation process based on Linux distribution
+install_init() {
+    DISTRO=`awk -F= '$1~/^ID$/ {print $2}' /etc/os-release`
+    BASE_DISTRO=`awk -F= '$1=/ID_LIKE/ {print $2}' /etc/os-release`
+
+    all_supported="ls "
+
+    case $DISTRO in
+        archarm|raspbian)
+            log Configuring installation for detected distro="'$DISTRO'"
+            source $INSTALL_DIR/install-scripts/$DISTRO
+            verify "Error importing configuration from install-scripts/$DISTRO"
+            ;;
+        *)
+            log Detected unknown distribution. Please verify that "'$DISTRO'" is supported and update this script.
+            log To add support for "'$DISTRO'" create a script with that name in "install-scripts"
+            exit 1
+            ;;
+    esac
+
+    # Some symlinks that will make life a little easier
+    # Note that this may (intentionally) clobber Python 3 symlinks in newer OS's
+    ln -fs `which python2.7` /usr/bin/python
+    ln -fs `which pip2` /usr/bin/pip
+}
+
+
+#
+# Wrapper function to handle installation of system packages
+# Args:
+#     1 - Package name
+pkginstall() {
+    log Installing $1...
+    $INSTALL_COMMAND $1
+    verify "Installation of package '$1' failed"
+}
+
+#
+# Wrapper function to handle installation of Python packages
+# Args:
+#     1 - Package name
+pipinstall() {
+    log Installing $1 via pip...
+    if [ $1 == "numpy" ]; then echo -e "\e[1;33mWARNING:\e[m numpy installation may take up to 30 minutes"; fi
+    /usr/bin/yes | pip install $1
+    verify "Installation of Python package '$1' failed"
+}
+
+# Prepare the build environment
+install_init
+rm -rf $BUILD_DIR
+mkdir -p $BUILD_DIR && cd $BUILD_DIR
+
+# Install system dependencies
+log Preparing to install ${#SYSTEM_DEPS[@]} packages on your system...
+for _dep in ${SYSTEM_DEPS[@]}; do
+    pkginstall $_dep;
+done
+
+# Install decoder
+log Installing decoder...
+pip install git+https://tom_slick@bitbucket.org/tom_slick/decoder.py.git
+verify "Installation of decoder-1.5XB-Unix failed"
+
+# Install Python dependencies
+log Preparing to install ${#PYTHON_DEPS[@]} python packages on your system...
+for _dep in ${PYTHON_DEPS[@]}; do
+    pipinstall $_dep;
+done
+
+log Installing rpi-audio-levels...
+pip install git+https://tom_slick@bitbucket.org/tom_slick/rpi-audio-levels.git
+verify "Installation of rpi-audio-levels failed"
+
+# Optionally add a line to /etc/sudoers
+if [ -f /etc/sudoers ]; then
+    KEEP_EN="Defaults             env_keep="SYNCHRONIZED_LIGHTS_HOME""
+    grep -q "$KEEP_EN" /etc/sudoers
+    if [ $? -ne 0 ]; then
+        echo "$KEEP_EN" >> /etc/sudoers
     fi
 fi
 
-# install decoder
-# http://www.brailleweb.com
-wget http://www.brailleweb.com/downloads/decoder-1.5XB-Unix.zip
-unzip decoder-1.5XB-Unix.zip
-cd decoder-1.5XB-Unix
-cp decoder.py codecs.pdc fileinfo.py /usr/lib/python2.7/.
+# Set up environment variables
+cat <<EOF >/etc/profile.d/lightshowpi.sh
+# Lightshow Pi Home
+export SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}
+# Add Lightshow Pi bin directory to path
+export PATH=\$PATH:${INSTALL_DIR}/bin
+EOF
 
-# install mutegen
-# rough test to see if it is installed
-which mutagen-pony > /dev/null
+# Clean up after ourselves
+cd ${INSTALL_DIR} && rm -rf ${BUILD_DIR}
 
-if [ $? -eq 1 ]; then 
-    cd mutagen-1.19
-    python setup.py build
-    python setup.py install
+# Print some instructions to the user
+cat <<EOF
 
-    if [ $? -ne 0 ]; then
-        errchk "Installing mutagen" $?
-    fi
-fi
 
-# install WiringPi2
-cd $BUILD_DIR
+All done! Reboot your Raspberry Pi before running lightshowPi.
+Run the following command to test your installation and hardware setup:
 
-git clone git://git.drogon.net/wiringPi
-cd wiringPi
+    sudo python $INSTALL_DIR/py/hardware_controller.py --state=flash
 
-./build
+EOF
+exit 0
 
-if [ $? -ne 0 ]; then
-    errchk "Git and configure WiringPi2" $?
-fi
-cd $BUILD_DIR
-
-# install wiringpi2-Python
-apt-get install -y python-dev python-setuptools python-pip
-git clone https://github.com/Gadgetoid/WiringPi2-Python.git
-cd WiringPi2-Python
-python setup.py install
-
-if [ $? -ne 0 ]; then
-    errchk "Installing wiringpi2" $?
-fi
-
-# install numpy
-# http://www.numpy.org/
-cd $BUILD_DIR
-apt-get install -y python-numpy
-
-if [ $? -ne 0 ]; then
-    errchk "Installing numpy" $?
-fi
-
-# install python-alsaaudio
-apt-get install -y python-alsaaudio
-if [ $? -ne 0 ]; then
-    errchk "Installing python-alsaaudio" $?
-fi
-
-# install audio encoders
-apt-get install -y lame flac faad vorbis-tools
-
-if [ $? -ne 0 ]; then
-    errchk "Installing audio-encoders" $?
-fi
-
-# install audio encoder ffmpeg (wheezy) or libav-tools (Jessie or OSMC)
-version=`cat /etc/*-release | grep 'VERSION_ID' | awk -F \" '{print $2}'`
-declare -i version
-
-if [ $version -le 7 ] ; then
-    apt-get install -y ffmpeg
-else
-    apt-get install -y libav-tools
-
-    # create symlink to avconv so the decoder can still work
-    echo "creating symlink"
-    ln -s /usr/bin/avconv /usr/bin/ffmpeg
-fi
-
-if [ $? -ne 0 ]; then
-    errchk "Installing ffmpeg or libav-tools" $?
-fi  
-
-# Setup environment variables
-ENV_VARIABLE="SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}"
-exists=`grep -r "$ENV_VARIABLE" /etc/profile*`
-
-if [ -z "$exists" ]; then
-    echo "# Lightshow Pi Home" > /etc/profile.d/lightshowpi.sh
-    echo "$ENV_VARIABLE" >> /etc/profile.d/lightshowpi.sh
-    echo "export SYNCHRONIZED_LIGHTS_HOME" >> /etc/profile.d/lightshowpi.sh
-    echo "" >> /etc/profile.d/lightshowpi.sh
-    echo "# Add Lightshow Pi bin directory to path" >> /etc/profile.d/lightshowpi.sh
-    echo "PATH=\$PATH:${INSTALL_DIR}/bin" >> /etc/profile.d/lightshowpi.sh
-    echo "export PATH" >> /etc/profile.d/lightshowpi.sh
-
-    # Force set this environment variable in this shell (as above doesn't take until reboot)
-    export $ENV_VARIABLE
-fi
-
-KEEP_EN="Defaults	env_keep="SYNCHRONIZED_LIGHTS_HOME""
-exists=`grep "$KEEP_EN" /etc/sudoers`
-
-if [ -z "$exists" ]; then
-    echo "$KEEP_EN" >> /etc/sudoers
-fi
-
-# Install googlevoice and sms depedencies
-easy_install simplejson
-
-if [ $? -ne 0 ]; then
-    errchk "Installing simplejson"  $?
-fi
-
-# Install fixed version of googlevoice
-pip install git+https://tom_slick@bitbucket.org/tom_slick/pygooglevoice.git --upgrade
-
-if [ $? -ne 0 ]; then
-    errchk "Installing pygooglevoice" $?
-fi
-
-# install beautiful soup
-pip install Beautifulsoup
-
-if [ $? -ne 0 ]; then
-    errchk "Installing Beautifulsoup" $?
-fi
-
-# Explain to installer how they can test to see if we are working
-echo
-echo "You may need to reboot your Raspberry Pi before running lightshowPi (sudo reboot)."
-echo "Run the following command to test your installation and hardware setup (press CTRL-C to stop the test):"
-echo
-echo "sudo python $INSTALL_DIR/py/hardware_controller.py --state=flash"
-echo

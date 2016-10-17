@@ -1,0 +1,40 @@
+Please check your local laws governing low powered radio broadcasts.
+LightshowPi is not responsible for any legal action taken against you.
+LightshowPi is not responsible for the content you choose to broadcast.
+
+https://www.fcc.gov/media/radio/low-power-radio-general-information#PART15
+Part 15 Devices
+
+Unlicensed operation on the AM and FM radio broadcast bands is permitted for 
+some extremely low powered devices covered under Part 15 of the FCC's rules.  
+On FM frequencies, these devices are limited to an effective service range of 
+approximately 200 feet (61 meters).  See 47 CFR (Code of Federal Regulations) 
+Section 15.239, and the July 24, 1991 Public Notice 
+https://apps.fcc.gov/edocs_public/attachmatch/DOC-297510A1.pdf (still in effect).  
+On the AM broadcast band, these devices are limited to an effective service 
+range of approximately 200 feet (61 meters).  See 47 CFR Sections 15.207, 
+15.209, 15.219, and 15.221.  These devices must accept any interference caused 
+by any other operation, which may further limit the effective service range.
+
+For more information on Part 15 devices, please see OET Bulletin No. 63 
+("Understanding the FCC Regulations for Low-Power, Non-Licensed Transmitters").
+https://www.fcc.gov/general/oet-bulletins-line#63
+Questions not answered by this Bulletin can be directed to the FCC's Office of 
+Engineering and Technology, Customer Service Branch, at the Columbia, Maryland 
+office, phone (301) 362 - 3000.
+
+Penalties for Operation Without A Permit or License
+
+The Commission considers unauthorized broadcast operation to be a serious 
+matter.  Presently, the maximum penalty for operating an unlicensed or "pirate" 
+broadcast station (one which is not permitted under Part 15 or is not a Carrier 
+Current Station) is set at $10,000 for a single violation or a single day of 
+operation, up to a total maximum amount of $75,000.
+
+Adjustments may be made upwards or downwards depending on the circumstances 
+involved.  Equipment used for an unauthorized operation may also be confiscated.  
+There are also criminal penalties (fine and/or imprisonment) for "willfully and 
+knowingly" operating a radio station without a license.  
+
+DON'T DO IT!
+
