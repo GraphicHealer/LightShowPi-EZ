@@ -157,3 +157,4 @@ Run the following command to test your installation and hardware setup:
 
 EOF
 exit 0
+
