@@ -82,7 +82,7 @@ import time
 import errno
 import stat
 import curses
-import brightCurses
+import bright_curses
 
 from collections import deque
 import Platform
@@ -147,7 +147,7 @@ network = hc.network
 server = network.networking == 'server'
 client = network.networking == "client"
 
-terminal = brightCurses.BrightCurses(cm.terminal)
+terminal = bright_curses.BrightCurses(cm.terminal)
 
 if cm.lightshow.use_fifo:
     if os.path.exists(cm.lightshow.fifo):
