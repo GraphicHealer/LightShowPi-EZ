@@ -2,4 +2,4 @@
 #
 # Get the amount of free MB in the system
 
-free -m | grep - | awk '{print $4}'
+echo "Free memory: "`free -m | grep - | awk '{print $4}'`"MB"
