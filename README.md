@@ -45,10 +45,28 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 * Stephen Burning
 * Eric Higdon
 * Tom Enos
+* Brandon Lyon
+* Ken B (K5ENB)
+* Paul Barnett
 * Anthony Tod
 
 Release Notes
 ============
+
+2016/10/16 :: Version 1.2
+-------------------------------
+
+* 3 to 4 times speed improvement by utilizing GPU for fft and other optimizations (thanks to Tom Enos, Colin Guyon, and Ken B)
+* support for streaming audio from pandora, airplay, and other online sources (thanks to Tom Enos and Ken B)
+* support fm broadcast on the pi2 and pi3 (thanks to Ken B)
+* multiple refactors + addition of comments to the code + clean-up (thanks to Tom Enos)
+* add the ability to override configuration options on a per-song basis (thanks to Tom Enos)
+* support pagination for the SMS 'list' command (thanks ot Brandon Lyon)
+* support for running lightshow pi on your linux box for debugging (thanks to Tom Enos)
+* addition of new configuration parameters to tweak many facets of the way lights blink / fade (thanks to Ken B)
+* addition of new configuration parameters to tweak standard deviation bounds used (thanks to Paul Barnett)
+* support a "terminal" mode for better debugging w/out hardware attached (thanks to Anthony Tod)
+* many other misc bug fixes (see Issues list for more details)
 
 2014/11/27 :: Version 1.1
 -------------------------------
