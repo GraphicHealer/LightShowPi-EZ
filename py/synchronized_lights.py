@@ -90,6 +90,7 @@ import fft
 from prepostshow import PrePostShow
 import RunningStats
 
+
 # Make sure SYNCHRONIZED_LIGHTS_HOME environment variable is set
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 
@@ -206,8 +207,7 @@ def update_lights(matrix, mean, std):
     global decay
 
     brightness = matrix - mean + (std * cm.lightshow.SD_low)
-    brightness = (brightness / (std * (cm.lightshow.SD_low + cm.lightshow.SD_high))) * (
-    1.0 - (cm.lightshow.attenuate_pct / 100.0))
+    brightness = (brightness / (std * (cm.lightshow.SD_low + cm.lightshow.SD_high))) * (1.0 - (cm.lightshow.attenuate_pct / 100.0))
 
     # insure that the brightness levels are in the correct range
     brightness = np.clip(brightness, 0.0, 1.0)
@@ -255,6 +255,7 @@ def set_audio_device(sample_rate, num_channels):
                           "2" if num_channels > 1 else "1"]
 
         log.info("Sending output as fm transmission")
+
 
         with open(os.devnull, "w") as dev_null:
             fm_process = subprocess.Popen(fm_command, stdin=subprocess.PIPE, stdout=dev_null)
