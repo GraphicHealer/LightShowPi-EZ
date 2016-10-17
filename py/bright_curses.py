@@ -59,7 +59,7 @@ class BrightCurses(object):
         # Calculate and display interframe ms and frames per second
         now_time = timer()
         frame_time = int((now_time - self.last_time) * 1000)
-        diag = "T:" + str(frame_time) + "ms FPS:" + str(1000 / frame_time)
+        diag = "T:" + "{:3d}".format(frame_time) + "ms FPS:" + "{:3d}".format(1000 / frame_time)
         self.stdscr.addstr(0, 0, diag[:w_width - 1])
         self.last_time = now_time
 
