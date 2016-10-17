@@ -13,7 +13,13 @@
 # your hardware off the pi.
 # Launch synchonized_lights.py with the same command line as you normally would, and the
 # active terminal will be used to render.
-
+#
+# To use, in your overrides.cfg which inherits from defaults.cfg
+# In the [termninal] section, set
+# enabled = True
+#
+# https://docs.python.org/2/howto/curses.html
+# https://en.wikipedia.org/wiki/Curses_(programming_library)
 """
 
 import curses
