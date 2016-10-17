@@ -62,7 +62,7 @@ Release Notes
 * multiple refactors + addition of comments to the code + clean-up (thanks to Tom Enos)
 * add the ability to override configuration options on a per-song basis (thanks to Tom Enos)
 * support pagination for the SMS 'list' command (thanks to Brandon Lyon)
-* support for running lightshow pi on your linux box for debugging (thanks to Tom Enos)
+* support for running lightshow pi on your linux box for debugging (thanks to Micah Wedemeyer)
 * addition of new configuration parameters to tweak many facets of the way lights blink / fade (thanks to Ken B)
 * addition of new configuration parameters to tweak standard deviation bounds used (thanks to Paul Barnett)
 * support a "terminal" mode for better debugging w/out hardware attached (thanks to Anthony Tod)
