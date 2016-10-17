@@ -89,7 +89,7 @@ class Configuration(object):
             self.lightshow = None
             self.audio_processing = None
             self.network = None
-	    self.terminal = None
+            self.terminal = None
 
             self.set_hardware()
             self.set_lightshow()
@@ -219,7 +219,7 @@ class Configuration(object):
         Retrieves the terminal configuration parsing it from the Config Parser as necessary.
         """
         term = dict()
-	term["enabled"] = self.config.getboolean('terminal', 'enabled')
+        term["enabled"] = self.config.getboolean('terminal', 'enabled')
         self.terminal = Section(term)
 
     def set_lightshow(self):
