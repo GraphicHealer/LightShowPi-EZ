@@ -15,7 +15,7 @@
 # active terminal will be used to render.
 #
 # To use, in your overrides.cfg which inherits from defaults.cfg
-# In the [termninal] section, set
+# In the [terminal] section, set
 # enabled = True
 #
 # https://docs.python.org/2/howto/curses.html
