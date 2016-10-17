@@ -81,6 +81,8 @@ import cPickle
 import time
 import errno
 import stat
+import curses
+import bright_curses
 
 from collections import deque
 import Platform
@@ -145,6 +147,8 @@ decay = np.zeros(cm.hardware.gpio_len, dtype='float32')
 network = hc.network
 server = network.networking == 'server'
 client = network.networking == "client"
+
+terminal = bright_curses.BrightCurses(cm.terminal)
 
 if cm.lightshow.use_fifo:
     if os.path.exists(cm.lightshow.fifo):
@@ -219,8 +223,11 @@ def update_lights(matrix, mean, std):
     if server:
         network.broadcast(brightness)
 
-    for blevel, pin in zip(brightness, range(hc.GPIOLEN)):
-        hc.set_light(pin, True, blevel)
+    if terminal.config.enabled:
+        terminal.curses_render(brightness)
+    else:
+        for blevel, pin in zip(brightness, range(hc.GPIOLEN)):
+            hc.set_light(pin, True, blevel)
 
 
 def set_audio_device(sample_rate, num_channels):
@@ -248,8 +255,8 @@ def set_audio_device(sample_rate, num_channels):
                           "2" if num_channels > 1 else "1"]
 
         log.info("Sending output as fm transmission")
-        
-        
+
+
         with open(os.devnull, "w") as dev_null:
             fm_process = subprocess.Popen(fm_command, stdin=subprocess.PIPE, stdout=dev_null)
 
@@ -447,11 +454,11 @@ def load_custom_config(config_filename):
                 if config.has_option(lsc, inverted):
                     hc.inverted_channels = map(int, config.get(lsc, inverted).split(","))
 
-		if config.has_option(lsc, "SD_low"):
-		   cm.lightshow.SD_low = config.getfloat(lsc, "SD_low")
+                if config.has_option(lsc, "SD_low"):
+                    cm.lightshow.SD_low = config.getfloat(lsc, "SD_low")
 
-		if config.has_option(lsc, "SD_high"):
-		   cm.lightshow.SD_high = config.getfloat(lsc, "SD_high")
+                if config.has_option(lsc, "SD_high"):
+                    cm.lightshow.SD_high = config.getfloat(lsc, "SD_high")
 
                 # setup up custom preshow
                 has_preshow_configuration = config.has_option(lsc, 'preshow_configuration')
@@ -888,15 +895,31 @@ def network_client():
         hc.clean_up()
 
 
-if __name__ == "__main__":
-    # Make sure one of --playlist or --file was specified
-    if args.file is None and args.playlist is None:
-        print "One of --playlist or --file must be specified"
-        sys.exit()
+def launch_curses(screen):
+    terminal.init(screen)
+    main()
 
+
+def main():
     if "-in" in cm.lightshow.mode:
         audio_in()
     elif client:
         network_client()
     else:
         play_song()
+
+
+if __name__ == "__main__":
+    # Make sure one of --playlist or --file was specified
+    if args.file is None and args.playlist is None:
+        print "One of --playlist or --file must be specified"
+        sys.exit()
+
+    if terminal.config.enabled:
+        try:
+            curses.wrapper(launch_curses)
+        except KeyboardInterrupt:
+            print "Got KeyboardInterrupt exception. Exiting..."
+            exit()
+    else:
+        main()
