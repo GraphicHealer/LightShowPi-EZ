@@ -11,7 +11,13 @@ server_address = ("", 80)
 lspitools = os.getenv("SYNCHRONIZED_LIGHTS_HOME") + "/web"
 os.chdir(lspitools)
 handler.cgi_directories = ["/"]
- 
-httpd = server(server_address, handler)
-httpd.serve_forever()
+
+try: 
+    httpd = server(server_address, handler)
+    httpd.serve_forever()
+
+except KeyboardInterrupt:
+    os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
+    os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
+
 
