@@ -27,17 +27,17 @@ for future use-->
 <style>
 
 h1 {
-    font-size: 70px;
+    font-size: 30px;
 }
 
 h2 {
-    font-size: 40px;
+    font-size: 20px;
 }
 
 input[type="submit"] {
-    width: 400px;
-    height: 150px;
-    font-size: 50px;     
+    width: 300px;
+    height: 100px;
+    font-size: 30px;     
 }
 
 </style>
@@ -54,12 +54,10 @@ message = form.getvalue("message", "")
 
 print """
 
-<br>
   <form method="post" action="web_controls.cgi">
     <input type="hidden" name="message" value="On"/>
     <input type="submit" value="Lights ON">
   </form>
-<br>
   <form method="post" action="web_controls.cgi">
     <input type="hidden" name="message" value="Off"/>
     <input type="submit" value="Lights OFF">
@@ -89,7 +87,6 @@ if message:
 cmd = 'pgrep -f "python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py"'
 if os.system(cmd) == 0:
     print """
-<br>
   <form method="post" action="web_controls.cgi">
     <input type="hidden" name="message" value="Next"/>
     <input type="submit" value="Play Next">
@@ -97,7 +94,6 @@ if os.system(cmd) == 0:
     """
 else:
     print """
-<br>
   <form method="post" action="web_controls.cgi">
     <input type="hidden" name="message" value="Start"/>
     <input type="submit" value="START">
@@ -107,7 +103,6 @@ else:
 if message:
     print """
 
-<br>
 <h2>Executed command: %s</h2>
 
     """ % cgi.escape(message)
