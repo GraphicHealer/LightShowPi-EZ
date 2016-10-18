@@ -14,7 +14,7 @@ print """
 <head>
 <meta charset="utf-8">
 <title>LightShowPi Web Controls</title>
-<meta name="description" content="A very basic web interface for LightshoPi">
+<meta name="description" content="A very basic web interface for LightShowPi">
 <meta name="author" content="Ken B">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- <link rel="stylesheet" href="">
