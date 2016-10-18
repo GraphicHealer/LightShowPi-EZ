@@ -12,7 +12,7 @@ or
 > cd /home/pi/lightshowpi
 
 2) Run the web server
-> sudo python web/web_controls.py
+> sudo python web/microweb/web_controls.py
 
 On your PC or mobile device,
 

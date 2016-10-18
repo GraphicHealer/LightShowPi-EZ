@@ -8,7 +8,7 @@ import os
 server = BaseHTTPServer.HTTPServer
 handler = CGIHTTPServer_root.CGIHTTPRequestHandler
 server_address = ("", 80)
-lspitools = os.getenv("SYNCHRONIZED_LIGHTS_HOME") + "/web"
+lspitools = os.getenv("SYNCHRONIZED_LIGHTS_HOME") + "/web/microweb"
 os.chdir(lspitools)
 handler.cgi_directories = ["/"]
 
