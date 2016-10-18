@@ -76,6 +76,9 @@ if message:
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
         os.system("python ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py --state=off")
+    if message == "Next":
+        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
+        sleep(1)
     if message == "Start":
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
@@ -88,7 +91,7 @@ if os.system(cmd) == 0:
     print """
 <br>
   <form method="post" action="web_controls.cgi">
-    <input type="hidden" name="message" value="Start"/>
+    <input type="hidden" name="message" value="Next"/>
     <input type="submit" value="Play Next">
   </form>
     """
