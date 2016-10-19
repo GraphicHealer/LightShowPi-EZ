@@ -16,7 +16,7 @@ handler = CGIHTTPServer_root.CGIHTTPRequestHandler
 server_address = ("", 80)
 lspitools = os.getenv("SYNCHRONIZED_LIGHTS_HOME") + "/web/microweb"
 os.chdir(lspitools)
-handler.cgi_directories = ["/"]
+handler.cgi_directories = ["/cgi-bin"]
 
 try: 
     httpd = server(server_address, handler)
