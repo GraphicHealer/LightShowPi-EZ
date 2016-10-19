@@ -1,11 +1,9 @@
- 
-
 #!/bin/bash
+
 #
 # Start microweb
 #
-# Author: Todd Giles (todd.giles@gmail.com)
-# Modifications: Chris Usey (chris.usey@gmail.com), Sean Millar (sean.millar@gmail.com) 
+# Author: Tom Enos
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
