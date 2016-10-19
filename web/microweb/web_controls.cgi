@@ -1,4 +1,5 @@
 #!/usr/bin/python
+
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
 # http://www.lightshowpi.org/
