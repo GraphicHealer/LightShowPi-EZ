@@ -615,6 +615,10 @@ if __name__ == "__main__":
     for akey, avalue in cm.audio_processing.config.iteritems():
         print akey, "=", avalue
 
+    print "\nNetwork Configuration"
+    for nkey, nvalue in cm.network.config.iteritems():
+        print nkey, "=", nvalue
+
     print "\nSMS Configuration"
     for skey, svalue in sms_cm.sms.config.iteritems():
         print skey, "=", svalue
