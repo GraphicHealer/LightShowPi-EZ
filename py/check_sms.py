@@ -93,13 +93,13 @@ class Sms(Thread):
         except NameError:
             self.playlist = cm.sms.playlist_path
 
+        commands.start(cm)
         self.voice = Voice()
 
         self.songs = list()
         logging.info('loading playlist ' + self.playlist)
 
         self.load_playlist()
-        commands.start(cm)
 
     def run(self):
         """Overloaded Thread.run, runs the update
