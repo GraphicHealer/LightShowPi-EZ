@@ -23,12 +23,11 @@ for OUTPUT in $(pgrep -f lightshowpi); do
     if [ ${OUTPUT} != ${id} ] && [ ${OUTPUT} != $$ ]; then
         out=`ps -p ${OUTPUT} -o cmd`
 
-        if [[ ${out} == *"${SYNCHRONIZED_LIGHTS_HOME}"* ]]; then
+        if [[ ${out} == *"${SYNCHRONIZED_LIGHTS_HOME}"* ]] && [[ ${out} != *"web"* ]]; then
             echo "killing:"
             echo  ${out}
+            sudo kill ${OUTPUT}
         fi
-
-        sudo kill ${OUTPUT}
 
     fi
 done
