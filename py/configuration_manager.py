@@ -243,6 +243,9 @@ class Configuration(object):
         command_string = self.config.get(ls, 'stream_command_string')
         lghtshw["stream_command_string"] = shlex.split(command_string)
 
+        lghtshw["stream_song_delim"] = self.config.get(ls, 'stream_song_delim')
+        lghtshw["stream_song_exit_count"] = self.config.getint(ls, 'stream_song_exit_count')
+
         playlist_path = self.config.get(ls, 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
         if playlist_path:
