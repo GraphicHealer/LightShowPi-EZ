@@ -83,6 +83,7 @@ import errno
 import stat
 import curses
 import bright_curses
+import mutagen
 
 from collections import deque
 import Platform
@@ -189,6 +190,7 @@ atexit.register(end_early)
 
 # Remove traceback on Ctrl-C
 signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+signal.signal(signal.SIGTERM, lambda x, y: sys.exit(0))
 
 
 def update_lights(matrix, mean, std):
@@ -784,6 +786,13 @@ def get_song():
         cm.update_state('current_song', str(songs.index(current_song)))
 
     song_filename = song_filename.replace("$SYNCHRONIZED_LIGHTS_HOME", cm.home_dir)
+
+    if cm.lightshow.songname_command:
+        metadata = mutagen.File(song_filename, easy=True)
+        if not metadata is None:
+            if "title" in metadata:
+                title = metadata["title"][0]
+                os.system(cm.lightshow.songname_command + " \"" + title + "\"")
 
     filename = os.path.abspath(song_filename)
     config_filename = os.path.dirname(filename) + "/." + os.path.basename(song_filename) + ".cfg"

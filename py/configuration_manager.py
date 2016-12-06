@@ -240,6 +240,8 @@ class Configuration(object):
         lghtshw["input_channels"] = self.config.getint(ls, 'input_channels')
         lghtshw["input_sample_rate"] = self.config.getint(ls, 'input_sample_rate')
 
+	lghtshw["songname_command"] = self.config.get(ls, 'songname_command')
+
         command_string = self.config.get(ls, 'stream_command_string')
         lghtshw["stream_command_string"] = shlex.split(command_string)
 
