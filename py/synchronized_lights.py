@@ -791,8 +791,8 @@ def get_song():
         metadata = mutagen.File(song_filename, easy=True)
         if not metadata is None:
             if "title" in metadata:
-                title = metadata["title"][0]
-                os.system(cm.lightshow.songname_command + " \"" + title + "\"")
+                now_playing = "Now Playing " + metadata["title"][0] + " by " + metadata["artist"][0]
+                os.system(cm.lightshow.songname_command + " \"" + now_playing + "\"")
 
     filename = os.path.abspath(song_filename)
     config_filename = os.path.dirname(filename) + "/." + os.path.basename(song_filename) + ".cfg"
