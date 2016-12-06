@@ -382,10 +382,14 @@ def audio_in():
         else:
             if cm.lightshow.stream_song_delim in streamout:
                 songcount+=1
-                print "LightShowPi : Song number " + str(songcount)
+#                print "LightShowPi : Song number " + str(songcount)
+                if cm.lightshow.songname_command:
+                    now_playing = "Now Playing " + streamout.lstrip(cm.lightshow.stream_song_delim)
+                    os.system(cm.lightshow.songname_command + " \"" + now_playing + "\"")
+
             if cm.lightshow.stream_song_exit_count > 0 and songcount > cm.lightshow.stream_song_exit_count:
                 break
-            print streamout
+#            print streamout
 
         try:
             data = stream_reader()
