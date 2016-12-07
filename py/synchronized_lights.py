@@ -183,7 +183,8 @@ def end_early():
         except NameError:
             pass
         os.kill(streaming.pid, signal.SIGINT)
-        os.unlink(cm.lightshow.fifo)
+        if cm.lightshow.use_fifo:
+            os.unlink(cm.lightshow.fifo)
 
 
 atexit.register(end_early)
@@ -380,16 +381,17 @@ def audio_in():
         except Empty:
             pass
         else:
+            print streamout
             if cm.lightshow.stream_song_delim in streamout:
                 songcount+=1
-#                print "LightShowPi : Song number " + str(songcount)
                 if cm.lightshow.songname_command:
-                    now_playing = "Now Playing " + streamout.lstrip(cm.lightshow.stream_song_delim)
-                    os.system(cm.lightshow.songname_command + " \"" + now_playing + "\"")
+                    streamout = streamout.replace('\033[2K','')
+                    streamout = streamout.replace(cm.lightshow.stream_song_delim,'')
+                    streamout = streamout.replace('"','')
+                    os.system(cm.lightshow.songname_command + ' "Now Playing ' + streamout + '"')
 
             if cm.lightshow.stream_song_exit_count > 0 and songcount > cm.lightshow.stream_song_exit_count:
                 break
-#            print streamout
 
         try:
             data = stream_reader()
