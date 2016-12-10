@@ -240,8 +240,13 @@ class Configuration(object):
         lghtshw["input_channels"] = self.config.getint(ls, 'input_channels')
         lghtshw["input_sample_rate"] = self.config.getint(ls, 'input_sample_rate')
 
+	lghtshw["songname_command"] = self.config.get(ls, 'songname_command')
+
         command_string = self.config.get(ls, 'stream_command_string')
         lghtshw["stream_command_string"] = shlex.split(command_string)
+
+        lghtshw["stream_song_delim"] = self.config.get(ls, 'stream_song_delim')
+        lghtshw["stream_song_exit_count"] = self.config.getint(ls, 'stream_song_exit_count')
 
         playlist_path = self.config.get(ls, 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)

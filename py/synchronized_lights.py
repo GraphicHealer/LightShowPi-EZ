@@ -83,12 +83,15 @@ import errno
 import stat
 import curses
 import bright_curses
+import mutagen
 
 from collections import deque
 import Platform
 import fft
 from prepostshow import PrePostShow
 import RunningStats
+from Queue import Queue, Empty
+from threading import Thread
 
 
 # Make sure SYNCHRONIZED_LIGHTS_HOME environment variable is set
@@ -180,13 +183,15 @@ def end_early():
         except NameError:
             pass
         os.kill(streaming.pid, signal.SIGINT)
-        os.unlink(cm.lightshow.fifo)
+        if cm.lightshow.use_fifo:
+            os.unlink(cm.lightshow.fifo)
 
 
 atexit.register(end_early)
 
 # Remove traceback on Ctrl-C
 signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+signal.signal(signal.SIGTERM, lambda x, y: sys.exit(0))
 
 
 def update_lights(matrix, mean, std):
@@ -284,12 +289,17 @@ def set_audio_device(sample_rate, num_channels):
     else:
         return lambda raw_data: None
 
+def enqueue_output(out, queue):
+    for line in iter(out.readline, b''):
+        queue.put(line)
+    out.close()
 
 def audio_in():
     """Control the lightshow from audio coming in from a real time audio"""
     global streaming
     stream_reader = None
     streaming = None
+    songcount = 0
 
     sample_rate = cm.lightshow.input_sample_rate
     num_channels = cm.lightshow.input_channels
@@ -306,6 +316,8 @@ def audio_in():
 
     elif cm.lightshow.mode == 'stream-in':
 
+        outq = Queue()
+
         if cm.lightshow.use_fifo:
             streaming = subprocess.Popen(cm.lightshow.stream_command_string,
                                          stdin=subprocess.PIPE,
@@ -313,6 +325,7 @@ def audio_in():
                                          preexec_fn=os.setsid)
             io = os.open(cm.lightshow.fifo, os.O_RDONLY | os.O_NONBLOCK)
             stream_reader = lambda: os.read(io, CHUNK_SIZE)
+            outthr = Thread(target=enqueue_output, args=(streaming.stdout, outq))
         else:
             # Open the input stream from command string
             streaming = subprocess.Popen(cm.lightshow.stream_command_string,
@@ -320,6 +333,10 @@ def audio_in():
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE)
             stream_reader = lambda: streaming.stdout.read(CHUNK_SIZE)
+            outthr = Thread(target=enqueue_output, args=(streaming.stderr, outq))
+
+        outthr.daemon = True
+        outthr.start()
 
     log.debug("Running in %s mode - will run until Ctrl+C is pressed" % cm.lightshow.mode)
     print "Running in %s mode, use Ctrl+C to stop" % cm.lightshow.mode
@@ -358,6 +375,24 @@ def audio_in():
 
     # Listen on the audio input device until CTRL-C is pressed
     while True:
+
+        try:
+            streamout = outq.get_nowait().strip('\n\r')
+        except Empty:
+            pass
+        else:
+            print streamout
+            if cm.lightshow.stream_song_delim in streamout:
+                songcount+=1
+                if cm.lightshow.songname_command:
+                    streamout = streamout.replace('\033[2K','')
+                    streamout = streamout.replace(cm.lightshow.stream_song_delim,'')
+                    streamout = streamout.replace('"','')
+                    os.system(cm.lightshow.songname_command + ' "Now Playing ' + streamout + '"')
+
+            if cm.lightshow.stream_song_exit_count > 0 and songcount > cm.lightshow.stream_song_exit_count:
+                break
+
         try:
             data = stream_reader()
 
@@ -757,6 +792,13 @@ def get_song():
         cm.update_state('current_song', str(songs.index(current_song)))
 
     song_filename = song_filename.replace("$SYNCHRONIZED_LIGHTS_HOME", cm.home_dir)
+
+    if cm.lightshow.songname_command:
+        metadata = mutagen.File(song_filename, easy=True)
+        if not metadata is None:
+            if "title" in metadata:
+                now_playing = "Now Playing " + metadata["title"][0] + " by " + metadata["artist"][0]
+                os.system(cm.lightshow.songname_command + " \"" + now_playing + "\"")
 
     filename = os.path.abspath(song_filename)
     config_filename = os.path.dirname(filename) + "/." + os.path.basename(song_filename) + ".cfg"
