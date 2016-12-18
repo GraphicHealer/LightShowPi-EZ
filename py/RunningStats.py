@@ -19,7 +19,8 @@ Third party dependencies:
 numpy: for calculation
     http://www.numpy.org/
 """
-import numpy
+
+from numpy import *
 
 
 class Stats(object):
@@ -30,43 +31,42 @@ class Stats(object):
         :type length: int
         """
         self.length = length
-        self.empty = numpy.zeros(length, dtype='float32')
         self.clear()
         self.sample_count = 0
-        self.old_mean = self.empty
-        self.old_std = self.empty
-        self.new_mean = self.empty
-        self.new_std = self.empty
+        self.old_mean = zeros(length, dtype='float32')
+        self.old_std = zeros(length, dtype='float32')
+        self.new_mean = zeros(length, dtype='float32')
+        self.new_std = zeros(length, dtype='float32')
 
     def clear(self):
         self.sample_count = 0
-        self.old_mean = self.empty
-        self.old_std = self.empty
-        self.new_mean = self.empty
-        self.new_std = self.empty
+        self.old_mean = zeros(self.length, dtype='float32')
+        self.old_std = zeros(self.length, dtype='float32')
+        self.new_mean = zeros(self.length, dtype='float32')
+        self.new_std = zeros(self.length, dtype='float32')
 
-    def preload(self, mean, std, sample_count=2):
-        """Add a starting samples to the running standard deviation and mean
+    def preload(self, mean_value, std_value, sample_count=2):
+        """Add a starting samples to the running standard deviation and mean_value
         
         This data does not need to be accurate.  It is only a base starting
         point for our light show.  With out preloading some values the show 
         will start with all lights on and then slowly change to what we want
         to see.  
         
-        :param mean: new sample mean starting point
-        :type mean: numpy array
-        :param std: new sample standard deviation starting point
-        :type std: numpy array
+        :param mean_value: new sample mean_value starting point
+        :type mean_value: numpy array
+        :param std_value: new sample standard deviation starting point
+        :type std_value: numpy array
         :param sample_count: how many samples to start with (min 2)
         :type sample_count: int
         """
-        if len(mean) == self.length and len(
-                std) == self.length and sample_count > 1 and self.sample_count == 0:
+        if len(mean_value) == self.length and len(
+                std_value) == self.length and sample_count > 1 and self.sample_count == 0:
             # cast all arrays to numpy just to make sure the data type is correct
-            self.new_mean = numpy.array(mean, dtype='float32')
-            self.new_std = numpy.array(std, dtype='float32')
-            self.old_mean = numpy.array(mean, dtype='float32')
-            self.old_std = numpy.array(std, dtype='float32')
+            self.new_mean = array(mean_value, dtype='float32')
+            self.new_std = array(std_value, dtype='float32')
+            self.old_mean = array(mean_value, dtype='float32')
+            self.old_std = array(std_value, dtype='float32')
             self.sample_count = sample_count
 
     def push(self, data):
@@ -81,7 +81,7 @@ class Stats(object):
         if self.sample_count == 1:
             self.old_mean = self.new_mean
             self.new_mean = data
-            self.old_std = self.empty
+            self.old_std = zeros(length, dtype='float32')
         else:
             self.new_mean = self.old_mean + (data - self.old_mean) / self.sample_count
             self.new_std = self.old_std + (data - self.old_mean) * (data - self.new_mean)
@@ -115,7 +115,7 @@ class Stats(object):
         if self.sample_count > 1:
             return self.new_std / (self.sample_count - 1.0)
         else:
-            return self.empty
+            return zeros(length, dtype='float32')
 
     def std(self):
         """Get the current standard deviation 
@@ -123,4 +123,4 @@ class Stats(object):
         :return: current standard deviation
         :rtype: numpy array
         """
-        return numpy.sqrt(self.variance())
+        return sqrt(self.variance())

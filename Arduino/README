@@ -1,0 +1,103 @@
+Thanks to Maniacal Labs for making the open source BiblioPixel Library and
+the firmware to the AllPixel open source as well.
+
+To setup your Arduino for use with lightshowpi you will need to get some
+information about your Arduino.
+
+First you will need your device address.
+Getting the address from the command line is simple
+Without your Arduino pluged in type in the command
+ls /dev/tty*
+
+example output
+pi@raspberrypi:~/lightshowpi/py $ ls /dev/tty*
+/dev/tty    /dev/tty17  /dev/tty26  /dev/tty35  /dev/tty44  /dev/tty53  /dev/tty62
+/dev/tty0   /dev/tty18  /dev/tty27  /dev/tty36  /dev/tty45  /dev/tty54  /dev/tty63
+/dev/tty1   /dev/tty19  /dev/tty28  /dev/tty37  /dev/tty46  /dev/tty55  /dev/tty7
+/dev/tty10  /dev/tty2   /dev/tty29  /dev/tty38  /dev/tty47  /dev/tty56  /dev/tty8
+/dev/tty11  /dev/tty20  /dev/tty3   /dev/tty39  /dev/tty48  /dev/tty57  /dev/tty9
+/dev/tty12  /dev/tty21  /dev/tty30  /dev/tty4   /dev/tty49  /dev/tty58  /dev/ttyAMA0
+/dev/tty13  /dev/tty22  /dev/tty31  /dev/tty40  /dev/tty5   /dev/tty59  /dev/ttyprintk
+/dev/tty14  /dev/tty23  /dev/tty32  /dev/tty41  /dev/tty50  /dev/tty6
+/dev/tty15  /dev/tty24  /dev/tty33  /dev/tty42  /dev/tty51  /dev/tty60
+/dev/tty16  /dev/tty25  /dev/tty34  /dev/tty43  /dev/tty52  /dev/tty61
+pi@raspberrypi:~/lightshowpi/py $ 
+
+Now plug in your arduino and issue the same command
+
+pi@raspberrypi:~/lightshowpi/py $ ls /dev/tty*
+/dev/tty    /dev/tty17  /dev/tty26  /dev/tty35  /dev/tty44  /dev/tty53  /dev/tty62
+/dev/tty0   /dev/tty18  /dev/tty27  /dev/tty36  /dev/tty45  /dev/tty54  /dev/tty63
+/dev/tty1   /dev/tty19  /dev/tty28  /dev/tty37  /dev/tty46  /dev/tty55  /dev/tty7
+/dev/tty10  /dev/tty2   /dev/tty29  /dev/tty38  /dev/tty47  /dev/tty56  /dev/tty8
+/dev/tty11  /dev/tty20  /dev/tty3   /dev/tty39  /dev/tty48  /dev/tty57  /dev/tty9
+/dev/tty12  /dev/tty21  /dev/tty30  /dev/tty4   /dev/tty49  /dev/tty58  /dev/ttyACM0
+/dev/tty13  /dev/tty22  /dev/tty31  /dev/tty40  /dev/tty5   /dev/tty59  /dev/ttyAMA0
+/dev/tty14  /dev/tty23  /dev/tty32  /dev/tty41  /dev/tty50  /dev/tty6   /dev/ttyprintk
+/dev/tty15  /dev/tty24  /dev/tty33  /dev/tty42  /dev/tty51  /dev/tty60
+/dev/tty16  /dev/tty25  /dev/tty34  /dev/tty43  /dev/tty52  /dev/tty61
+
+There is a new entry in this case it's /dev/ttyACM0
+For one of my clones it /dev/ttyUSB0
+So yours may vary depending on what your device is.
+
+The next thing that we need is the hardware ID of your device in "VID:PID" form
+The command for that is lsusb
+
+pi@raspberrypi:~/lightshowpi/py $ lsusb
+Bus 001 Device 025: ID 2341:0043 Arduino SA Uno R3 (CDC ACM)
+Bus 001 Device 003: ID 0424:ec00 Standard Microsystems Corp. SMSC9512/9514 Fast Ethernet Adapter
+Bus 001 Device 002: ID 0424:9514 Standard Microsystems Corp. 
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+
+That one was easy it says Arduino right on it
+VID:PID for the above is 2341:0043
+
+pi@raspberrypi:~/lightshowpi/py $ lsusb
+Bus 001 Device 026: ID 1a86:7523 QinHeng Electronics HL-340 USB-Serial adapter
+Bus 001 Device 003: ID 0424:ec00 Standard Microsystems Corp. SMSC9512/9514 Fast Ethernet Adapter
+Bus 001 Device 002: ID 0424:9514 Standard Microsystems Corp. 
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+pi@raspberrypi:~/lightshowpi/py $ 
+
+For this clone it not as clear
+1a86:7523 QinHeng Electronics HL-340 USB-Serial adapter
+
+So again you might want to run lsusb without the Arduino pluged in then with 
+to see the difference.
+
+So that is how you get your device address and hardware ID for the lightshowpi 
+config.  
+
+So now we need to burn our sketch to the Arduino, I'll leave that for you.
+
+But there are a few variables that you have an option of changing.  They are 
+all in the global.h file.
+
+SPI_DATA, SPI_CLOCK, ONEWIREPIN, rebootPin
+
+For SPI_DATA and SPI_CLOCK there are examples in there, just uncomment the 
+one you want to use.  But doing so is not nessary, if your Arduino has an ICSP
+header then you can use that and not have to change a thing. Included is ICSPHeader.jpg
+
+
+The only reason to change the ONEWIREPIN is if you are using it for something else
+
+The rebootPin, again the only reason to change it is if you are using that pin for 
+something else.
+
+Now that our sketch is loaded on the Arduino all we have to do is hook up the wires
+
+1) connect a jumper from the rest pin to pin 15
+2) connect your led strip data line to pin 4 on the ICSP header for spi controled strips
+   or to your Arduinos pin 2 for led strips that do not have a clock line
+3) if your strip has a clock line the connect it to pin 3 on the ICSP header
+4) connect your led strips to their power source.  Use an external source, do not power
+   them from you Arduino
+5) run a common ground from the led strip or external power supply to any of the ground
+   pins on the arduino.  pin 6 on the ICSP header is a ground for example.
+6) using a usb cable hook you RPI to your Arduino.
+
+
+
+

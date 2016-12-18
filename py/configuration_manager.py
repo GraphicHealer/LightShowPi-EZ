@@ -15,6 +15,7 @@ manage these configuration files.
 
 import ConfigParser
 import ast
+import csv
 import datetime
 import fcntl
 import logging
@@ -28,10 +29,14 @@ from collections import defaultdict
 
 # The home directory and configuration directory for the application.
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
+
+# HOME_DIR = '/home/tom/current/lightshowpi-led'
+
 if not HOME_DIR:
     print("Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, "
           "see readme")
     sys.exit()
+
 CONFIG_DIR = HOME_DIR + '/config'
 LOG_DIR = HOME_DIR + '/logs'
 
@@ -61,9 +66,11 @@ class Configuration(object):
     def __init__(self, sms=False):
         self.gpio_len = None
         self.playlist = None
+        self.playlist_path = None
 
         # path and file locations
         self.home_dir = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
+        # self.home_dir = HOME_DIR
         self.config_dir = self.home_dir + "/config/"
         self.log_dir = self.home_dir + "/logs/"
         self.state_file = self.config_dir + "state.cfg"
@@ -89,24 +96,42 @@ class Configuration(object):
             self.lightshow = None
             self.audio_processing = None
             self.network = None
-            self.terminal = None
+            self.fm = None
+            self.led = None
 
             self.set_hardware()
+            self.set_fm()
+            self.set_led()
             self.set_lightshow()
             self.set_audio_processing()
             self.set_network()
-            self.set_terminal()
         else:
             self.sms = None
             self.who_can = dict()
-            self.throttlestate = dict()
+            self.throttle_state = dict()
             self.set_sms()
 
     def load_config(self):
         """Load config files into ConfigParser instance"""
         self.config.readfp(open(self.config_dir + '/defaults.cfg'))
-        self.config.read([self.config_dir + '/overrides.cfg', '/home/pi/.lights.cfg',
-                          os.path.expanduser('~/.lights.cfg')])
+
+        defaults = list()
+        for c_files in os.listdir(self.config_dir):
+            if c_files.endswith(".cfg"):
+                if c_files != "defaults.cfg" and \
+                              c_files != "state.cfg" and \
+                              "overrides" not in c_files:
+                    defaults.append(self.config_dir + c_files)
+
+        overrides = list()
+        for co_files in os.listdir(self.config_dir):
+            if co_files.endswith(".cfg") and "overrides" in co_files:
+                overrides.append(self.config_dir + co_files)
+
+        for config_file in defaults:
+            self.config.readfp(open(config_file))
+
+        self.config.read(overrides)
 
     # handle the program state / next 3 methods
     def load_state(self):
@@ -176,10 +201,16 @@ class Configuration(object):
                 for k, v in settings[count].iteritems():
                     settings[count][k] = v if not isinstance(v, str) else int(v, 16)
 
-        hrdwr["gpio_pins"] = map(int, self.config.get('hardware', 'gpio_pins').split(","))
+        g_pins = self.config.get('hardware', 'gpio_pins')
+        try:
+            hrdwr["gpio_pins"] = map(int, g_pins.split(","))
+        except (AttributeError, ValueError):
+            hrdwr["gpio_pins"] = list()
+
         self.gpio_len = len(hrdwr["gpio_pins"])
 
         hrdwr["gpio_len"] = len(hrdwr["gpio_pins"])
+        hrdwr["physical_gpio_len"] = hrdwr["gpio_len"]
 
         temp = self.config.get('hardware', 'pin_modes').split(",")
         if len(temp) != 1:
@@ -187,10 +218,132 @@ class Configuration(object):
         else:
             hrdwr["pin_modes"] = [temp[0] for _ in range(self.gpio_len)]
 
+        hrdwr["is_pin_pwm"] = [True if pin == "pwm" else False for pin in hrdwr["pin_modes"]]
+
         hrdwr["pwm_range"] = int(self.config.get('hardware', 'pwm_range'))
         hrdwr["active_low_mode"] = self.config.getboolean('hardware', 'active_low_mode')
+        hrdwr["piglow"] = self.config.getboolean('hardware', 'piglow')
 
         self.hardware = Section(hrdwr)
+
+    def set_led(self):
+        """
+        Retrieves the fm configuration parsing it from the Config Parser as necessary.
+        """
+        led = dict()
+
+        lc = self.config.get('led', 'led_configuration').upper()
+        st = self.config.get('led', 'strip_type').upper()
+        sst = ["APA102", "LPD8806", "WS2801", "WS2811", "WS2812",
+               "WS2812B", "NEOPIXEL", "WS2811_400", "APA104",
+               "TM1803", "TM1804", "TM1809", "UCS1903", "SM16716",
+               "LPD1886", "P9813"]
+
+        if lc in ["SERIAL", "MATRIX", "SPI"]:
+            led["led_configuration"] = lc
+        else:
+            led["led_configuration"] = None
+
+        if st in sst[0:3] and lc == "SPI":
+            led["strip_type"] = st
+        elif lc in ["SERIAL", "MATRIX"] and st in sst:
+            led["strip_type"] = st
+        else:
+            led["strip_type"] = None
+
+        c_order = self.config.get('led', 'channel_order').upper()
+        if c_order in ["RGB", "RBG", "GRB", "GBR", "BRG", "BGR"]:
+            led["channel_order"] = c_order
+        else:
+            led["channel_order"] = "RGB"
+        
+        led["led_channel_configuration"] = self.config.get('led', 'led_channel_configuration').upper()
+
+        led_count = self.config.getint('led', 'led_channel_count')
+        if led["led_configuration"]:
+
+            led["led_count"] = led_count
+            gpio_len = self.hardware.get("gpio_len")
+
+            if led["led_channel_configuration"] == "MIRROR":
+                led["led_count"] = gpio_len
+            
+            elif led["led_channel_configuration"] == "LEDONLY":
+                self.hardware.set_value("gpio_len", led_count)
+                self.hardware.set_value("physical_gpio_len", 0) 
+                
+                if led_count > gpio_len:
+                    gpio_pins = self.hardware.get("gpio_pins")
+                    gpio_pins.extend([_ + 1000 for _ in range(led_count - gpio_len)])
+                    self.hardware.set_value("gpio_pins", gpio_pins)
+
+                    pin_modes = self.hardware.get("pin_modes")
+                    pin_modes.extend(["pwm" for _ in range(led_count - gpio_len)])
+                    self.hardware.set_value("pin_modes", pin_modes)
+
+                    is_pin_pwm = self.hardware.get("is_pin_pwm")
+                    is_pin_pwm.extend([True for _ in range(led_count - gpio_len)])
+                    self.hardware.set_value("is_pin_pwm", is_pin_pwm)
+
+            elif led["led_channel_configuration"] == "EXTEND":
+                self.hardware.set_value("gpio_len", gpio_len + led_count)
+                self.hardware.set_value("physical_gpio_len", gpio_len)
+
+                gpio_pins = self.hardware.get("gpio_pins")
+                gpio_pins.extend([_ + 1000 for _ in range(led_count)])
+                self.hardware.set_value("gpio_pins", gpio_pins)
+
+                pin_modes = self.hardware.get("pin_modes")
+                pin_modes.extend(["pwm" for _ in range(led_count)])
+                self.hardware.set_value("pin_modes", pin_modes)
+
+                is_pin_pwm = self.hardware.get("is_pin_pwm")
+                is_pin_pwm.extend([True for _ in range(led_count)])
+                self.hardware.set_value("is_pin_pwm", is_pin_pwm)
+        else:
+            led["led_count"] = 0
+
+        led["max_brightness"] = self.config.getint('led', 'max_brightness')
+        led["per_channel"] = self.config.getint('led', 'per_channel')
+
+        led["pattern_color_map"] = self.config.get('led', 'pattern_color_map').upper()
+        led["pattern_color"] = map(int, self.config.get('led', 'pattern_color').split(","))
+        led["pattern_type"] = self.config.get('led', 'pattern_type').upper()
+
+        device_id = self.config.getint('led', 'device_id')
+        if 0 <= device_id <= 255:
+            led["device_id"] = device_id
+        else:
+            led["device_id"] = None
+
+        led["device_address"] = self.config.get('led', 'device_address')
+        led["hardware_id"] = self.config.get('led', 'hardware_id')
+        if led["hardware_id"] == "":
+            led["hardware_id"] = "1D50:60AB"
+        led["baud_rate"] = self.config.getint('led', 'baud_rate')
+        led["update_throttle"] = self.config.getint('led', 'update_throttle')
+
+        led["matrix_width"] = self.config.getint('led', 'matrix_width')
+        led["matrix_height"] = self.config.getint('led', 'matrix_height')
+        led["matrix_pattern_type"] = self.config.get('led', 'matrix_pattern_type').upper()
+
+        file_name = self.config.get('led', 'image_path').replace('$SYNCHRONIZED_LIGHTS_HOME',
+                                                                 self.home_dir)
+        if os.path.isfile(file_name):
+            led["image_path"] = file_name
+        else:
+            led["image_path"] = self.home_dir + "/16xstar.gif"
+
+        self.led = Section(led)
+
+    def set_fm(self):
+        """
+        Retrieves the fm configuration parsing it from the Config Parser as necessary.
+        """
+        fm = dict()
+        fm["enabled"] = self.config.getboolean('fm', 'fm')
+        fm["frequency"] = self.config.get('fm', 'frequency')
+        self.fm = Section(fm)
 
     def set_network(self):
         """
@@ -214,14 +367,6 @@ class Configuration(object):
 
         self.network = Section(ntwrk)
 
-    def set_terminal(self):
-        """
-        Retrieves the terminal configuration parsing it from the Config Parser as necessary.
-        """
-        term = dict()
-        term["enabled"] = self.config.getboolean('terminal', 'enabled')
-        self.terminal = Section(term)
-
     def set_lightshow(self):
         """
         Retrieve the lightshow configuration loading and parsing it from a file as necessary.
@@ -233,20 +378,15 @@ class Configuration(object):
         lghtshw["fifo"] = "/tmp/audio"
         lghtshw["audio_in_card"] = self.config.get(ls, 'audio_in_card')
         lghtshw["audio_out_card"] = self.config.get(ls, 'audio_out_card')
-        
+
         if lghtshw["use_fifo"]:
             lghtshw["audio_out_card"] = ""
-            
+
         lghtshw["input_channels"] = self.config.getint(ls, 'input_channels')
         lghtshw["input_sample_rate"] = self.config.getint(ls, 'input_sample_rate')
 
-	lghtshw["songname_command"] = self.config.get(ls, 'songname_command')
-
         command_string = self.config.get(ls, 'stream_command_string')
         lghtshw["stream_command_string"] = shlex.split(command_string)
-
-        lghtshw["stream_song_delim"] = self.config.get(ls, 'stream_song_delim')
-        lghtshw["stream_song_exit_count"] = self.config.getint(ls, 'stream_song_exit_count')
 
         playlist_path = self.config.get(ls, 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
@@ -257,10 +397,10 @@ class Configuration(object):
 
         lghtshw["randomize_playlist"] = self.config.getboolean(ls, 'randomize_playlist')
 
-        onc = "always_on_channels"
-        lghtshw[onc] = map(int, self.config.get(ls, onc).split(","))
-        offc = "always_off_channels"
-        lghtshw[offc] = map(int, self.config.get(ls, offc).split(","))
+        on_c = "always_on_channels"
+        lghtshw[on_c] = map(int, self.config.get(ls, on_c).split(","))
+        off_c = "always_off_channels"
+        lghtshw[off_c] = map(int, self.config.get(ls, off_c).split(","))
         ic = "invert_channels"
         lghtshw[ic] = map(int, self.config.get(ls, ic).split(","))
 
@@ -299,6 +439,7 @@ class Configuration(object):
         lghtshw['postshow'] = postshow
         lghtshw["decay_factor"] = self.config.getfloat(ls, 'decay_factor')
         lghtshw["attenuate_pct"] = self.config.getfloat(ls, 'attenuate_pct')
+        lghtshw["light_delay"] = self.config.getfloat(ls, 'light_delay')
 
         lghtshw["log_level"] = self.config.get(ls, 'log_level').upper()
 
@@ -313,9 +454,7 @@ class Configuration(object):
         Retrieve the audio processing configuration loading and parsing it from a file as necessary.
         """
         audio_prcssng = dict()
-        audio_prcssng["fm"] = self.config.getboolean('audio_processing', 'fm')
-        audio_prcssng["frequency"] = self.config.get('audio_processing', 'frequency')
-        audio_prcssng["light_delay"] = self.config.getfloat('audio_processing', 'light_delay')
+        audio_prcssng["chunk_size"] = self.config.getint('audio_processing', 'chunk_size')
         audio_prcssng["min_frequency"] = \
             self.config.getfloat('audio_processing', 'min_frequency')
         audio_prcssng["max_frequency"] = \
@@ -349,7 +488,7 @@ class Configuration(object):
 
         playlist_path = self.config.get('lightshow', 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
-        
+
         if playlist_path:
             shrtmssgsrvc["playlist_path"] = playlist_path
         else:
@@ -407,22 +546,53 @@ class Configuration(object):
 
         self.sms = Section(shrtmssgsrvc)
 
-    def get_playlist(self):
-        """Retrieve the song list
+    def get_playlist(self, play_list=None):
+        play_list = play_list or self.playlist_path
 
-        :return: a list of songs
-        :rtype: list
-        """
-        return self.playlist
+        with open(play_list, 'rb') as playlist_fp:
+            fcntl.lockf(playlist_fp, fcntl.LOCK_SH)
+            playlist = csv.reader(playlist_fp, delimiter='\t')
+            songs = list()
 
-    def set_playlist(self, songs):
-        """Sets the list of songs
+            for song in playlist:
+                if len(song) < 2 or len(song) > 4:
+                    log.error('Invalid playlist.  Each line should be in the form: '
+                              '<song name><tab><path to song>')
+                    log.warning('Removing invalid entry')
+                    print "Error found in playlist"
+                    print "Deleting entry:", song
+                    continue
 
-        if loaded elsewhere, as is done by check_sms for example
+                elif len(song) > 2:
+                    song[2] = set(song[2].split(','))
 
-        :param song_list: a list of songs
-        :type song_list: list
-        """
+                elif len(song) == 2:
+                    song.append(set())
+
+                songs.append(song)
+
+            fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
+
+        self.playlist = songs
+
+        return songs
+
+    def set_playlist(self, songs, playlist=None):
+        playlist = playlist or self.playlist_path
+
+        with open(playlist, 'wb') as playlist_fp:
+            fcntl.lockf(playlist_fp, fcntl.LOCK_EX)
+            writer = csv.writer(playlist_fp, delimiter='\t')
+
+            for song in songs:
+                if len(song[2]) > 0:
+                    song[2] = ",".join(song[2])
+                else:
+                    del song[2]
+
+            writer.writerows(songs)
+            fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
+
         self.playlist = songs
 
     def has_permission(self, user, cmd):
@@ -455,60 +625,59 @@ class Configuration(object):
         """
         # Load throttle STATE
         self.load_state()
-        self.throttlestate = ast.literal_eval(self.get_state('throttle', '{}'))
-        processcommandflag = -1
+        self.throttle_state = ast.literal_eval(self.get_state('throttle', '{}'))
+        process_command_flag = -1
 
         # Analyze throttle timing
-        currenttimestamp = datetime.datetime.now()
-        throttletimelimit = self.sms.throttle_time_limit_seconds
+        current_time_stamp = datetime.datetime.now()
+        throttle_time_limit = self.sms.throttle_time_limit_seconds
 
-        if "throttle_timestamp_start" in self.throttlestate:
-            throttlestarttime = datetime.datetime.strptime(
-                self.throttlestate['throttle_timestamp_start'], '%Y-%m-%d %H:%M:%S.%f')
+        if "throttle_timestamp_start" in self.throttle_state:
+            throttle_start_time = datetime.datetime.strptime(
+                self.throttle_state['throttle_timestamp_start'], '%Y-%m-%d %H:%M:%S.%f')
         else:
-            throttlestarttime = currenttimestamp
+            throttle_start_time = current_time_stamp
 
-        delta = datetime.timedelta(seconds=int(throttletimelimit))
-        throttlestoptime = throttlestarttime + delta
+        delta = datetime.timedelta(seconds=int(throttle_time_limit))
+        throttle_stop_time = throttle_start_time + delta
 
         # Compare times and see if we need to reset the throttle STATE
-        if (currenttimestamp == throttlestarttime) or \
-                (throttlestoptime < currenttimestamp):
+        if (current_time_stamp == throttle_start_time) or (throttle_stop_time < current_time_stamp):
             # There is no time recorded or the time 
             # has expired reset the throttle STATE
-            self.throttlestate = dict()
-            self.throttlestate['throttle_timestamp_start'] = str(currenttimestamp)
-            self.update_state('throttle', self.throttlestate)
+            self.throttle_state = dict()
+            self.throttle_state['throttle_timestamp_start'] = str(current_time_stamp)
+            self.update_state('throttle', self.throttle_state)
 
         # ANALYZE THE THROTTLE COMMANDS AND LIMITS
-        allthrottlelimit = -1
-        cmdthrottlelimit = -1
+        all_throttle_limit = -1
+        cmd_throttle_limit = -1
 
         # Check to see what group belongs to starting with the first 
         # group declared
         throttled_group = None
         for group in self.sms.groups:
-            userlist = self.sms.get(group + "_users")
+            user_list = self.sms.get(group + "_users")
 
-            if user in userlist:
+            if user in user_list:
                 # The user belongs to this group, check if there are any 
                 # throttle definitions
                 if group in self.sms.throttled_groups:
                     # The group has throttle commands defined, now check if 
                     # the command is defined
-                    throttledcommands = self.sms.throttled_groups[group]
+                    throttled_commands = self.sms.throttled_groups[group]
 
                     # Check if all command exists
-                    if "all" in throttledcommands:
-                        allthrottlelimit = int(throttledcommands['all'])
+                    if "all" in throttled_commands:
+                        all_throttle_limit = int(throttled_commands['all'])
 
                     # Check if the command passed is defined
-                    if cmd in throttledcommands:
-                        cmdthrottlelimit = int(throttledcommands[cmd])
+                    if cmd in throttled_commands:
+                        cmd_throttle_limit = int(throttled_commands[cmd])
 
                     # A throttle definition was found, we no longer need to 
                     # check anymore groups
-                    if allthrottlelimit != -1 or cmdthrottlelimit != -1:
+                    if all_throttle_limit != -1 or cmd_throttle_limit != -1:
                         throttled_group = group
                         break
 
@@ -519,49 +688,49 @@ class Configuration(object):
         else:
             # Throttle limits were found, check them against throttle STATE 
             # limits
-            if throttled_group in self.throttlestate:
-                groupthrottlestate = self.throttlestate[throttled_group]
+            if throttled_group in self.throttle_state:
+                group_throttle_state = self.throttle_state[throttled_group]
             else:
-                groupthrottlestate = dict()
+                group_throttle_state = dict()
 
-            if cmd in groupthrottlestate:
-                groupthrottlecmdlimit = int(groupthrottlestate[cmd])
+            if cmd in group_throttle_state:
+                group_throttle_cmd_limit = int(group_throttle_state[cmd])
             else:
-                groupthrottlecmdlimit = 0
+                group_throttle_cmd_limit = 0
 
         # Check to see if we need to apply "all"
-        if allthrottlelimit != -1:
+        if all_throttle_limit != -1:
 
-            if 'all' in groupthrottlestate:
-                groupthrottlealllimit = int(groupthrottlestate['all'])
+            if 'all' in group_throttle_state:
+                group_throttle_all_limit = int(group_throttle_state['all'])
             else:
-                groupthrottlealllimit = 0
+                group_throttle_all_limit = 0
 
             # Check if "all" throttle limit has been reached
-            if groupthrottlealllimit < allthrottlelimit:
+            if group_throttle_all_limit < all_throttle_limit:
                 # Not Reached, bump throttle and record
-                groupthrottlealllimit += 1
-                groupthrottlestate['all'] = groupthrottlealllimit
-                self.throttlestate[throttled_group] = groupthrottlestate
-                processcommandflag = False
+                group_throttle_all_limit += 1
+                group_throttle_state['all'] = group_throttle_all_limit
+                self.throttle_state[throttled_group] = group_throttle_state
+                process_command_flag = False
             else:
-                # "all" throttle has been reached we dont want to process 
+                # "all" throttle has been reached we don't want to process 
                 # anything else
                 return True
 
         # Check to see if we need to apply "cmd"
-        if cmdthrottlelimit != -1:
-            if groupthrottlecmdlimit < cmdthrottlelimit:
+        if cmd_throttle_limit != -1:
+            if group_throttle_cmd_limit < cmd_throttle_limit:
                 # Not reached, bump throttle
-                groupthrottlecmdlimit += 1
-                groupthrottlestate[cmd] = groupthrottlecmdlimit
-                self.throttlestate[throttled_group] = groupthrottlestate
-                processcommandflag = False
+                group_throttle_cmd_limit += 1
+                group_throttle_state[cmd] = group_throttle_cmd_limit
+                self.throttle_state[throttled_group] = group_throttle_state
+                process_command_flag = False
 
-        # Record the updatedthrottle STATE and return
-        self.update_state('throttle', self.throttlestate)
+        # Record the updated throttle STATE and return
+        self.update_state('throttle', self.throttle_state)
 
-        return processcommandflag
+        return process_command_flag
 
 
 class Section(object):
@@ -609,28 +778,24 @@ if __name__ == "__main__":
     print "Logs directory set:", LOG_DIR
 
     print "\nHardware Configuration"
-    for hkey, hvalue in cm.hardware.config.iteritems():
-        print hkey, "=", hvalue
+    for h_key, h_value in cm.hardware.config.iteritems():
+        print h_key, "=", h_value
 
     print "\nLightshow Configuration"
-    for lkey, lvalue in cm.lightshow.config.iteritems():
-        print lkey, "=", lvalue
+    for l_key, l_value in cm.lightshow.config.iteritems():
+        print l_key, "=", l_value
 
     print "\nAudio Processing Configuration"
-    for akey, avalue in cm.audio_processing.config.iteritems():
-        print akey, "=", avalue
-
-    print "\nNetwork Configuration"
-    for nkey, nvalue in cm.network.config.iteritems():
-        print nkey, "=", nvalue
+    for a_key, a_value in cm.audio_processing.config.iteritems():
+        print a_key, "=", a_value
 
     print "\nSMS Configuration"
-    for skey, svalue in sms_cm.sms.config.iteritems():
-        print skey, "=", svalue
+    for s_key, s_value in sms_cm.sms.config.iteritems():
+        print s_key, "=", s_value
 
-    for wckey, wcvalue in sms_cm.who_can.iteritems():
-        print wckey, "=", wcvalue
+    for wc_key, wc_value in sms_cm.who_can.iteritems():
+        print wc_key, "=", wc_value
 
-    print "\nTerminal Configuration" 
-    for tkey, tvalue in cm.terminal.config.iteritems(): 
-        print tkey, "=", tvalue
+    print "\nLED Configuration"
+    for led_key, led_value in cm.led.config.iteritems():
+        print led_key, "=", led_value
