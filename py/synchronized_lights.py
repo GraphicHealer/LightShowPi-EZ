@@ -77,6 +77,11 @@ import stat
 import sys
 import time
 import wave
+import curses
+import bright_curses
+import mutagen
+from Queue import Queue, Empty
+from threading import Thread
 
 import alsaaudio as aa
 import decoder
@@ -159,6 +164,7 @@ class Lightshow(object):
         self.cache_filename = None
         self.config_filename = None
         self.song_filename = None
+        self.terminal = None
 
         self.output = lambda raw_data: None
 
@@ -181,12 +187,17 @@ class Lightshow(object):
                 os.remove(cm.lightshow.fifo)
             os.mkfifo(cm.lightshow.fifo, 0777)
 
-        self.chunk_size = 2048  # Use a multiple of 8 (move this to config)
+        self.chunk_size = cm.audio_processing.chunk_size  # Use a multiple of 8 
 
         atexit.register(self.exit_function)
 
         # Remove traceback on Ctrl-C
         signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+        signal.signal(signal.SIGTERM, lambda x, y: sys.exit(0))
+
+        if cm.terminal.enabled:
+            self.terminal = bright_curses.BrightCurses(cm.terminal)
+            curses.wrapper(self.launch_curses)
 
     def exit_function(self):
         """atexit function"""
@@ -249,6 +260,10 @@ class Lightshow(object):
         if self.server:
             self.network.broadcast(brightness)
 
+        if self.terminal:
+            self.terminal.curses_render(brightness)
+            return
+
         for pin in range(len(brightness[:self.physical_gpio_len])):
             hc.set_light(pin, True, brightness[pin])
 
@@ -308,6 +323,7 @@ class Lightshow(object):
 
     def set_audio_source(self):
         stream_reader = None
+        outq = None
 
         if cm.lightshow.mode == 'audio-in':
             # Open the input stream from default input device
@@ -321,6 +337,8 @@ class Lightshow(object):
 
         elif cm.lightshow.mode == 'stream-in':
 
+            outq = Queue()
+
             if cm.lightshow.use_fifo:
                 self.streaming = subprocess.Popen(cm.lightshow.stream_command_string,
                                                   stdin=subprocess.PIPE,
@@ -328,6 +346,7 @@ class Lightshow(object):
                                                   preexec_fn=os.setsid)
                 io = os.open(cm.lightshow.fifo, os.O_RDONLY | os.O_NONBLOCK)
                 stream_reader = lambda: os.read(io, self.chunk_size)
+                outthr = Thread(target=self.enqueue_output, args=(self.streaming.stdout, outq))
             else:
                 # Open the input stream from command string
                 self.streaming = subprocess.Popen(cm.lightshow.stream_command_string,
@@ -335,8 +354,12 @@ class Lightshow(object):
                                                   stdout=subprocess.PIPE,
                                                   stderr=subprocess.PIPE)
                 stream_reader = lambda: self.streaming.stdout.read(self.chunk_size)
+                outthr = Thread(target=self.enqueue_output, args=(self.streaming.stderr, outq))
 
-        return stream_reader
+            outthr.daemon = True
+            outthr.start()
+
+        return stream_reader,outq
 
     def audio_in(self):
         """Control the lightshow from audio coming in from a real time audio"""
@@ -344,7 +367,7 @@ class Lightshow(object):
         self.sample_rate = cm.lightshow.input_sample_rate
         self.num_channels = cm.lightshow.input_channels
 
-        stream_reader = self.set_audio_source()
+        stream_reader,outq = self.set_audio_source()
 
         log.debug("Running in %s mode - will run until Ctrl+C is pressed" % cm.lightshow.mode)
         print "Running in %s mode, use Ctrl+C to stop" % cm.lightshow.mode
@@ -377,8 +400,28 @@ class Lightshow(object):
         if self.server:
             self.network.set_playing()
 
+        songcount = 0 
+
         # Listen on the audio input device until CTRL-C is pressed
         while True:
+
+            try:
+                streamout = outq.get_nowait().strip('\n\r')
+            except Empty:
+                pass
+            else:
+                print streamout
+                if cm.lightshow.stream_song_delim in streamout:
+                    songcount+=1
+                    if cm.lightshow.songname_command:
+                        streamout = streamout.replace('\033[2K','')
+                        streamout = streamout.replace(cm.lightshow.stream_song_delim,'')
+                        streamout = streamout.replace('"','')
+                        os.system(cm.lightshow.songname_command + ' "Now Playing ' + streamout + '"')
+
+                if cm.lightshow.stream_song_exit_count > 0 and songcount > cm.lightshow.stream_song_exit_count:
+                    break
+
             try:
                 data = stream_reader()
 
@@ -714,6 +757,13 @@ class Lightshow(object):
         self.cache_filename = \
             os.path.dirname(filename) + "/." + os.path.basename(self.song_filename) + ".sync"
 
+        if cm.lightshow.songname_command:
+            metadata = mutagen.File(self.song_filename, easy=True)
+            if not metadata is None:
+                if "title" in metadata:
+                    now_playing = "Now Playing " + metadata["title"][0] + " by " + metadata["artist"][0]
+                    os.system(cm.lightshow.songname_command + " \"" + now_playing + "\"")
+
     def play_song(self):
         """Play the next song from the play list (or --file argument)."""
 
@@ -881,6 +931,14 @@ class Lightshow(object):
 
             self.network.close_connection()
             hc.clean_up()
+
+    def launch_curses(self, screen):
+        self.terminal.init(screen)
+
+    def enqueue_output(self, out, queue):
+        for line in iter(out.readline, b''):
+            queue.put(line)
+        out.close()
 
 
 if __name__ == "__main__":

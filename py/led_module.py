@@ -70,7 +70,7 @@ class Led(object):
             self.serial_setup()
             self.led = LEDStrip(self.driver)
             self.write_all = self.write_full
-        elif self.led_config.led_configuration == "MATRIX":
+        elif self.led_config.led_configuration == "SERIALMATRIX":
             self.led_count = self.led_config.matrix_width * self.led_config.matrix_height
             self.serial_setup()
             self.matrix_setup()

@@ -30,8 +30,6 @@ from collections import defaultdict
 # The home directory and configuration directory for the application.
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 
-# HOME_DIR = '/home/tom/current/lightshowpi-led'
-
 if not HOME_DIR:
     print("Need to setup SYNCHRONIZED_LIGHTS_HOME environment variable, "
           "see readme")
@@ -70,7 +68,6 @@ class Configuration(object):
 
         # path and file locations
         self.home_dir = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
-        # self.home_dir = HOME_DIR
         self.config_dir = self.home_dir + "/config/"
         self.log_dir = self.home_dir + "/logs/"
         self.state_file = self.config_dir + "state.cfg"
@@ -97,6 +94,7 @@ class Configuration(object):
             self.audio_processing = None
             self.network = None
             self.fm = None
+            self.terminal = None
             self.led = None
 
             self.set_hardware()
@@ -105,6 +103,7 @@ class Configuration(object):
             self.set_lightshow()
             self.set_audio_processing()
             self.set_network()
+            self.set_terminal()
         else:
             self.sms = None
             self.who_can = dict()
@@ -225,6 +224,14 @@ class Configuration(object):
         hrdwr["piglow"] = self.config.getboolean('hardware', 'piglow')
 
         self.hardware = Section(hrdwr)
+
+    def set_terminal(self):
+        """
+        Retrieves the terminal configuration parsing it from the Config Parser as necessary.
+        """
+        term = dict()
+        term["enabled"] = self.config.getboolean('terminal', 'enabled')
+        self.terminal = Section(term)
 
     def set_led(self):
         """
@@ -385,8 +392,13 @@ class Configuration(object):
         lghtshw["input_channels"] = self.config.getint(ls, 'input_channels')
         lghtshw["input_sample_rate"] = self.config.getint(ls, 'input_sample_rate')
 
+        lghtshw["songname_command"] = self.config.get(ls, 'songname_command')
+
         command_string = self.config.get(ls, 'stream_command_string')
         lghtshw["stream_command_string"] = shlex.split(command_string)
+
+        lghtshw["stream_song_delim"] = self.config.get(ls, 'stream_song_delim')
+        lghtshw["stream_song_exit_count"] = self.config.getint(ls, 'stream_song_exit_count')
 
         playlist_path = self.config.get(ls, 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
@@ -789,6 +801,10 @@ if __name__ == "__main__":
     for a_key, a_value in cm.audio_processing.config.iteritems():
         print a_key, "=", a_value
 
+    print "\nNetwork Configuration"
+    for nkey, nvalue in cm.network.config.iteritems():
+        print nkey, "=", nvalue
+
     print "\nSMS Configuration"
     for s_key, s_value in sms_cm.sms.config.iteritems():
         print s_key, "=", s_value
@@ -799,3 +815,8 @@ if __name__ == "__main__":
     print "\nLED Configuration"
     for led_key, led_value in cm.led.config.iteritems():
         print led_key, "=", led_value
+
+    print "\nTerminal Configuration" 
+    for tkey, tvalue in cm.terminal.config.iteritems(): 
+        print tkey, "=", tvalue
+
