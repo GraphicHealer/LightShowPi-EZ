@@ -53,7 +53,6 @@ class Led(object):
         self.pattern_color_map = self.led_config.pattern_color_map
 
         self.channel_order = getattr(ChannelOrder, self.led_config.channel_order)
-        self.led_count = self.led_config.led_count * self.led_config.per_channel
         self.last = self.led_config.led_count - 1
         self.rgb = list()
         for x in range(self.led_config.led_count):
@@ -62,17 +61,20 @@ class Led(object):
         self.update_skip = self.skip
         self.max_brightness = self.led_config.max_brightness / 100.0
 
-        if self.led_config.led_configuration == "SPI":
-            self.strip_setup()
-            self.led = LEDStrip(self.driver)
-            self.write_all = self.write_full
-        elif self.led_config.led_configuration == "SERIAL":
-            self.serial_setup()
-            self.led = LEDStrip(self.driver)
-            self.write_all = self.write_full
-        elif self.led_config.led_configuration == "SERIALMATRIX":
+        if self.led_config.led_configuration == "STRIP":
+            self.led_count = self.led_config.led_count * self.led_config.per_channel
+        elif self.led_config.led_configuration == "MATRIX":
             self.led_count = self.led_config.matrix_width * self.led_config.matrix_height
+
+        if self.led_config.led_connection == "SPI":
+            self.strip_setup()
+        elif self.led_config.led_connection == "SERIAL":
             self.serial_setup()
+
+        if self.led_config.led_configuration == "STRIP":
+            self.led = LEDStrip(self.driver)
+            self.write_all = self.write_full
+        elif self.led_config.led_configuration == "MATRIX":
             self.matrix_setup()
             self.write_all = self.write_matrix
 
@@ -129,7 +131,7 @@ class Led(object):
         self.write_all(leds)
 
     def write(self, pin, color):
-        if self.led_config.led_configuration == "MATRIX":
+        if self.led_config.led_configuration == "SERIALMATRIX":
             return
 
         self.led.set(pin, scale(color_map[color], color))
@@ -199,6 +201,12 @@ class Led(object):
 
         self.led.all_off()
 
+        if self.p_type == 'SBARS':
+            for y in range(self.led_config.matrix_width):
+                y_ind = int(((self.last + 1.0) / self.led_config.matrix_width) * y)
+                for x_cord in range(int(pin_list[y_ind] * float(self.led_config.matrix_height))):
+                    rgb = color_map[int( 255.0 * float(x_cord) / float(self.led_config.matrix_height) )]
+                    self.led.set(x_cord, y_ind, rgb)
         if self.p_type == 'MBARS':
             norm_arr = [int(x * 255) for x in pin_list]
             self.drops.append(norm_arr)

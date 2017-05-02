@@ -240,20 +240,23 @@ class Configuration(object):
         led = dict()
 
         lc = self.config.get('led', 'led_configuration').upper()
+        lconn = self.config.get('led', 'led_connection').upper()
         st = self.config.get('led', 'strip_type').upper()
         sst = ["APA102", "LPD8806", "WS2801", "WS2811", "WS2812",
                "WS2812B", "NEOPIXEL", "WS2811_400", "APA104",
                "TM1803", "TM1804", "TM1809", "UCS1903", "SM16716",
                "LPD1886", "P9813"]
 
-        if lc in ["SERIAL", "MATRIX", "SPI"]:
+        if lconn in ["SERIAL", "SPI"]:
             led["led_configuration"] = lc
+            led["led_connection"] = lconn
         else:
             led["led_configuration"] = None
+            led["led_connection"] = None
 
-        if st in sst[0:3] and lc == "SPI":
+        if st in sst[0:3] and lconn == "SPI":
             led["strip_type"] = st
-        elif lc in ["SERIAL", "MATRIX"] and st in sst:
+        elif lconn in ["SERIAL"] and st in sst:
             led["strip_type"] = st
         else:
             led["strip_type"] = None
