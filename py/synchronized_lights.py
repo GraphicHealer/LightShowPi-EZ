@@ -248,9 +248,9 @@ class Lightshow(object):
                                brightness,
                                self.decay)
 
-            brightness = where(self.decay - self.decay_factor > 0,
-                               self.decay - self.decay_factor,
-                               brightness)
+            brightness = where(self.decay <= brightness,
+                               brightness,
+                               self.decay)
 
             self.decay = where(self.decay - self.decay_factor > 0,
                                self.decay - self.decay_factor,
