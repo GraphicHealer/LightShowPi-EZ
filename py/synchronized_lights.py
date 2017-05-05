@@ -254,7 +254,7 @@ class Lightshow(object):
 
             self.decay = where(self.decay - self.decay_factor > 0,
                                self.decay - self.decay_factor,
-                               self.decay)
+                               0)
 
         # broadcast to clients if in server mode
         if self.server:
