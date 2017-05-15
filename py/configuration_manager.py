@@ -68,9 +68,9 @@ class Configuration(object):
 
         # path and file locations
         self.home_dir = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
-        self.config_dir = self.home_dir + "/config/"
+        self.config_dir = self.home_dir + "/config"
         self.log_dir = self.home_dir + "/logs/"
-        self.state_file = self.config_dir + "state.cfg"
+        self.state_file = self.config_dir + "/state.cfg"
 
         # ConfigParsers
         self.config = ConfigParser.RawConfigParser(allow_no_value=True)
