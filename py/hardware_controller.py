@@ -54,7 +54,7 @@ signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 
 cm = configuration_manager.Configuration()
 
-is_a_raspberryPI = Platform.platform_detect() == 1
+is_a_raspberryPI = Platform.platform_detect() >= 1
 
 if is_a_raspberryPI:
     import wiringpi

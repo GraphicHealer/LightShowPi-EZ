@@ -126,6 +126,11 @@ log Installing rpi-audio-levels...
 pip install git+https://tom_slick@bitbucket.org/tom_slick/rpi-audio-levels.git
 verify "Installation of rpi-audio-levels failed"
 
+# Install wiringpi-python
+log Installing wiringpi...
+pip install git+https://broken2048@bitbucket.org/broken2048/wiringpi-python.git
+verify "Installation of wiringpi failed"
+
 # Optionally add a line to /etc/sudoers
 if [ -f /etc/sudoers ]; then
     KEEP_EN="Defaults             env_keep="SYNCHRONIZED_LIGHTS_HOME""
