@@ -69,7 +69,7 @@ def pi_revision():
     with open('/proc/cpuinfo', 'r') as infile:
         for line in infile:
             # Match a line of the form "Revision : 0002" while ignoring extra
-            # info in front of the revsion (like 1000 when the Pi was over-volted).
+            # info in front of the revision (like 1000 when the Pi was over-volted).
             match = re.match('Revision\s+:\s+.*(\w{4})$', line, flags=re.IGNORECASE)
             if match and match.group(1) in ['0000', '0002', '0003']:
                 # Return revision 1 if revision ends with 0000, 0002 or 0003.
@@ -103,6 +103,9 @@ def pi_version():
         return 1
     elif match.group(1) == 'BCM2709':
         # Pi 2
+        return 2
+    elif match.group(1) == 'BCM2835':
+        # Pi 2 or 3 and 4.9+ kernel
         return 2
     else:
         # Something else, not a pi.
@@ -155,7 +158,10 @@ def get_model():
     with open('/proc/cmdline', 'r') as f:
         line = f.readline()
         m = re.search('bcm2708.boardrev=(0x[0123456789abcdef]*) ', line)
-        model = m.group(1)[-2:].lower()
+        if m:
+            model = m.group(1)[-2:].lower()
+        else:
+            return "Unknown","Unknown"
     
     if model in ["07", "08", "09"]:
         return "Model A", header26
