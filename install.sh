@@ -128,7 +128,7 @@ verify "Installation of rpi-audio-levels failed"
 
 # Install wiringpi-python
 log Installing wiringpi...
-pip install git+https://broken2048@bitbucket.org/broken2048/wiringpi-python.git
+pip install --upgrade git+https://broken2048@bitbucket.org/broken2048/wiringpi-python.git
 verify "Installation of wiringpi failed"
 
 # Optionally add a line to /etc/sudoers
