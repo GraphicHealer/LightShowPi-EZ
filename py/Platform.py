@@ -95,6 +95,7 @@ def pi_version():
     # Match a line like 'Hardware   : BCM2709'
     match = re.search('^Hardware\s+:\s+(\w+)$', cpuinfo,
                       flags=re.MULTILINE | re.IGNORECASE)
+
     if not match:
         # Couldn't find the hardware, assume it isn't a pi.
         return None
@@ -105,8 +106,14 @@ def pi_version():
         # Pi 2
         return 2
     elif match.group(1) == 'BCM2835':
-        # Pi 2 or 3 and 4.9+ kernel
-        return 2
+        # 4.9+ kernel
+	(type,header) = get_model()
+	if type == 'Pi 2 Model B':
+            return 2
+	if type == 'Pi 3 Model B':
+            return 3
+        else:
+            return 1
     else:
         # Something else, not a pi.
         return None
@@ -155,13 +162,11 @@ header26 = """A and B models
 
 
 def get_model():
-    with open('/proc/cmdline', 'r') as f:
-        line = f.readline()
-        m = re.search('bcm2708.boardrev=(0x[0123456789abcdef]*) ', line)
-        if m:
-            model = m.group(1)[-2:].lower()
-        else:
-            return "Unknown","Unknown"
+    with open('/proc/cpuinfo', 'r') as infile:
+        cpuinfo = infile.read()
+    match = re.search('^Revision\s+:\s+\w+(\w{2})$', cpuinfo,
+                      flags=re.MULTILINE | re.IGNORECASE)
+    model = match.group(1)
     
     if model in ["07", "08", "09"]:
         return "Model A", header26
@@ -178,10 +183,13 @@ def get_model():
     elif model in ["11"]:
         return "Compute Module", "Custom"
     
-    elif model in ["41"]:
+    elif model in ["41", "42"]:
         return "Pi 2 Model B", header40
     
-    elif model in ["92"]:
+    elif model in ["82"]:
+        return "Pi 3 Model B", header40
+    
+    elif model in ["92", "93", "c1"]:
         return "Pi Zero", header40
     
     raise RuntimeError('Could not determine Raspberry Pi model.')    
