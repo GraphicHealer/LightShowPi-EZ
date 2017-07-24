@@ -5,7 +5,7 @@ INSTALL_COMMAND="apt-get install -q=2 -y"
 
 ## Python dependencies to be installed
 PYTHON_DEPS=(Beautifulsoup mutagen simplejson wiringpi wiringpi2 pygooglevoice twython emoji \
-             spidev BiblioPixel)
+             spidev "BiblioPixel<3.0")
 
 ## System packages to be installed
 SYSTEM_DEPS=(curl faad flac gcc git lame mpg123 make python-alsaaudio python-dev \

@@ -5,7 +5,7 @@ INSTALL_COMMAND="pacman -S --noconfirm"
 
 ## Python dependencies to be installed
 PYTHON_DEPS=(Beautifulsoup mutagen pyalsaaudio simplejson wiringpi wiringpi2 pygooglevoice cython \
-             twython emoji spidev BiblioPixel)
+             twython emoji spidev "BiblioPixel<3.0")
 
 ## System packages to be installed
 SYSTEM_DEPS=(faad2 ffmpeg flac gcc git lame mpg123 make python2-numpy python2-setuptools \
