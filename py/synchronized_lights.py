@@ -83,12 +83,15 @@ import errno
 import stat
 import curses
 import bright_curses
+import mutagen
 
 from collections import deque
 import Platform
 import fft
 from prepostshow import PrePostShow
 import RunningStats
+from Queue import Queue, Empty
+from threading import Thread
 
 
 # Make sure SYNCHRONIZED_LIGHTS_HOME environment variable is set
@@ -148,7 +151,7 @@ network = hc.network
 server = network.networking == 'server'
 client = network.networking == "client"
 
-terminal = bright_curses.BrightCurses(cm.terminal)
+terminal = False
 
 if cm.lightshow.use_fifo:
     if os.path.exists(cm.lightshow.fifo):
@@ -177,16 +180,18 @@ def end_early():
     if cm.lightshow.mode == 'stream-in':
         try:
             streaming.stdin.write("q")
-        except:
+        except NameError:
             pass
         os.kill(streaming.pid, signal.SIGINT)
-        os.unlink(cm.lightshow.fifo)
+        if cm.lightshow.use_fifo:
+            os.unlink(cm.lightshow.fifo)
 
 
 atexit.register(end_early)
 
 # Remove traceback on Ctrl-C
 signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+signal.signal(signal.SIGTERM, lambda x, y: sys.exit(0))
 
 
 def update_lights(matrix, mean, std):
@@ -207,7 +212,8 @@ def update_lights(matrix, mean, std):
     global decay
 
     brightness = matrix - mean + (std * cm.lightshow.SD_low)
-    brightness = (brightness / (std * (cm.lightshow.SD_low + cm.lightshow.SD_high))) * (1.0 - (cm.lightshow.attenuate_pct / 100.0))
+    brightness = (brightness / (std * (cm.lightshow.SD_low + cm.lightshow.SD_high))) * \
+                 (1.0 - (cm.lightshow.attenuate_pct / 100.0))
 
     # insure that the brightness levels are in the correct range
     brightness = np.clip(brightness, 0.0, 1.0)
@@ -223,7 +229,7 @@ def update_lights(matrix, mean, std):
     if server:
         network.broadcast(brightness)
 
-    if terminal.config.enabled:
+    if terminal:
         terminal.curses_render(brightness)
     else:
         for blevel, pin in zip(brightness, range(hc.GPIOLEN)):
@@ -231,6 +237,14 @@ def update_lights(matrix, mean, std):
 
 
 def set_audio_device(sample_rate, num_channels):
+    """Setup the audio devices for output
+
+    :param sample_rate: audio sample rate
+    :type sample_rate: int
+
+    :param num_channels: number of audio channels
+    :type num_channels: int
+    """
     global fm_process
     pi_version = Platform.pi_version()
 
@@ -244,7 +258,7 @@ def set_audio_device(sample_rate, num_channels):
                       srate,
                       "stereo" if num_channels > 1 else "mono"]
 
-        if pi_version == 2:
+        if pi_version >= 2:
             fm_command = ["sudo",
                           cm.home_dir + "/bin/pi_fm_rds",
                           "-audio", "-", "-freq",
@@ -255,7 +269,6 @@ def set_audio_device(sample_rate, num_channels):
                           "2" if num_channels > 1 else "1"]
 
         log.info("Sending output as fm transmission")
-
 
         with open(os.devnull, "w") as dev_null:
             fm_process = subprocess.Popen(fm_command, stdin=subprocess.PIPE, stdout=dev_null)
@@ -276,12 +289,17 @@ def set_audio_device(sample_rate, num_channels):
     else:
         return lambda raw_data: None
 
+def enqueue_output(out, queue):
+    for line in iter(out.readline, b''):
+        queue.put(line)
+    out.close()
 
 def audio_in():
     """Control the lightshow from audio coming in from a real time audio"""
     global streaming
     stream_reader = None
     streaming = None
+    songcount = 0
 
     sample_rate = cm.lightshow.input_sample_rate
     num_channels = cm.lightshow.input_channels
@@ -298,6 +316,8 @@ def audio_in():
 
     elif cm.lightshow.mode == 'stream-in':
 
+        outq = Queue()
+
         if cm.lightshow.use_fifo:
             streaming = subprocess.Popen(cm.lightshow.stream_command_string,
                                          stdin=subprocess.PIPE,
@@ -305,6 +325,7 @@ def audio_in():
                                          preexec_fn=os.setsid)
             io = os.open(cm.lightshow.fifo, os.O_RDONLY | os.O_NONBLOCK)
             stream_reader = lambda: os.read(io, CHUNK_SIZE)
+            outthr = Thread(target=enqueue_output, args=(streaming.stdout, outq))
         else:
             # Open the input stream from command string
             streaming = subprocess.Popen(cm.lightshow.stream_command_string,
@@ -312,6 +333,10 @@ def audio_in():
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE)
             stream_reader = lambda: streaming.stdout.read(CHUNK_SIZE)
+            outthr = Thread(target=enqueue_output, args=(streaming.stderr, outq))
+
+        outthr.daemon = True
+        outthr.start()
 
     log.debug("Running in %s mode - will run until Ctrl+C is pressed" % cm.lightshow.mode)
     print "Running in %s mode, use Ctrl+C to stop" % cm.lightshow.mode
@@ -350,6 +375,25 @@ def audio_in():
 
     # Listen on the audio input device until CTRL-C is pressed
     while True:
+
+        if cm.lightshow.mode == 'stream-in':
+            try:
+                streamout = outq.get_nowait().strip('\n\r')
+            except Empty:
+                pass
+            else:
+                print streamout
+                if cm.lightshow.stream_song_delim in streamout:
+                    songcount+=1
+                    if cm.lightshow.songname_command:
+                        streamout = streamout.replace('\033[2K','')
+                        streamout = streamout.replace(cm.lightshow.stream_song_delim,'')
+                        streamout = streamout.replace('"','')
+                        os.system(cm.lightshow.songname_command + ' "Now Playing ' + streamout + '"')
+
+                if cm.lightshow.stream_song_exit_count > 0 and songcount > cm.lightshow.stream_song_exit_count:
+                    break
+
         try:
             data = stream_reader()
 
@@ -750,6 +794,13 @@ def get_song():
 
     song_filename = song_filename.replace("$SYNCHRONIZED_LIGHTS_HOME", cm.home_dir)
 
+    if cm.lightshow.songname_command:
+        metadata = mutagen.File(song_filename, easy=True)
+        if not metadata is None:
+            if "title" in metadata:
+                now_playing = "Now Playing " + metadata["title"][0] + " by " + metadata["artist"][0]
+                os.system(cm.lightshow.songname_command + " \"" + now_playing + "\"")
+
     filename = os.path.abspath(song_filename)
     config_filename = os.path.dirname(filename) + "/." + os.path.basename(song_filename) + ".cfg"
     cache_filename = os.path.dirname(filename) + "/." + os.path.basename(song_filename) + ".sync"
@@ -896,6 +947,10 @@ def network_client():
 
 
 def launch_curses(screen):
+    """Initiate the curses window
+
+    :param screen: window object representing the entire screen
+    """
     terminal.init(screen)
     main()
 
@@ -915,8 +970,9 @@ if __name__ == "__main__":
         print "One of --playlist or --file must be specified"
         sys.exit()
 
-    if terminal.config.enabled:
+    if cm.terminal.enabled:
         try:
+            terminal = bright_curses.BrightCurses(cm.terminal)
             curses.wrapper(launch_curses)
         except KeyboardInterrupt:
             print "Got KeyboardInterrupt exception. Exiting..."

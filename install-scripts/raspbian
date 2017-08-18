@@ -4,12 +4,12 @@
 INSTALL_COMMAND="apt-get install -q=2 -y"
 
 ## Python dependencies to be installed
-PYTHON_DEPS=(Beautifulsoup mutagen simplejson wiringpi wiringpi2 pygooglevoice)
+PYTHON_DEPS=(Beautifulsoup mutagen simplejson pygooglevoice twython emoji)
 
 ## System packages to be installed
 SYSTEM_DEPS=(curl faad flac gcc git lame mpg123 make python-alsaaudio python-dev \
              python-numpy python-pip python-setuptools unzip vorbis-tools wiringpi \
-             cython pianobar)
+             cython pianobar swig2.0)
 
 ## Miscellaneous checks
 
