@@ -1,0 +1,58 @@
+ 
+h1 {
+    font-size: 30px;
+    color: blue;
+}
+
+h2 {
+    font-size: 20px;
+}
+
+input[type="submit"] {
+    width: 300px;
+    height: 100px;
+    font-size: 30px;
+    -webkit-transition: all 0.30s ease-in-out;
+    -moz-transition: all 0.30s ease-in-out;
+    -ms-transition: all 0.30s ease-in-out;
+    -o-transition: all 0.30s ease-in-out;
+}
+
+#on {
+    color:white;
+    background-color: green;
+}
+
+#on:hover { 
+    color:black;
+    background-color: #7FFF00;
+}
+
+#off {
+    color:white;
+    background-color: red;
+}
+#off:hover { 
+    color:black;
+    background-color: #DB7093;
+}
+
+#start {
+    color:white;
+    background-color: blue;
+}
+#start:hover { 
+    color:black;
+    background-color: #87CEEB;
+}
+
+#next {
+    color:black;
+    background-color: yellow;
+}
+
+#next:hover { 
+    color:black;
+    background-color: #FFFFE0;
+}
+

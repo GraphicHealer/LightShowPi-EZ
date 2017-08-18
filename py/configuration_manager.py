@@ -64,9 +64,9 @@ class Configuration(object):
 
         # path and file locations
         self.home_dir = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
-        self.config_dir = self.home_dir + "/config/"
+        self.config_dir = self.home_dir + "/config"
         self.log_dir = self.home_dir + "/logs/"
-        self.state_file = self.config_dir + "state.cfg"
+        self.state_file = self.config_dir + "/state.cfg"
 
         # ConfigParsers
         self.config = ConfigParser.RawConfigParser(allow_no_value=True)
@@ -240,8 +240,13 @@ class Configuration(object):
         lghtshw["input_channels"] = self.config.getint(ls, 'input_channels')
         lghtshw["input_sample_rate"] = self.config.getint(ls, 'input_sample_rate')
 
+	lghtshw["songname_command"] = self.config.get(ls, 'songname_command')
+
         command_string = self.config.get(ls, 'stream_command_string')
         lghtshw["stream_command_string"] = shlex.split(command_string)
+
+        lghtshw["stream_song_delim"] = self.config.get(ls, 'stream_song_delim')
+        lghtshw["stream_song_exit_count"] = self.config.getint(ls, 'stream_song_exit_count')
 
         playlist_path = self.config.get(ls, 'playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME', self.home_dir)
@@ -614,6 +619,10 @@ if __name__ == "__main__":
     print "\nAudio Processing Configuration"
     for akey, avalue in cm.audio_processing.config.iteritems():
         print akey, "=", avalue
+
+    print "\nNetwork Configuration"
+    for nkey, nvalue in cm.network.config.iteritems():
+        print nkey, "=", nvalue
 
     print "\nSMS Configuration"
     for skey, svalue in sms_cm.sms.config.iteritems():
