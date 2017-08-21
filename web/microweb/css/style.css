@@ -8,14 +8,50 @@ h2 {
     font-size: 20px;
 }
 
+h3 {
+    font-size: 14px;
+}
+
 input[type="submit"] {
-    width: 300px;
-    height: 100px;
-    font-size: 30px;
     -webkit-transition: all 0.30s ease-in-out;
     -moz-transition: all 0.30s ease-in-out;
     -ms-transition: all 0.30s ease-in-out;
     -o-transition: all 0.30s ease-in-out;
+}
+
+#on,#off,#next,#start {
+    width: 300px;
+    height: 100px;
+    font-size: 30px;
+}
+
+#volUp,#volDown {
+    width: 120px;
+    height: 60px;
+    font-size: 20px;
+}
+
+#voldiv {
+    font-size: 24px;
+}
+
+#playlist {
+    width: 300px;
+    height: 60px;
+    font-size: 20px;
+}
+
+#playitem {
+    width: 300px;
+    height: 50px;
+    font-size: 30px;
+}
+
+#playnext {
+    width: 300px;
+    height: 50px;
+    font-size: 30px;
+    background-color: red;
 }
 
 #on {
