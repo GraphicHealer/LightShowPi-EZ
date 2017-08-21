@@ -21,10 +21,12 @@ cm = hc.cm
 
 cgitb.enable()  # for troubleshooting
 form = cgi.FieldStorage()
-itemnumber = form.getvalue("itemnumber", "")
+itemnext = form.getvalue("itemnumber", "")
 
-if itemnumber:
-    cm.update_state('song_to_play', str(itemnumber))
+if itemnext:
+    itemnext = int(itemnext) + 1
+#    cm.update_state('song_to_play', str(itemnext -1))
+    cm.update_state('play_now', str(itemnext))
 
 print "Content-type: text/html"
 print
@@ -56,7 +58,10 @@ print """
      
 """ 
 
-itemnext = int(cm.get_state('song_to_play', "0"))
+if itemnext:
+    itemnext -= 1
+else:
+    itemnext = int(cm.get_state('song_to_play', "0"))
 
 with open(cm.lightshow.playlist_path, 'rb') as playlist_fp:
     fcntl.lockf(playlist_fp, fcntl.LOCK_SH)
