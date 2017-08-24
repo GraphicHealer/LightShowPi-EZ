@@ -286,7 +286,7 @@ class Lightshow(object):
                       srate,
                       "stereo" if self.num_channels > 1 else "mono"]
 
-        if pi_version == 2:
+        if pi_version >= 2:
             fm_command = ["sudo",
                           cm.home_dir + "/bin/pi_fm_rds",
                           "-audio", "-", "-freq",
