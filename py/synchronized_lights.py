@@ -405,22 +405,23 @@ class Lightshow(object):
         # Listen on the audio input device until CTRL-C is pressed
         while True:
 
-            try:
-                streamout = outq.get_nowait().strip('\n\r')
-            except Empty:
-                pass
-            else:
-                print streamout
-                if cm.lightshow.stream_song_delim in streamout:
-                    songcount+=1
-                    if cm.lightshow.songname_command:
-                        streamout = streamout.replace('\033[2K','')
-                        streamout = streamout.replace(cm.lightshow.stream_song_delim,'')
-                        streamout = streamout.replace('"','')
-                        os.system(cm.lightshow.songname_command + ' "Now Playing ' + streamout + '"')
+            if cm.lightshow.mode == 'stream-in':
+                try:
+                    streamout = outq.get_nowait().strip('\n\r')
+                except Empty:
+                    pass
+                else:
+                    print streamout
+                    if cm.lightshow.stream_song_delim in streamout:
+                        songcount+=1
+                        if cm.lightshow.songname_command:
+                            streamout = streamout.replace('\033[2K','')
+                            streamout = streamout.replace(cm.lightshow.stream_song_delim,'')
+                            streamout = streamout.replace('"','')
+                            os.system(cm.lightshow.songname_command + ' "Now Playing ' + streamout + '"')
 
-                if cm.lightshow.stream_song_exit_count > 0 and songcount > cm.lightshow.stream_song_exit_count:
-                    break
+                    if cm.lightshow.stream_song_exit_count > 0 and songcount > cm.lightshow.stream_song_exit_count:
+                        break
 
             try:
                 data = stream_reader()
