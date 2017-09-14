@@ -70,7 +70,7 @@ with open(cm.lightshow.playlist_path, 'rb') as playlist_fp:
     itemnumber = 0
     for song in playlist:
         print '<form method="post" action="playlist.cgi?itemnumber=' + str(itemnumber) + '">'
-	if itemnumber == itemnext:
+        if itemnumber == itemnext:
             input_id = 'playnext'
         else:
             input_id = 'playitem'
