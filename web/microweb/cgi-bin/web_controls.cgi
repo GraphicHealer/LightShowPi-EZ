@@ -9,12 +9,47 @@
 import cgi
 import cgitb
 import os
+import subprocess
 from time import sleep
 
 
 cgitb.enable()  # for troubleshooting
 form = cgi.FieldStorage()
 message = form.getvalue("message", "")
+
+HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
+volume = subprocess.check_output([HOME_DIR + '/bin/vol'])
+
+if message:
+    if message == "Volume -":
+        if int(volume) - 5 < 0:
+            volume = "0"
+        else:
+            volume = str(int(volume) - 5)
+        os.system(HOME_DIR + '/bin/vol ' + volume)
+    if message == "Volume +":
+        if int(volume) + 5 > 100:
+            volume = "100"
+        else:
+            volume = str(int(volume) + 5)
+        os.system(HOME_DIR + '/bin/vol ' + volume)
+    if message == "On":
+        os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
+        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
+        os.system("python ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py --state=on")
+    if message == "Off":
+        os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
+        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
+        os.system("python ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py --state=off")
+    if message == "Next":
+        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
+        sleep(1)
+    if message == "Start":
+        os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
+        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
+        os.system("${SYNCHRONIZED_LIGHTS_HOME}/bin/play_sms &")
+        os.system("${SYNCHRONIZED_LIGHTS_HOME}/bin/check_sms &")
+        sleep(1)
 
 print "Content-type: text/html"
 print
@@ -36,7 +71,23 @@ print """
     </head>
     <body>
         <center>
-            <h1> LightShowPi Web Controls </h1>
+            <h2> LightShowPi Web Controls </h2>
+
+            <div id="voldiv">
+            <form method="post" action="web_controls.cgi">
+                <input id="volDown" type="submit" name="message" value="Volume -">
+"""
+
+print "&nbsp" + volume + "&nbsp"
+
+print """
+                <input id="volUp" type="submit" name="message" value="Volume +">
+            </form>
+            </div>
+
+            <form method="post" action="playlist.cgi">
+                <input id="playlist" type="submit" value="Playlist">
+            </form>
 
             <form method="post" action="web_controls.cgi">
                 <input type="hidden" name="message" value="On"/>
@@ -48,25 +99,6 @@ print """
                 <input id="off" type="submit" value="Lights OFF">
             </form>
 """ 
-
-if message:
-    if message == "On":
-        os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
-        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
-        os.system("python ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py --state=on")
-    if message == "Off":
-        os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
-        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
-        os.system("python ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py --state=off")
-    if message == "Next":
-        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
-        sleep(1)
-    if message == "Start":
-        os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
-        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
-        os.system("${SYNCHRONIZED_LIGHTS_HOME}/bin/play_sms &")
-        os.system("${SYNCHRONIZED_LIGHTS_HOME}/bin/check_sms &")
-        sleep(1)
 
 cmd = 'pgrep -f "python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py"'
 if os.system(cmd) == 0:
