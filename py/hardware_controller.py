@@ -86,7 +86,7 @@ class Hardware(object):
         self.broadcast = self.network.broadcast
 
         self.led = None
-        if self.cm.led.led_configuration:
+        if self.cm.led.led_connection:
             self.led = led_module.Led(self.cm.led)
 
         self.create_lights()
