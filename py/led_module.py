@@ -25,6 +25,8 @@ from lightshow_serial_driver import *
 from bibliopixel import log
 from PIL import Image, ImageSequence, ImageChops, ImageEnhance
 
+from driver_sacn import DriverSACN
+
 log.setLogLevel(log.WARNING)
 # log.setLogLevel(log.DEBUG)
 
@@ -70,6 +72,8 @@ class Led(object):
             self.strip_setup()
         elif self.led_config.led_connection == "SERIAL":
             self.serial_setup()
+        elif self.led_config.led_connection == "SACN":
+            self.sacn_setup()
 
         if self.led_config.led_configuration == "STRIP":
             self.led = LEDStrip(self.driver)
@@ -102,6 +106,13 @@ class Led(object):
                                    deviceID=self.led_config.device_id,
                                    hardwareID=self.led_config.hardware_id,
                                    baud_rate=self.led_config.baud_rate)
+
+    def sacn_setup(self):
+        self.driver = DriverSACN(num=self.led_count,
+                                 host=self.led_config.sacn_address,
+                                 port=self.led_config.sacn_port,
+                                 universe_boundary=self.led_config.universe_boundary,
+                                 broadcast=False)
 
     def matrix_setup(self):
         self.images = []

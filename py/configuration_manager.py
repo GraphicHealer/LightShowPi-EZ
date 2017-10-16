@@ -68,7 +68,7 @@ class Configuration(object):
 
         # path and file locations
         self.home_dir = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
-        self.config_dir = self.home_dir + "/config"
+        self.config_dir = self.home_dir + "/config/"
         self.log_dir = self.home_dir + "/logs/"
         self.state_file = self.config_dir + "/state.cfg"
 
@@ -235,7 +235,7 @@ class Configuration(object):
 
     def set_led(self):
         """
-        Retrieves the fm configuration parsing it from the Config Parser as necessary.
+        Retrieves the led configuration parsing it from the Config Parser as necessary.
         """
         led = dict()
 
@@ -247,7 +247,7 @@ class Configuration(object):
                "TM1803", "TM1804", "TM1809", "UCS1903", "SM16716",
                "LPD1886", "P9813"]
 
-        if lconn in ["SERIAL", "SPI"]:
+        if lconn in ["SERIAL", "SPI", "SACN"]:
             led["led_configuration"] = lc
             led["led_connection"] = lconn
         else:
@@ -260,6 +260,10 @@ class Configuration(object):
             led["strip_type"] = st
         else:
             led["strip_type"] = None
+
+        led["sacn_address"] = self.config.get('led', 'sacn_address')
+        led["sacn_port"] = self.config.getint('led', 'sacn_port')
+        led["universe_boundary"] = self.config.getint('led', 'universe_boundary')
 
         c_order = self.config.get('led', 'channel_order').upper()
         if c_order in ["RGB", "RBG", "GRB", "GBR", "BRG", "BGR"]:
