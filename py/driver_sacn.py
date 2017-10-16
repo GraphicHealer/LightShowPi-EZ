@@ -54,7 +54,7 @@ class RETURN_CODES:
 class DriverSACN(DriverBase):
     """Driver for communicating with another device on the network."""
 
-    def __init__(self, num=0, width=0, height=0, host="localhost", broadcast=False, port=5568, universe=1, broadcast_interface=''):
+    def __init__(self, num=0, width=0, height=0, host="localhost", broadcast=False, port=5568, universe=1, universe_boundary=512, broadcast_interface=''):
         super(DriverSACN, self).__init__(num, width, height)
 
         self._host = host
@@ -63,6 +63,7 @@ class DriverSACN(DriverBase):
         self._broadcast = broadcast
         self._broadcast_interface = broadcast_interface
         self._universe = universe
+        self._universe_boundary = universe_boundary
 
 
 # s = socket(AF_INET, SOCK_DGRAM)
@@ -96,10 +97,24 @@ class DriverSACN(DriverBase):
             data = self._buf
             s = self._connect()
 
-            count = self.bufByteCount
-            packet = E131Packet(universe=self._universe, data=data)
+            universes = int(self.bufByteCount / self._universe_boundary) + 1
+            countlast = self.bufByteCount % self._universe_boundary
 
+            countboundary = self._universe_boundary * (universes - 1)
+            udata = data[countboundary:countboundary + countlast]
+            packet = E131Packet(universe=self._universe + universes - 1, data=udata)
             s.sendto(packet.packet_data, (self._host, self._port))
+            universes -= 1
+            while universes > 0:
+                countboundary = self._universe_boundary * (universes - 1)
+                udata = data[countboundary:countboundary + self._universe_boundary]
+                packet = E131Packet(universe=self._universe + universes - 1, data=udata)
+                s.sendto(packet.packet_data, (self._host, self._port))
+                universes -=1
+                
+
+#            packet = E131Packet(universe=self._universe, data=data)
+#            s.sendto(packet.packet_data, (self._host, self._port))
 
             s.close()
 
