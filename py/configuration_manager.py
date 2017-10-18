@@ -261,7 +261,17 @@ class Configuration(object):
         else:
             led["strip_type"] = None
 
-        led["sacn_address"] = self.config.get('led', 'sacn_address')
+        led["enable_multicast"] = self.config.getboolean('led', 'enable_multicast')
+
+        # if multicast is enabled setup broadcast flag and broadcast address
+        # TODO: possibly need to manage broadcast address a little differently in future to handle more customization
+        if led["enable_multicast"]:
+            led["sacn_address"] = "239.255.0.1"
+            led["sacn_broadcast"] = True
+        else:
+            led["sacn_address"] = self.config.get('led', 'sacn_address')
+            led["sacn_broadcast"] = False
+        
         led["sacn_port"] = self.config.getint('led', 'sacn_port')
         led["universe_boundary"] = self.config.getint('led', 'universe_boundary')
 
