@@ -112,7 +112,7 @@ class Led(object):
                                  host=self.led_config.sacn_address,
                                  port=self.led_config.sacn_port,
                                  universe_boundary=self.led_config.universe_boundary,
-                                 broadcast=False)
+                                 broadcast=self.led_config.sacn_broadcast)
 
     def matrix_setup(self):
         self.images = []
