@@ -273,7 +273,8 @@ class Lightshow(object):
             else:
                 leds = brightness[:cm.hardware.gpio_len]
 
-            hc.led.write_all(leds)
+            for led_instance in hc.led:
+                led_instance.write_all(leds)
 
     def set_fm(self):
         pi_version = Platform.pi_version()

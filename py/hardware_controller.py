@@ -86,8 +86,11 @@ class Hardware(object):
         self.broadcast = self.network.broadcast
 
         self.led = None
-        if self.cm.led.led_connection:
-            self.led = led_module.Led(self.cm.led)
+        if self.cm.configs.led:
+            self.led = list()
+            for lc in self.cm.configs.led:
+                self.cm.set_led(config_file=lc)
+                self.led.append(led_module.Led(self.cm.led))
 
         self.create_lights()
         self.set_overrides()
@@ -227,8 +230,9 @@ class Hardware(object):
             self.set_light(pin, use_always_onoff, 1.0)
 
         if self.led:
-            self.led.all_set_on = True
-            self.led.all_leds_on()
+            for led_instance in self.led:
+                led_instance.all_set_on = True
+                led_instance.all_leds_on()
 
     def turn_off_lights(self, use_always_onoff=False):
         """
@@ -242,8 +246,9 @@ class Hardware(object):
             self.set_light(pin, use_always_onoff, 0)
 
         if self.led:
-            self.led.all_set_on = False
-            self.led.all_leds_off()
+            for led_instance in self.led:
+                led_instance.all_set_on = False
+                led_instance.all_leds_off()
 
     # turn_off_light and turn_on_light are left in for compatibility
     # with external scripts and will be removed in future versions
