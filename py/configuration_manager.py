@@ -96,10 +96,11 @@ class Configuration(object):
             self.fm = None
             self.terminal = None
             self.led = None
+            self.configs = None
 
             self.set_hardware()
             self.set_fm()
-            self.set_led()
+            self.set_configs()
             self.set_lightshow()
             self.set_audio_processing()
             self.set_network()
@@ -183,6 +184,18 @@ class Configuration(object):
             self.state.write(state_fp)
             fcntl.lockf(state_fp, fcntl.LOCK_UN)
 
+    def set_configs(self):
+
+        configs = dict()
+
+        temp = self.config.get('configs', 'led_config').split(",")
+        if self.config.get('configs', 'led_config') == "":
+            configs["led"] = list()
+        else:
+            configs["led"] = temp
+            
+        self.configs = Section(configs)
+
     def set_hardware(self):
         """
         Retrieves the hardware configuration parsing it from the Config Parser as necessary.
@@ -233,15 +246,19 @@ class Configuration(object):
         term["enabled"] = self.config.getboolean('terminal', 'enabled')
         self.terminal = Section(term)
 
-    def set_led(self):
+    def set_led(self, config_file):
         """
         Retrieves the led configuration parsing it from the Config Parser as necessary.
         """
+
+        self.led_config = ConfigParser.RawConfigParser(allow_no_value=True)
+        self.led_config.readfp(open(self.config_dir + config_file))
+
         led = dict()
 
-        lc = self.config.get('led', 'led_configuration').upper()
-        lconn = self.config.get('led', 'led_connection').upper()
-        st = self.config.get('led', 'strip_type').upper()
+        lc = self.led_config.get('led', 'led_configuration').upper()
+        lconn = self.led_config.get('led', 'led_connection').upper()
+        st = self.led_config.get('led', 'strip_type').upper()
         sst = ["APA102", "LPD8806", "WS2801", "WS2811", "WS2812",
                "WS2812B", "NEOPIXEL", "WS2811_400", "APA104",
                "TM1803", "TM1804", "TM1809", "UCS1903", "SM16716",
@@ -261,7 +278,7 @@ class Configuration(object):
         else:
             led["strip_type"] = None
 
-        led["enable_multicast"] = self.config.getboolean('led', 'enable_multicast')
+        led["enable_multicast"] = self.led_config.getboolean('led', 'enable_multicast')
 
         # if multicast is enabled setup broadcast flag and broadcast address
         # TODO: possibly need to manage broadcast address a little differently in future to handle more customization
@@ -269,21 +286,21 @@ class Configuration(object):
             led["sacn_address"] = "239.255.0.1"
             led["sacn_broadcast"] = True
         else:
-            led["sacn_address"] = self.config.get('led', 'sacn_address')
+            led["sacn_address"] = self.led_config.get('led', 'sacn_address')
             led["sacn_broadcast"] = False
         
-        led["sacn_port"] = self.config.getint('led', 'sacn_port')
-        led["universe_boundary"] = self.config.getint('led', 'universe_boundary')
+        led["sacn_port"] = self.led_config.getint('led', 'sacn_port')
+        led["universe_boundary"] = self.led_config.getint('led', 'universe_boundary')
 
-        c_order = self.config.get('led', 'channel_order').upper()
+        c_order = self.led_config.get('led', 'channel_order').upper()
         if c_order in ["RGB", "RBG", "GRB", "GBR", "BRG", "BGR"]:
             led["channel_order"] = c_order
         else:
             led["channel_order"] = "RGB"
         
-        led["led_channel_configuration"] = self.config.get('led', 'led_channel_configuration').upper()
+        led["led_channel_configuration"] = self.led_config.get('led', 'led_channel_configuration').upper()
 
-        led_count = self.config.getint('led', 'led_channel_count')
+        led_count = self.led_config.getint('led', 'led_channel_count')
         if led["led_configuration"]:
 
             led["led_count"] = led_count
@@ -327,31 +344,31 @@ class Configuration(object):
         else:
             led["led_count"] = 0
 
-        led["max_brightness"] = self.config.getint('led', 'max_brightness')
-        led["per_channel"] = self.config.getint('led', 'per_channel')
+        led["max_brightness"] = self.led_config.getint('led', 'max_brightness')
+        led["per_channel"] = self.led_config.getint('led', 'per_channel')
 
-        led["pattern_color_map"] = self.config.get('led', 'pattern_color_map').upper()
-        led["pattern_color"] = map(int, self.config.get('led', 'pattern_color').split(","))
-        led["pattern_type"] = self.config.get('led', 'pattern_type').upper()
+        led["pattern_color_map"] = self.led_config.get('led', 'pattern_color_map').upper()
+        led["pattern_color"] = map(int, self.led_config.get('led', 'pattern_color').split(","))
+        led["pattern_type"] = self.led_config.get('led', 'pattern_type').upper()
 
-        device_id = self.config.getint('led', 'device_id')
+        device_id = self.led_config.getint('led', 'device_id')
         if 0 <= device_id <= 255:
             led["device_id"] = device_id
         else:
             led["device_id"] = None
 
-        led["device_address"] = self.config.get('led', 'device_address')
-        led["hardware_id"] = self.config.get('led', 'hardware_id')
+        led["device_address"] = self.led_config.get('led', 'device_address')
+        led["hardware_id"] = self.led_config.get('led', 'hardware_id')
         if led["hardware_id"] == "":
             led["hardware_id"] = "1D50:60AB"
-        led["baud_rate"] = self.config.getint('led', 'baud_rate')
-        led["update_throttle"] = self.config.getint('led', 'update_throttle')
+        led["baud_rate"] = self.led_config.getint('led', 'baud_rate')
+        led["update_throttle"] = self.led_config.getint('led', 'update_throttle')
 
-        led["matrix_width"] = self.config.getint('led', 'matrix_width')
-        led["matrix_height"] = self.config.getint('led', 'matrix_height')
-        led["matrix_pattern_type"] = self.config.get('led', 'matrix_pattern_type').upper()
+        led["matrix_width"] = self.led_config.getint('led', 'matrix_width')
+        led["matrix_height"] = self.led_config.getint('led', 'matrix_height')
+        led["matrix_pattern_type"] = self.led_config.get('led', 'matrix_pattern_type').upper()
 
-        file_name = self.config.get('led', 'image_path').replace('$SYNCHRONIZED_LIGHTS_HOME',
+        file_name = self.led_config.get('led', 'image_path').replace('$SYNCHRONIZED_LIGHTS_HOME',
                                                                  self.home_dir)
         if os.path.isfile(file_name):
             led["image_path"] = file_name
@@ -830,8 +847,10 @@ if __name__ == "__main__":
         print wc_key, "=", wc_value
 
     print "\nLED Configuration"
-    for led_key, led_value in cm.led.config.iteritems():
-        print led_key, "=", led_value
+    for lc in cm.configs.led:
+        cm.set_led(config_file=lc)
+        for led_key, led_value in cm.led.config.iteritems():
+            print led_key, "=", led_value
 
     print "\nTerminal Configuration" 
     for tkey, tvalue in cm.terminal.config.iteritems(): 
