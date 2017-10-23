@@ -880,6 +880,8 @@ def main():
 if __name__ == "__main__":
     hc = Hardware()
 
+    signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--state', choices=["off",
                                             "on",
@@ -934,16 +936,6 @@ if __name__ == "__main__":
 
     if state == "random_pattern":
         exit_event = threading.Event()
-    try:
-        if hc.led:
-            hc.led.test = True
-    except NameError:
-        pass
 
     main()
 
-    try:
-        if hc.led:
-            hc.led.test = False
-    except NameError:
-        pass
