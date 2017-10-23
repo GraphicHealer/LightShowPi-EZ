@@ -92,12 +92,17 @@ class Hardware(object):
         self.led = None
         if self.cm.configs.led:
             self.led = list()
-            LEDManager.register('LED', led_module.Led)      
-            for lc in self.cm.configs.led:
-                self.cm.set_led(config_file=lc)
-                self.ledmanager = LEDManager()
-                self.ledmanager.start()
-                self.led.append(self.ledmanager.LED(self.cm.led))
+            if self.cm.configs.led_multiprocess:
+                LEDManager.register('LED', led_module.Led)      
+                for lc in self.cm.configs.led:
+                    self.cm.set_led(config_file=lc)
+                    self.ledmanager = LEDManager()
+                    self.ledmanager.start()
+                    self.led.append(self.ledmanager.LED(self.cm.led))
+            else:
+                for lc in self.cm.configs.led:
+                    self.cm.set_led(config_file=lc)
+                    self.led.append(led_module.Led(self.cm.led))
 
         self.create_lights()
         self.set_overrides()

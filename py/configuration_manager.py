@@ -188,11 +188,12 @@ class Configuration(object):
 
         configs = dict()
 
-        temp = self.config.get('configs', 'led_config').split(",")
         if self.config.get('configs', 'led_config') == "":
             configs["led"] = list()
         else:
-            configs["led"] = temp
+            configs["led"] = self.config.get('configs', 'led_config').split(",")
+
+        configs["led_multiprocess"] = self.config.getboolean('configs','led_multiprocess')
             
         self.configs = Section(configs)
 
