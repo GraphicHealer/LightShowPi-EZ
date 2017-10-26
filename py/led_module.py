@@ -111,6 +111,7 @@ class Led(object):
         self.driver = DriverSACN(num=self.led_count,
                                  host=self.led_config.sacn_address,
                                  port=self.led_config.sacn_port,
+                                 universe = self.led_config.universe,
                                  universe_boundary=self.led_config.universe_boundary,
                                  broadcast=self.led_config.sacn_broadcast)
 
