@@ -292,7 +292,7 @@ class Configuration(object):
         
         led["sacn_port"] = self.led_config.getint('led', 'sacn_port')
         led["universe_boundary"] = self.led_config.getint('led', 'universe_boundary')
-        led["universe"] = self.led_config.getint('led', 'universe')
+        led["universe"] = self.led_config.getint('led', 'universe_start')
 
         c_order = self.led_config.get('led', 'channel_order').upper()
         if c_order in ["RGB", "RBG", "GRB", "GBR", "BRG", "BGR"]:
