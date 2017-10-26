@@ -30,6 +30,7 @@ import atexit
 import signal
 import threading
 import os
+from multiprocessing.managers import BaseManager
 
 from collections import defaultdict
 
@@ -54,7 +55,8 @@ def exit_function():
 atexit.register(exit_function)
 
 # Remove traceback on Ctrl-C
-signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+#signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 # load configuration
 cm = configuration_manager.Configuration()
@@ -71,6 +73,8 @@ else:
 
     logging.debug("Not running on a raspberryPI")
 
+class LEDManager(BaseManager):
+    pass
 
 class Hardware(object):
     def __init__(self):
@@ -88,9 +92,17 @@ class Hardware(object):
         self.led = None
         if self.cm.configs.led:
             self.led = list()
-            for lc in self.cm.configs.led:
-                self.cm.set_led(config_file=lc)
-                self.led.append(led_module.Led(self.cm.led))
+            if self.cm.configs.led_multiprocess:
+                LEDManager.register('LED', led_module.Led)      
+                for lc in self.cm.configs.led:
+                    self.cm.set_led(config_file=lc)
+                    self.ledmanager = LEDManager()
+                    self.ledmanager.start()
+                    self.led.append(self.ledmanager.LED(self.cm.led))
+            else:
+                for lc in self.cm.configs.led:
+                    self.cm.set_led(config_file=lc)
+                    self.led.append(led_module.Led(self.cm.led))
 
         self.create_lights()
         self.set_overrides()
@@ -868,6 +880,8 @@ def main():
 if __name__ == "__main__":
     hc = Hardware()
 
+    signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--state', choices=["off",
                                             "on",
@@ -922,16 +936,6 @@ if __name__ == "__main__":
 
     if state == "random_pattern":
         exit_event = threading.Event()
-    try:
-        if hc.led:
-            hc.led.test = True
-    except NameError:
-        pass
 
     main()
 
-    try:
-        if hc.led:
-            hc.led.test = False
-    except NameError:
-        pass

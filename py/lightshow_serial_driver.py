@@ -186,15 +186,21 @@ class DriverSerial(DriverBase):
 
     @staticmethod
     def _printError(error):
+        fatal = True
         msg = "Unknown error occured."
         if error == RETURN_CODES.ERROR_SIZE:
             msg = "Data packet size incorrect."
+            fatal = False
         elif error == RETURN_CODES.ERROR_UNSUPPORTED:
             msg = "Unsupported configuration attempted."
         elif error == RETURN_CODES.ERROR_PIXEL_COUNT:
             msg = "Too many pixels specified for device."
         elif error == RETURN_CODES.ERROR_BAD_CMD:
             msg = "Unsupported protocol command. Check your device version."
+
+        if not fatal:
+            log.info("%s: %s", error, msg)
+            return
 
         log.error("%s: %s", error, msg)
         raise BiblioSerialError(msg)
