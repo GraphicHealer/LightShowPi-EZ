@@ -14,3 +14,6 @@ sftp-config.json
 
 # Ignore Dolphin View settings files
 .directory
+
+# Ignore all LED configs except default
+Led[0-9].cfg
