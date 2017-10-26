@@ -264,6 +264,10 @@ class Lightshow(object):
             self.terminal.curses_render(brightness)
             return
 
+        # in the instance a single channel is defined convert scalar back into array
+        if not hasattr(brightness, "__len__"):
+            brightness = np.array([brightness])
+
         for pin in range(len(brightness[:self.physical_gpio_len])):
             hc.set_light(pin, True, brightness[pin])
 
