@@ -49,9 +49,18 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 * Ken B (K5ENB)
 * Paul Barnett
 * Anthony Tod
+* Brent Reinhard
 
 Release Notes
 ============
+
+2016/10/16 :: Version 1.3
+-------------------------------
+
+* Added initial support for controlling individually controllable RGB LED lights (thanks to Tom Enos, Ken B, and Chris Usey)
+* Addition of the "microweb" UI for controlling your lightshow (thanks to Ken B)
+* Twitter support, tweeting current song playing (thanks to Brent Reinhard and Ken B)
+* Various bug-fixes and updates to support latest kernel versions (thanks to Ken B)
 
 2016/10/16 :: Version 1.2
 -------------------------------
