@@ -249,9 +249,6 @@ class FFT(object):
             has_config = False
             logging.warn("Cached config data does not match")
 
-        if has_config:
-            self.audio_levels = None
-            
         return has_config
 
     def save_config(self):
