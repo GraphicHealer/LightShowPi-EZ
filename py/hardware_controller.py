@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
-# http://www.lightshowpi.com/
+# http://www.lightshowpi.org/
 #
 # Author: Ryan Jennings
 # Author: Chris Usey
-# Author: Todd Giles (todd@lightshowpi.com)
+# Author: Todd Giles (todd@lightshowpi.org)
 # Author: Tom Enos (tomslick.ca@gmail.com)
 
 """Control the Raspberry pi hardware.

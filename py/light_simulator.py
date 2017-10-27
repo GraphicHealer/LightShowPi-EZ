@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
-# http://www.lightshowpi.com/
+# http://www.lightshowpi.org/
 #
 # Author: Tom Enos
 """Simple Gui to see what the lightshow is doing

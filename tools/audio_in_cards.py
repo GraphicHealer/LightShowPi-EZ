@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
-# http://www.lightshowpi.com/
+# http://www.lightshowpi.org/
 #
-# Author: Todd Giles (todd@lightshowpi.com)
+# Author: Todd Giles (todd@lightshowpi.org)
 """Trivial wrapper around alsaaduio.cards() for getting a list of your audio cards.
 
 Helpful in determining the list of USB audio cards in advanced audio-in setups.

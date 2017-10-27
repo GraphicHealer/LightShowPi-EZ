@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
-# http://www.lightshowpi.com/
+# http://www.lightshowpi.org/
 #
-# Author: Todd Giles (todd@lightshowpi.com)
+# Author: Todd Giles (todd@lightshowpi.org)
 #
 # Initial commands implemented by Chris Usey (chris.usey@gmail.com)
 """Command definition file.
