@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
-# http://www.lightshowpi.com/
+# http://www.lightshowpi.org/
 #
-# Author: Todd Giles (todd@lightshowpi.com)
+# Author: Todd Giles (todd@lightshowpi.org)
 #
 # Initial commands implemented by Chris Usey (chris.usey@gmail.com)
 """Command definition file.
 
 Enabled commands must be defined in the configuration file. Each command must also have a
-matching function defined in this file with a name in the form 'def cmd_commandname(user, args)'.
+matching function defined in this file with a name in the form 'def cmd_command_name(user, args)'.
 For example, the command help would have a matching function definition for 'def cmd_help(user,
 args)'. The user argument will include the cell number of the user who made the request (if the
 command is received via sms) and the 'args' argument is a string containing all the text in the
@@ -248,8 +248,8 @@ def cmd_volume(*args):
         return cm.sms.volume_description
 
     # Execute the sanitized command and handle result
-    volscript = cm.home_dir + '/bin/vol'
-    output, error = subprocess.Popen(volscript + ' ' + sanitized_cmd,
+    vol_script = cm.home_dir + '/bin/vol'
+    output, error = subprocess.Popen(vol_script + ' ' + sanitized_cmd,
                                      shell=True, stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE).communicate()
     if error:

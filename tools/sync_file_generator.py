@@ -32,28 +32,28 @@ sys.path.insert(0, HOME_DIR + "/py")
 
 # import the configuration_manager and fft now that we can
 import fft
-import configuration_manager as cm
+
+import hardware_controller as hc
+
+# get copy of configuration manager
+cm = hc.cm
+
+# get copy of configuration manager
 
 #### reusing code from synchronized_lights.py
 #### no need to reinvent the wheel
 
-_CONFIG = cm.CONFIG
-GPIOLEN = len([int(pin) for pin in _CONFIG.get('hardware', 
-                                               'gpio_pins').split(',')])
-_MIN_FREQUENCY = _CONFIG.getfloat('audio_processing', 'min_frequency')
-_MAX_FREQUENCY = _CONFIG.getfloat('audio_processing', 'max_frequency')
+GPIOLEN = cm.hardware.gpio_len 
+_MIN_FREQUENCY = cm.audio_processing.min_frequency
+_MAX_FREQUENCY = cm.audio_processing.max_frequency
 
 try:
-    _CUSTOM_CHANNEL_MAPPING = \
-        [int(channel) for channel in _CONFIG.get('audio_processing',\
-            'custom_channel_mapping').split(',')]
+    _CUSTOM_CHANNEL_MAPPING = cm.audio_processing.custom_channel_mapping
 except:
     _CUSTOM_CHANNEL_MAPPING = 0
 
 try:
-    _CUSTOM_CHANNEL_FREQUENCIES = [int(channel) for channel in
-                                   _CONFIG.get('audio_processing',
-                                               'custom_channel_frequencies').split(',')]
+    _CUSTOM_CHANNEL_FREQUENCIES = cm.audio_processing.custom_channel_frequencies
 except:
     _CUSTOM_CHANNEL_FREQUENCIES = 0
 

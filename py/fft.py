@@ -1,8 +1,8 @@
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
-# http://www.lightshowpi.com/
+# http://www.lightshowpi.org/
 #
-# Author: Todd Giles (todd@lightshowpi.com)
+# Author: Todd Giles (todd@lightshowpi.org)
 # Author: Tom Enos (tomslick.ca@gmail.com)
 
 """FFT methods for computing / analyzing frequency response of audio.
@@ -249,9 +249,6 @@ class FFT(object):
             has_config = False
             logging.warn("Cached config data does not match")
 
-        if has_config:
-            self.audio_levels = None
-            
         return has_config
 
     def save_config(self):

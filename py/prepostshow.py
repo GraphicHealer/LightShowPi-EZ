@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
-# http://www.lightshowpi.com/
+# http://www.lightshowpi.org/
 #
-# Author: Todd Giles (todd@lightshowpi.com)
+# Author: Todd Giles (todd@lightshowpi.org)
 # Author: Chris Usey (chris.usey@gmail.com)
 # Author: Tom Enos (tomslick.ca@gmail.com)
 
-"""Preshow and Postshow functionality for the lightshows.
+"""Preshow and Postshow functionality for the light show.
 
 Your lightshow can be configured to have a "preshow" before each
 individual song is played or a "postshow" after each individual

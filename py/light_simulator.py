@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
-# http://www.lightshowpi.com/
+# http://www.lightshowpi.org/
 #
 # Author: Tom Enos
 """Simple Gui to see what the lightshow is doing
@@ -16,7 +16,7 @@ Setup:
       
 Usage:
       Open 2 terminals, in both export your SYNCHRONIZED_LIGHTS_HOME variable
-      or you can export it globaly and not do this all the time.  But if your
+      or you can export it globally and not do this all the time.  But if your
       working with different versions in different directories you might not want
       to do that.  Next edit (or create)overrides.cfg and under [network] set 
       networking = server In one of the terminals start this sim.  You will not
@@ -58,13 +58,13 @@ class Gui(Canvas):
     def __init__(self, parent):
         Canvas.__init__(self, parent)
         self.gpio_pins = CM.hardware.gpio_pins
-        self.gpiolen = CM.hardware.gpio_len
+        self.gpio_len = CM.hardware.gpio_len
         self.pwm_max = CM.hardware.pwm_range
-        self.gpioactive = hc._GPIOACTIVE
+        self.gpio_active = hc._GPIOACTIVE
         self.is_pin_pwm = hc.is_pin_pwm
         self.gpio = list()
         self.state = list()
-        self.channels = [_ for _ in range(self.gpiolen)]
+        self.channels = [_ for _ in range(self.gpio_len)]
         self.channel_keys = CM.network.channels.keys()
         self.network = hc.network
         self.red = "#FF0000"
@@ -96,13 +96,13 @@ class Gui(Canvas):
         # How many lights in a row
         max_row_length = 16
 
-        row_length = self.gpiolen
+        row_length = self.gpio_len
 
-        if self.gpiolen > max_row_length:
+        if self.gpio_len > max_row_length:
             row_length = max_row_length
 
         # calculate number of rows
-        rows = int(ceil(self.gpiolen / row_length))
+        rows = int(ceil(self.gpio_len / row_length))
 
         # size of the window
         width = (row_length * spacing) + int((rad * 1.75))
@@ -118,7 +118,7 @@ class Gui(Canvas):
 
         row_counter = 0
 
-        for _ in range(self.gpiolen):
+        for _ in range(self.gpio_len):
             top_left = column_worker - rad
             bottom_left = row_worker - rad
             top_right = column_worker + rad
@@ -156,7 +156,7 @@ class Gui(Canvas):
 
     def tkinter_function(self):
         """this is where the window is updated"""
-        blevels = None
+        b_levels = None
         data = self.network.receive()
         done = False
 
@@ -167,14 +167,14 @@ class Gui(Canvas):
             done = True
 
         elif isinstance(data[0], np.ndarray):
-            blevels = data[0]
+            b_levels = data[0]
 
         else:
             done = True
 
         if not done:
             for pin in self.channel_keys:
-                self.set_light(self.channels[pin], True, blevels[pin])
+                self.set_light(self.channels[pin], True, b_levels[pin])
 
         self.parent.after(1, self.tkinter_function)
 
@@ -215,7 +215,7 @@ class Gui(Canvas):
 
         if hc.is_pin_pwm[pin]:
             brightness = int(brightness * self.pwm_max)
-            if self.gpioactive:
+            if self.gpio_active:
                 brightness = 100 - brightness
             level = '#{0:02X}{1:02X}{2:02X}'.format(255,
                                                     int(ceil(brightness * 2.55)),
@@ -230,7 +230,7 @@ class Gui(Canvas):
         else:
             item = self.gpio[pin]
             onoff = int(brightness > .5)
-            if self.gpioactive:
+            if self.gpio_active:
                 onoff = 1 - onoff
             color = (self.blue, self.white)[onoff]
             try:

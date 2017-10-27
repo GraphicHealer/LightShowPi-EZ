@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
-# http://www.lightshowpi.com/
+# http://www.lightshowpi.org/
 #
-# Author: Todd Giles (todd@lightshowpi.com)
+# Author: Todd Giles (todd@lightshowpi.org)
 #
 # Modifications by: Chris Usey (chris.usey@gmail.com)
 # Modifications by: Tom Enos (tomslick.ca@gmail.com)
@@ -93,13 +93,12 @@ class Sms(Thread):
         except NameError:
             self.playlist = cm.sms.playlist_path
 
-        commands.start(cm)
-        self.voice = Voice()
-
         self.songs = list()
         logging.info('loading playlist ' + self.playlist)
 
         self.load_playlist()
+        commands.start(cm)
+        self.voice = Voice()
 
     def run(self):
         """Overloaded Thread.run, runs the update
