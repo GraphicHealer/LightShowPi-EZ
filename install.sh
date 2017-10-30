@@ -96,7 +96,7 @@ pkginstall() {
 pipinstall() {
     log Installing $1 via pip...
     if [ $1 == "numpy" ]; then echo -e "\e[1;33mWARNING:\e[m numpy installation may take up to 30 minutes"; fi
-    /usr/bin/yes | pip install $1
+    /usr/bin/yes | pip install --upgrade $1
     verify "Installation of Python package '$1' failed"
 }
 
@@ -113,7 +113,7 @@ done
 
 # Install decoder
 log Installing decoder...
-pip install git+https://tom_slick@bitbucket.org/tom_slick/decoder.py.git
+pip install --upgrade git+https://tom_slick@bitbucket.org/tom_slick/decoder.py.git
 verify "Installation of decoder-1.5XB-Unix failed"
 
 # Install Python dependencies
