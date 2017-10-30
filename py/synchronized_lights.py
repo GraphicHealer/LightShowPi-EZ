@@ -727,8 +727,8 @@ class Lightshow(object):
                     if current_song[0:3] == song[0:3] and len(song) == 3:
                         song.append("playing!")
 
-                # Update playlist
-                cm.set_playlist(songs, args.playlist)
+                # Update playlist file
+                cm.write_playlist(songs, args.playlist)
 
             else:
                 # Get a "play now" requested song
