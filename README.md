@@ -54,7 +54,7 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 Release Notes
 ============
 
-2016/10/16 :: Version 1.3
+2017/10/27 :: Version 1.3
 -------------------------------
 
 * Added initial support for controlling individually controllable RGB LED lights (thanks to Tom Enos, Ken B, and Chris Usey)
