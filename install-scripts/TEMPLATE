@@ -23,7 +23,7 @@
 INSTALL_COMMAND=
 
 ## Python dependencies to be installed
-PYTHON_DEPS=(mutagen pyalsaaudio wiringpi2 Beautifulsoup simplejson pygooglevoice)
+PYTHON_DEPS=(mutagen pyalsaaudio wiringpi2 Beautifulsoup simplejson)
 
 ## System packages to be installed
 # Include at a minimum:

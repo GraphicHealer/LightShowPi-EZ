@@ -625,7 +625,10 @@ class Configuration(object):
 
         return songs
 
-    def set_playlist(self, songs, playlist=None):
+    def set_playlist(self, songs):
+	self.playlist = songs
+
+    def write_playlist(self, songs, playlist=None):
         playlist = playlist or self.playlist_path
 
         with open(playlist, 'wb') as playlist_fp:
@@ -641,7 +644,7 @@ class Configuration(object):
             writer.writerows(songs)
             fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
 
-        self.playlist = songs
+	self.playlist = songs
 
     def has_permission(self, user, cmd):
         """Returns True if a user has permission to execute the given command

@@ -123,13 +123,18 @@ for _dep in ${PYTHON_DEPS[@]}; do
 done
 
 log Installing rpi-audio-levels...
-pip install git+https://tom_slick@bitbucket.org/tom_slick/rpi-audio-levels.git
+pip install --upgrade git+https://tom_slick@bitbucket.org/tom_slick/rpi-audio-levels.git
 verify "Installation of rpi-audio-levels failed"
 
 # Install wiringpi-python
 log Installing wiringpi...
 pip install --upgrade git+https://broken2048@bitbucket.org/broken2048/wiringpi-python.git
 verify "Installation of wiringpi failed"
+
+# Install pygooglevoice
+log Installing pygooglevoice...
+pip install --upgrade git+https://github.com/pettazz/pygooglevoice.git
+verify "Installation of pygooglevoice failed"
 
 # Optionally add a line to /etc/sudoers
 if [ -f /etc/sudoers ]; then
