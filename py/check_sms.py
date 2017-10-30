@@ -106,7 +106,13 @@ class Sms(Thread):
         self.login()
 
         while not self.cancelled:
-            self.update()
+            try:
+                self.update()
+            except:
+                logging.error(
+                    'Error when checking for sms messages, will try again in 15 seconds.',
+                    exc_info=1)
+
             time.sleep(15)
 
     def cancel(self):
