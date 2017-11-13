@@ -111,6 +111,8 @@ for _dep in ${SYSTEM_DEPS[@]}; do
     pkginstall $_dep;
 done
 
+/usr/bin/easy_install -U pip
+
 # Install decoder
 log Installing decoder...
 pip install --upgrade git+https://tom_slick@bitbucket.org/tom_slick/decoder.py.git
@@ -123,7 +125,7 @@ for _dep in ${PYTHON_DEPS[@]}; do
 done
 
 log Installing rpi-audio-levels...
-pip install --upgrade git+https://tom_slick@bitbucket.org/tom_slick/rpi-audio-levels.git
+pip install git+https://tom_slick@bitbucket.org/tom_slick/rpi-audio-levels.git
 verify "Installation of rpi-audio-levels failed"
 
 # Install wiringpi-python
