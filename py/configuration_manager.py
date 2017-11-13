@@ -70,7 +70,7 @@ class Configuration(object):
         self.home_dir = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
         self.config_dir = self.home_dir + "/config/"
         self.log_dir = self.home_dir + "/logs/"
-        self.state_file = self.config_dir + "/state.cfg"
+        self.state_file = self.config_dir + "state.cfg"
 
         # ConfigParsers
         self.config = ConfigParser.RawConfigParser(allow_no_value=True)
@@ -113,24 +113,10 @@ class Configuration(object):
 
     def load_config(self):
         """Load config files into ConfigParser instance"""
-        self.config.readfp(open(self.config_dir + '/defaults.cfg'))
-
-        defaults = list()
-        for c_files in os.listdir(self.config_dir):
-            if c_files.endswith(".cfg"):
-                if c_files != "defaults.cfg" and \
-                              c_files != "state.cfg" and \
-                              "overrides" not in c_files:
-                    defaults.append(self.config_dir + c_files)
+        self.config.readfp(open(self.config_dir + 'defaults.cfg'))
 
         overrides = list()
-        for co_files in os.listdir(self.config_dir):
-            if co_files.endswith(".cfg") and "overrides" in co_files:
-                overrides.append(self.config_dir + co_files)
-
-        for config_file in defaults:
-            self.config.readfp(open(config_file))
-
+        overrides.append(self.config_dir + "overrides.cfg")
         self.config.read(overrides)
 
     # handle the program state / next 3 methods
