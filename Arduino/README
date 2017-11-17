@@ -72,19 +72,19 @@ config.
 So now we need to burn our sketch to the Arduino, I'll leave that for you.
 
 But there are a few variables that you have an option of changing.  They are 
-all in the global.h file.
+all optionally defined in the global.h file.
 
 SPI_DATA, SPI_CLOCK, ONEWIREPIN, rebootPin
-
-For SPI_DATA and SPI_CLOCK there are examples in there, just uncomment the 
-one you want to use.  But doing so is not nessary, if your Arduino has an ICSP
-header then you can use that and not have to change a thing. Included is ICSPHeader.jpg
-
 
 The only reason to change the ONEWIREPIN is if you are using it for something else
 
 The rebootPin, again the only reason to change it is if you are using that pin for 
 something else.
+
+For SPI_DATA and SPI_CLOCK see the notes at the bottom for modifications.
+Doing so is not nessary, if your Arduino has an ICSP
+header then you can use that and not have to change a thing. 
+Included is ICSPHeader.jpg
 
 Now that our sketch is loaded on the Arduino all we have to do is hook up the wires
 
@@ -96,8 +96,29 @@ Now that our sketch is loaded on the Arduino all we have to do is hook up the wi
    them from you Arduino
 5) run a common ground from the led strip or external power supply to any of the ground
    pins on the arduino.  pin 6 on the ICSP header is a ground for example.
-6) using a usb cable hook you RPI to your Arduino.
+6) use a usb cable hook you RPI to your Arduino.
 
 
+global.h notes :
+
+// define pins use with your arduino
+
+// ONEWIREPIN is for use with led strips that do not have a clock line
+// just a data line.
+#define ONEWIREPIN 2
+
+// Data and Clock pins
+// if you use the ICSP header you do not need to set these values.
+// If you need/want to you can set them to something else here.
+// Arduino Nano, Pro, Pro Mini, Micro, Uno, Duemilanove
+//#define SPI_DATA 11
+//#define SPI_CLOCK 13
+//arduino Mega
+//#define SPI_DATA 51
+//#define SPI_CLOCK 52
+
+// pin 15 is A0 on an Uno, on the Mega it is RX3.
+// you can change this to any free pin that you have
+#define rebootPin 15
 
 
