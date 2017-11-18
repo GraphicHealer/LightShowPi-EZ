@@ -1,4 +1,4 @@
-#include "FastLED.h"
+#include <FastLED.h>
 #include <EEPROM.h>
 #include "global.h"
 
@@ -145,7 +145,7 @@ void setup()
   digitalWrite(rebootPin, LOW);
   pinMode(rebootPin, OUTPUT);
 
-  Serial.begin(1000000);
+  Serial.begin(BAUD_RATE);
   Serial.setTimeout(1000);
 
   if (EEPROM.read(0) != CONFIGCHECK)
@@ -372,5 +372,5 @@ inline void getData()
 void loop()
 {
   getData();
-  FastLED.delay(0);
+//  FastLED.delay(0);
 }

@@ -2,6 +2,10 @@
 
 #define FIRMWARE_VER 3
 
+#define ONEWIREPIN 2
+
+#define BAUD_RATE 1000000
+
 template <class T> int EEPROM_writeAnything(int ee, const T& value)
 {
   const byte* p = (const byte*)(const void*)&value;
@@ -53,8 +57,6 @@ namespace RETURN_CODES
     ERROR_BAD_CMD = 4,
   };
 }
-
-#define ONEWIREPIN 2
 
 #define FREE_RAM_BUFFER 180
 
