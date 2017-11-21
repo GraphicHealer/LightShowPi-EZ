@@ -55,7 +55,7 @@ class PrePostShow(object):
         if hardware:
             self.hc = hardware
         else:
-            self.hc = __import__('hardware_controller')
+            self.hc = __import__('hardware_controller').Hardware()
             self.hc.initialize()
 
         self.config = self.hc.cm.lightshow.get(show)
