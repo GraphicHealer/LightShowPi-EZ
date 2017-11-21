@@ -212,8 +212,10 @@ class DriverSerial(DriverBase):
         raise IOError(error)
 
     def _connect(self):
+        allpixel = False
         try:
             if self.dev == "" or self.dev is None:
+                allpixel = True
                 DriverSerial.findSerialDevices(self._hardwareID)
 
                 if self.deviceID is not None:
@@ -277,10 +279,13 @@ class DriverSerial(DriverBase):
 
             if len(resp) == 0:
                 # Hack I had to add for my Arduinos to correct IOError
-                # self._com.write(packet)
-                # resp = self._com.read(1)
-                # if len(resp) == 0:
+                if allpixel:
                     DriverSerial._comError()
+                else:
+                    self._com.write(packet)
+                    resp = self._com.read(1)
+                    if len(resp) == 0:
+                        DriverSerial._comError()
 
             return ord(resp)
 
