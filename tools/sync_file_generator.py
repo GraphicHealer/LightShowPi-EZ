@@ -120,6 +120,14 @@ def cache_song(song_filename):
     sample_rate = musicfile.getframerate()
     num_channels = musicfile.getnchannels()
 
+    fft_calc = fft.FFT(CHUNK_SIZE,
+                       sample_rate,
+                       GPIOLEN,
+                       _MIN_FREQUENCY,
+                       _MAX_FREQUENCY,
+                       _CUSTOM_CHANNEL_MAPPING,
+                       _CUSTOM_CHANNEL_FREQUENCIES)
+
     song_filename = os.path.abspath(song_filename)
 
     # create empty array for the cache_matrix
@@ -136,14 +144,10 @@ def cache_song(song_filename):
     # Process audio song_filename
     row = 0
     data = musicfile.readframes(CHUNK_SIZE) # move chunk_size to configuration_manager
-    frequency_limits = calculate_channel_frequency(_MIN_FREQUENCY,
-                                                   _MAX_FREQUENCY,
-                                                   _CUSTOM_CHANNEL_MAPPING,
-                                                   _CUSTOM_CHANNEL_FREQUENCIES)
 
     while data != '':
         # No cache - Compute FFT in this chunk, and cache results
-        matrix = fft.calculate_levels(data, CHUNK_SIZE, sample_rate, frequency_limits, GPIOLEN)
+        matrix = fft_calc.calculate_levels(data)
 
         # Add the matrix to the end of the cache 
         cache_matrix = np.vstack([cache_matrix, matrix])
