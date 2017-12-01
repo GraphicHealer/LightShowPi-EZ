@@ -13,14 +13,14 @@ def main(exit_event):
     Start at each end and walk to the other using pwm
     """
     # this is a list of all the channels you have access to
-    lights = [pin for pin in range(len(hc._GPIO_PINS))]
+    lights = [pin for pin in range(len(hc.channels))]
     
     # the gpio pins in reversed order
     lights2 = lights[::-1]
     
     # get _PWM_MAX from the hc module
     # this is the max value for the pwm channels
-    pwm_max = hc._PWM_MAX
+    pwm_max = hc.pwm_max
     
     # start with all the lights off
     hc.turn_on_lights()

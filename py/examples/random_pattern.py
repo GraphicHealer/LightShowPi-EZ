@@ -16,7 +16,7 @@ def main(exit_event):
     # this is a list of all the channels you have access to
     # I'm also tracking the time here so that I know when I turned a light off
     # So I'm putting everything in a dict
-    gpio_pins = hc._GPIO_PINS
+    gpio_pins = hc.channels
     lights = dict.fromkeys(range(0, len(gpio_pins)), [True, time.time()])
 
     # get a number that is about 40% the length of your gpio's

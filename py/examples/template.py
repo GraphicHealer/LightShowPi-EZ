@@ -2,7 +2,7 @@
 
 import time
 
-lights = hc._GPIO_PINS
+lights = hc.channels
 
 # exit_event is passed in from the pre/post show script as is required
 # if an exit_event is generated the pre/post show script can terminate the script 
