@@ -13,7 +13,7 @@ def main(exit_event):
     Unlights one channel at a time in order
     """
     # this is a list of all the channels you have access to
-    lights = hc._GPIO_PINS
+    lights = hc.channels
 
     # start with all the lights off
     hc.turn_off_lights()

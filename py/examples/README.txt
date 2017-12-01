@@ -16,7 +16,7 @@ import time
 
 def main(exit_event):
 
-    lights = hc._GPIO_PINS
+    lights = hc.channels
     
     <a loop>
     
@@ -49,7 +49,7 @@ if you don't want to.  It just means that the script will have to finish before
 it exits.
 
 Then I think it's a good idea to assign the list of gpio pins to an easy to remember
-variable name, but _GPIO_PINS in hardware_controller is the same list,
+variable name, but channels in hardware_controller is the same list,
 you can decide which way you want to use them.
 You can also setup other things at this point if you need or want to.
 Setup other variables (like storing a start time from the time module)
