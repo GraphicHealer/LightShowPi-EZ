@@ -134,8 +134,6 @@ if parser.parse_args().createcache:
 log.basicConfig(filename=LOG_DIR + '/music_and_lights.play.dbg',
                 format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d} - %(message)s',
                 level=log.INFO)
-level = levels.get(parser.parse_args().log.upper())
-log.getLogger().setLevel(level)
 
 # import hardware_controller
 import hardware_controller
@@ -949,6 +947,12 @@ class Lightshow(object):
 
 if __name__ == "__main__":
     lightshow = Lightshow()
+
+    level = levels.get(parser.parse_args().log.upper())
+
+    if cm.lightshow.log_level != "":
+        level = levels.get(cm.lightshow.log_level.upper())
+    log.getLogger().setLevel(level)
 
     # Make sure one of --playlist or --file was specified
     if args.file is None and args.playlist is None:
