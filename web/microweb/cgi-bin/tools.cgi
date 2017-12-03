@@ -19,6 +19,7 @@ sys.path.insert(0, HOME_DIR + '/py')
 import hardware_controller 
 hc = hardware_controller.Hardware()
 cm = hc.cm
+hc.initialize(False)
 
 cgitb.enable()  # for troubleshooting
 form = cgi.FieldStorage()

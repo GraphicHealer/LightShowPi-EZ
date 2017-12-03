@@ -328,12 +328,13 @@ class Hardware(object):
         self.turn_off_lights()
         self.set_pins_as_inputs()
 
-    def initialize(self):
+    def initialize(self,reset=True):
         """Set pins as outputs and start all lights in the off state."""
         wiringpi.wiringPiSetup()
         self.enable_device()
         self.set_pins_as_outputs()
-        self.turn_off_lights()
+        if reset:
+            self.turn_off_lights()
 
 
 class Channel(object):
