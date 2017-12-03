@@ -73,6 +73,10 @@ print """
         <center>
             <h2> LightShowPi Web Controls </h2>
 
+            <form method="post" action="tools.cgi">
+                <input id="tools" type="image" src="/gearicon.png" >
+            </form>
+
             <div id="voldiv">
             <form method="post" action="web_controls.cgi">
                 <input id="volDown" type="submit" name="message" value="Volume -">

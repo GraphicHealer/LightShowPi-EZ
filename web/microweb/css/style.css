@@ -1,94 +1,200 @@
  
 h1 {
-    font-size: 30px;
-    color: blue;
+    font-size: 26px;
+    color: darkslateblue;
 }
-
+ 
 h2 {
-    font-size: 20px;
+    font-size: 18px;
 }
-
+ 
 h3 {
-    font-size: 14px;
+    font-size: 12px;
+}
+ 
+input#tools {
+    width: 26px;
+    height: 26px;
 }
 
-input[type="submit"] {
-    -webkit-transition: all 0.30s ease-in-out;
-    -moz-transition: all 0.30s ease-in-out;
-    -ms-transition: all 0.30s ease-in-out;
-    -o-transition: all 0.30s ease-in-out;
+td#onoff {
+    width: 60px;
+    text-align: right;
+    font-size: 20px
 }
 
-#on,#off,#next,#start {
+input[type=submit] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    -ms-appearance: none;
+    -o-appearance: none;
+    -khtml-appearance: none;
+    appearance: none;
+    -webkit-transition: all .3s ease-in-out;
+    -moz-transition: all .3s ease-in-out;
+    -ms-transition: all .3s ease-in-out;
+    -o-transition: all .3s ease-in-out;
+    -khtml-transition: all .3s ease-in-out;
+    transition: all .3s ease-in-out;
+}
+ 
+#on,
+#off,
+#next,
+#start {
+    outline: none;
     width: 300px;
-    height: 90px;
+    height: 80px;
     font-size: 30px;
+    -webkit-border-radius: 50px;
+    -moz-border-radius: 50px;
+    -ms-border-radius: 50px 0 50px;
+    -o-border-radius: 50px;
+    -khtml-border-radius: 50px;
+    border-radius: 50px;
+    padding: 5px;
 }
-
-#volUp,#volDown {
-    width: 120px;
-    height: 60px;
-    font-size: 20px;
-}
-
+ 
 #voldiv {
-    font-size: 24px;
-}
-
-#playlist {
+    display: block;
+    margin: 0 auto;
     width: 300px;
     height: 60px;
     font-size: 20px;
+ 
 }
-
+ 
+#volDown {
+    color: #000;
+    background-color: lightgray;
+    background: linear-gradient(white, lightgray);
+    margin-left: 0;
+    margin-right: auto;
+    outline: none;
+    width: 120px;
+    height: 50px;
+    font-size: 20px;
+    -webkit-border-radius: 50px 15px 15px 50px;
+    -moz-border-radius: 50px 15px 15px 50px;
+    -ms-border-radius: 50px 15px 15px 50px;
+    -o-border-radius: 50px 15px 15px 50px;
+    -khtml-border-radius: 50px 15px 15px 50px;
+    border-radius: 50px 15px 15px 50px;
+    padding: 5px;
+}
+ 
+#volUp {
+    color: #000;
+    background-color: lightgray;
+    background: linear-gradient(white, lightgray);
+    margin-left: auto;
+    margin-right: 0;
+    outline: none;
+    width: 120px;
+    height: 50px;
+    font-size: 20px;
+    -webkit-border-radius: 15px 50px 50px 15px;
+    -moz-border-radius: 15px 50px 50px 15px;
+    -ms-border-radius: 15px 50px 50px 15px;
+    -o-border-radius: 15px 50px 50px 15px;
+    -khtml-border-radius: 15px 50px 50px 15px;
+    border-radius: 15px 50px 50px 15px;
+    padding: 5px;
+}
+ 
+#playlist {
+    color: #000;
+    background-color: lightgray;
+    background: linear-gradient(white, lightgray);
+    outline: none;
+    width: 300px;
+    height: 60px;
+    font-size: 20px;
+    -webkit-border-radius: 50px;
+    -moz-border-radius: 50px;
+    -ms-border-radius: 50px 0 50px;
+    -o-border-radius: 50px;
+    -khtml-border-radius: 50px;
+    border-radius: 50px;
+    padding: 5px;
+}
+ 
 #playitem {
+    color: #000;
+    background-color: lightgray;
+    background: linear-gradient(white, lightgray);
+    outline: none;
     width: 300px;
     height: 50px;
     font-size: 30px;
+    -webkit-border-radius: 50px;
+    -moz-border-radius: 50px;
+    -ms-border-radius: 50px 0 50px;
+    -o-border-radius: 50px;
+    -khtml-border-radius: 50px;
+    border-radius: 50px;
+    padding: 5px;
 }
-
+ 
 #playnext {
+    color: #000;
+    background-color: yellow;
+    background: linear-gradient(white, yellow);
+    outline: none;
     width: 300px;
     height: 50px;
     font-size: 30px;
-    background-color: red;
+    -webkit-border-radius: 50px;
+    -moz-border-radius: 50px;
+    -ms-border-radius: 50px 0 50px;
+    -o-border-radius: 50px;
+    -khtml-border-radius: 50px;
+    border-radius: 50px;
+    padding: 5px;
 }
-
+ 
 #on {
-    color:white;
-    background-color: green;
+    color: #FFF;
+    background-color: darkgreen;
+    background: linear-gradient(white, darkgreen);
 }
-
-#on:hover { 
-    color:black;
+ 
+#on:hover {
+    color: #000;
     background-color: #7FFF00;
 }
-
+ 
 #off {
-    color:white;
-    background-color: red;
+    color: #FFF;
+    background-color: darkred;
+    background: linear-gradient(white, darkred);
 }
-#off:hover { 
-    color:black;
+ 
+#off:hover {
+    color: #000;
     background-color: #DB7093;
 }
-
+ 
 #start {
-    color:white;
-    background-color: blue;
+    color: #FFF;
+    background-color: darkslateblue;
+    background: linear-gradient(white, darkslateblue);
 }
-#start:hover { 
-    color:black;
+ 
+#start:hover {
+    color: #000;
     background-color: #87CEEB;
 }
-
+ 
 #next {
-    color:black;
-    background-color: yellow;
+    color: #000;
+    background-color: #FF0;
+    background: linear-gradient(white, yellow);
 }
-
-#next:hover { 
-    color:black;
+ 
+#next:hover {
+    color: #000;
     background-color: #FFFFE0;
 }
+
 
