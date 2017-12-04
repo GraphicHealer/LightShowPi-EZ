@@ -31,11 +31,15 @@ if message:
     if message == 'Shutdown':
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
+        os.system('pkill -f "chromium"')
+        sleep(2.0)
         hc.turn_off_lights()
         os.system("shutdown -h now")
     if message == 'Reboot':
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
+        os.system('pkill -f "chromium"')
+        sleep(2.0)
         hc.turn_off_lights()
         os.system("reboot")
 
