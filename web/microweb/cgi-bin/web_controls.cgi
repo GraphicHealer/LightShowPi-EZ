@@ -74,7 +74,7 @@ print """
             <h2> LightShowPi Web Controls </h2>
 
             <form method="post" action="tools.cgi">
-                <input id="tools" type="image" src="/gearicon.png" >
+                <input id="tools" type="image" src="/gearicon64.png" >
             </form>
 
             <div id="voldiv">
