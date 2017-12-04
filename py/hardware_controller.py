@@ -44,7 +44,7 @@ args = None
 def exit_function():
     """atexit function"""
     if args:
-        if not args.state == "on":
+        if not args.state == "on" and not args.state == "off":
             hc.turn_off_lights()
         if args.state == "random_pattern":
             exit_event.set()
