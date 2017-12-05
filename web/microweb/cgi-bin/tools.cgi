@@ -10,14 +10,19 @@ import cgi
 import cgitb
 import os
 import sys
-import fcntl
-import csv
+import ConfigParser
 from time import sleep
 
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 sys.path.insert(0, HOME_DIR + '/py')
 import hardware_controller 
-hc = hardware_controller.Hardware()
+
+state_file = HOME_DIR + '/web/microweb/config/webstate.cfg'
+state = ConfigParser.RawConfigParser()
+state.readfp(open(state_file))
+config_file = state.get('microweb','config')
+
+hc = hardware_controller.Hardware(param_config=config_file)
 cm = hc.cm
 hc.initialize(False)
 

@@ -39,6 +39,7 @@ import led_module
 import networking
 
 args = None
+cm = None
 
 
 def exit_function():
@@ -58,10 +59,6 @@ atexit.register(exit_function)
 #signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-# load configuration
-cm = configuration_manager.Configuration()
-
-
 # Test if running on a RaspberryPi
 is_a_raspberryPI = Platform.platform_detect() == 1
 
@@ -77,8 +74,11 @@ class LEDManager(BaseManager):
     pass
 
 class Hardware(object):
-    def __init__(self):
-        self.cm = cm
+
+    def __init__(self, param_config=None):
+        self.cm = configuration_manager.Configuration(param_config=param_config)
+        global cm
+        cm = self.cm
 
         # list to store the Channels instances in
         self.channels = list()
@@ -879,7 +879,6 @@ def main():
 
 
 if __name__ == "__main__":
-    hc = Hardware()
 
     signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 
@@ -908,8 +907,13 @@ if __name__ == "__main__":
                         help='number of light in a group')
     parser.add_argument('--pwm_speed', default=0.5,
                         help='time in seconds to full on or off')
+    parser.add_argument('--config', default="",
+                    help='Config File Override')
 
     args = parser.parse_args()
+
+    hc = Hardware(param_config=args.config)
+
     state = args.state
     sleep = float(args.sleep)
 

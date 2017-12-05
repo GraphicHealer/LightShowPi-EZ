@@ -114,9 +114,10 @@ levels = {'DEBUG': log.DEBUG,
 parser = argparse.ArgumentParser()
 parser.add_argument('--log', default='INFO',
                     help='Set the logging level. levels:INFO, DEBUG, WARNING, ERROR, CRITICAL')
+parser.add_argument('--config', default=None, help='Config File Override')
 
 file_group = parser.add_mutually_exclusive_group()
-file_group.add_argument('--playlist', default="playlist_path",
+file_group.add_argument('--playlist', default=None,
                         help='Playlist to choose song from.')
 file_group.add_argument('--file', help='path to the song to play (required if no '
                                        'playlist is designated)')
@@ -135,17 +136,18 @@ log.basicConfig(filename=LOG_DIR + '/music_and_lights.play.dbg',
                 format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d} - %(message)s',
                 level=log.INFO)
 
+args = parser.parse_args()
+
 # import hardware_controller
 import hardware_controller
 
-hc = hardware_controller.Hardware()
+hc = hardware_controller.Hardware(param_config=args.config)
 
 # get copy of configuration manager
 cm = hc.cm
 
-parser.set_defaults(playlist=cm.lightshow.playlist_path)
-args = parser.parse_args()
-
+if not args.playlist:
+    args.playlist=cm.lightshow.playlist_path
 
 class Lightshow(object):
     def __init__(self):

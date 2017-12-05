@@ -10,31 +10,28 @@ import cgi
 import cgitb
 import os
 import sys
-import fcntl
-import csv
+import subprocess
 import ConfigParser
 from time import sleep
 
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 sys.path.insert(0, HOME_DIR + '/py')
-import hardware_controller
 
 state_file = HOME_DIR + '/web/microweb/config/webstate.cfg'
 state = ConfigParser.RawConfigParser()
 state.readfp(open(state_file))
 config_file = state.get('microweb','config')
+if config_file:
+    config_param = '--config=' + config_file 
+else:
+    config_param = None
 
-hc = hardware_controller.Hardware(param_config=config_file)
-cm = hc.cm
 
 cgitb.enable()  # for troubleshooting
 form = cgi.FieldStorage()
-itemnext = form.getvalue("itemnumber", "")
+message = form.getvalue("message", "")
+use_file = form.getvalue("use_file", "")
 
-if itemnext:
-    itemnext = int(itemnext) + 1
-#    cm.update_state('song_to_play', str(itemnext -1))
-    cm.update_state('play_now', str(itemnext))
 
 print "Content-type: text/html"
 print
@@ -57,35 +54,44 @@ print """
     <body>
         <center>
             <h2> LightShowPi Web Controls </h2>
-            <h3> Playlist </h3>
+            <h3> Settings </h3>
 
             <form method="post" action="web_controls.cgi">
                 <input id="playlist" type="submit" value="Back">
             </form>
 
-     
+            <form method="post" action="settings.cgi">
+                <input type="hidden" name="message" value="Show Config"/>
+                <input id="playlist" type="submit" value="Show Config">
+            </form>
+
 """ 
 
-if itemnext:
-    itemnext -= 1
-else:
-    itemnext = int(cm.get_state('song_to_play', "0"))
-
-with open(cm.lightshow.playlist_path, 'rb') as playlist_fp:
-    fcntl.lockf(playlist_fp, fcntl.LOCK_SH)
-    playlist = csv.reader(playlist_fp, delimiter='\t')
-    
-    itemnumber = 0
-    for song in playlist:
-        print '<form method="post" action="playlist.cgi?itemnumber=' + str(itemnumber) + '">'
-        if itemnumber == itemnext:
-            input_id = 'playnext'
-        else:
-            input_id = 'playitem'
-        print '<input id="' + input_id + '" type="submit" name="item' + str(itemnumber) + '" value="' + song[0] + '">'
+for c_files in os.listdir(HOME_DIR + '/config'):
+    if c_files.endswith(".cfg") and "overrides" in c_files:
+        print '<form method="post" action="settings.cgi">'
+        print '<input type="hidden" name="use_file" value="' + c_files + '"/>'
+        print '<input id="playlist" type="submit" value="Use ' + c_files + '">'
         print '</form>'
-        itemnumber += 1
 
-    fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
+if use_file:
+    state.set('microweb','config',use_file)
+    with open(state_file, 'wb') as state_fp:
+        state.write(state_fp)
+
+if message:
+
+    if message == 'Show Config':
+
+	if config_param:
+            proc = subprocess.Popen(["python", HOME_DIR + "/py/configuration_manager.py", config_param], stdout=subprocess.PIPE)
+        else:
+            proc = subprocess.Popen(["python", HOME_DIR + "/py/configuration_manager.py"], stdout=subprocess.PIPE)
+        out = proc.communicate()[0]
+        print '</center>'
+	print '<pre>'
+        print out
+        print '</pre>'
+
 
 print "</body></html>"

@@ -25,7 +25,7 @@ from threading import Thread
 import configuration_manager
 import commands
 
-cm = configuration_manager.Configuration(True)
+cm = configuration_manager.Configuration(sms=True)
 
 logging.basicConfig(filename=configuration_manager.LOG_DIR + '/music_and_lights.check.dbg',
                     format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d}'
@@ -308,7 +308,10 @@ if __name__ == "__main__":
                              'configuration file for Google Voice')
     parser.add_argument('--log', default='INFO',
                         help='Set the logging level. levels:INFO, DEBUG, WARNING, ERROR, CRITICAL')
+    parser.add_argument('--config', default=None, help='Config File Override')
     args = parser.parse_args()
+
+    cm = configuration_manager.Configuration(sms=True,param_config=args.config)
 
     check_sms = Sms(args.setup)
     signal.signal(signal.SIGINT, lambda x, y: check_sms.cancel())

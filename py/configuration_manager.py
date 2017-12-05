@@ -25,6 +25,7 @@ import sys
 import warnings
 import json
 import shlex
+import argparse
 from collections import defaultdict
 
 # The home directory and configuration directory for the application.
@@ -61,7 +62,7 @@ class Configuration(object):
     to manage these configuration files.
     """
 
-    def __init__(self, sms=False):
+    def __init__(self, sms=False, param_config=None):
         self.gpio_len = None
         self.playlist = None
         self.playlist_path = None
@@ -71,6 +72,8 @@ class Configuration(object):
         self.config_dir = self.home_dir + "/config/"
         self.log_dir = self.home_dir + "/logs/"
         self.state_file = self.config_dir + "state.cfg"
+
+        self.param_config = param_config
 
         # ConfigParsers
         self.config = ConfigParser.RawConfigParser(allow_no_value=True)
@@ -116,7 +119,10 @@ class Configuration(object):
         self.config.readfp(open(self.config_dir + 'defaults.cfg'))
 
         overrides = list()
-        overrides.append(self.config_dir + "overrides.cfg")
+        if self.param_config:
+            overrides.append(self.config_dir + self.param_config)
+        else:
+            overrides.append(self.config_dir + "overrides.cfg")
         self.config.read(overrides)
 
     # handle the program state / next 3 methods
@@ -808,8 +814,14 @@ class Section(object):
 
 if __name__ == "__main__":
     # prints the current configuration
-    cm = Configuration()
-    sms_cm = Configuration(True)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', default=None, help='Config File Override')
+    args = parser.parse_args()
+
+    cm = Configuration(param_config=args.config)
+    sms_cm = Configuration(sms=True,param_config=args.config)
+
     print "Home directory set:", HOME_DIR
     print "Config directory set:", CONFIG_DIR
     print "Logs directory set:", LOG_DIR

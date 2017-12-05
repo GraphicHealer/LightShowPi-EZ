@@ -10,6 +10,7 @@ import cgi
 import cgitb
 import os
 import subprocess
+import ConfigParser
 from time import sleep
 
 
@@ -19,6 +20,15 @@ message = form.getvalue("message", "")
 
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 volume = subprocess.check_output([HOME_DIR + '/bin/vol'])
+
+state_file = HOME_DIR + '/web/microweb/config/webstate.cfg'
+state = ConfigParser.RawConfigParser()
+state.readfp(open(state_file))
+config_file = state.get('microweb','config')
+if config_file:
+    config_param = '--config=' + config_file + ' '
+else:
+    config_param = ''
 
 if message:
     if message == "Volume -":
@@ -36,19 +46,19 @@ if message:
     if message == "On":
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
-        os.system("python ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py --state=on")
+        os.system("python ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py " + config_param + "--state=on")
     if message == "Off":
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
-        os.system("python ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py --state=off")
+        os.system("python ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py " + config_param + "--state=off")
     if message == "Next":
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
         sleep(1)
     if message == "Start":
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
-        os.system("${SYNCHRONIZED_LIGHTS_HOME}/bin/play_sms &")
-        os.system("${SYNCHRONIZED_LIGHTS_HOME}/bin/check_sms &")
+        os.system("${SYNCHRONIZED_LIGHTS_HOME}/bin/play_sms " + config_param + "&")
+        os.system("${SYNCHRONIZED_LIGHTS_HOME}/bin/check_sms " + config_param + "&")
         sleep(1)
 
 print "Content-type: text/html"
@@ -73,9 +83,17 @@ print """
         <center>
             <h2> LightShowPi Web Controls </h2>
 
+            <table>
+            <tr><td>
             <form method="post" action="tools.cgi">
-                <input id="tools" type="image" src="/gearicon64.png" >
+                <input id="tools" type="image" src="/toolsicon64.png" >
             </form>
+            </td><td>
+            <form method="post" action="settings.cgi">
+                <input id="settings" type="image" src="/gearicon64.png" >
+            </form>
+            </td></tr>
+            </table>
 
             <div id="voldiv">
             <form method="post" action="web_controls.cgi">

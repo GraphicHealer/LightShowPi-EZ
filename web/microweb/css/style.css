@@ -6,15 +6,28 @@ h1 {
  
 h2 {
     font-size: 18px;
+    margin-top: 6px;
+    margin-bottom: 6px;
 }
  
 h3 {
     font-size: 12px;
 }
+
+pre {
+    display: block;
+}
  
 input#tools {
     width: 26px;
     height: 26px;
+    margin-right: 110px;
+}
+
+input#settings {
+    width: 26px;
+    height: 26px;
+    margin-left: 110px;
 }
 
 td#onoff {

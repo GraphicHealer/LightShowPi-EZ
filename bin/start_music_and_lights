@@ -4,6 +4,9 @@
 #
 # Author: Todd Giles (todd.giles@gmail.com)
 # Modifications: Chris Usey (chris.usey@gmail.com), Sean Millar (sean.millar@gmail.com)
+#
+# Usage: start_music_and_lights [ --config=filename.cfg ]
+# --config= will use the defined .cfg file in the $SYNCHRONIZED_LIGHTS_HOME/config directory
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -14,5 +17,5 @@ if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
 fi 
 
 $SYNCHRONIZED_LIGHTS_HOME/bin/stop_music_and_lights $$
-$SYNCHRONIZED_LIGHTS_HOME/bin/play_sms &
-$SYNCHRONIZED_LIGHTS_HOME/bin/check_sms &
+$SYNCHRONIZED_LIGHTS_HOME/bin/play_sms $* &
+$SYNCHRONIZED_LIGHTS_HOME/bin/check_sms $* &
