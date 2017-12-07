@@ -50,6 +50,8 @@ class Led(object):
         self.all_set_on = False
         self.test = False
 
+        self.leds = numpy.array([0 for _ in range(self.led_config.led_count)])
+
         self.per_channel = self.led_config.per_channel
         self.pattern_color = self.led_config.pattern_color
         self.pattern_color_map = self.led_config.pattern_color_map
@@ -83,7 +85,7 @@ class Led(object):
             self.write_all = self.write_matrix
 
         self.led.setMasterBrightness(int(self.max_brightness * 255))
-        atexit.register(self.exit_function)
+#        atexit.register(self.exit_function)
 
     def exit_function(self):
         if not self.all_set_on:
@@ -134,13 +136,19 @@ class Led(object):
         self.drops = [[0 for _ in range(self.led_config.led_count)] for _ in range(self.led_config.matrix_height)]
 
     def all_leds_off(self):
+        self.leds = numpy.array([0 for _ in range(self.led_config.led_count)])
         self.led.all_off()
         self.led.update()
 
     def all_leds_on(self):
-        leds = numpy.array([1 for _ in range(self.led_config.led_count)])
+        self.leds = numpy.array([1 for _ in range(self.led_config.led_count)])
         self.update_skip = 0
-        self.write_all(leds)
+        self.write_all(self.leds)
+
+    def write_leds(self, pin, value):
+        self.leds[pin] = value
+        self.update_skip = 0
+        self.write_all(self.leds)
 
     def write(self, pin, color):
         if self.led_config.led_configuration == "SERIALMATRIX":

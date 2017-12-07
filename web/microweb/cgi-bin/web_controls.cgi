@@ -80,10 +80,9 @@ print """
         <link rel="stylesheet" href="/css/style.css">
     </head>
     <body>
-        <center>
             <h2> LightShowPi Web Controls </h2>
 
-            <table>
+            <table class="center">
             <tr><td>
             <form method="post" action="tools.cgi">
                 <input id="tools" type="image" src="/toolsicon64.png" >
@@ -100,7 +99,7 @@ print """
                 <input id="volDown" type="submit" name="message" value="Volume -">
 """
 
-print "&nbsp" + volume + "&nbsp"
+print "&nbsp;" + volume + "&nbsp;"
 
 print """
                 <input id="volUp" type="submit" name="message" value="Volume +">

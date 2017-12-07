@@ -24,7 +24,6 @@ config_file = state.get('microweb','config')
 
 hc = hardware_controller.Hardware(param_config=config_file)
 cm = hc.cm
-hc.initialize(False)
 
 cgitb.enable()  # for troubleshooting
 form = cgi.FieldStorage()
@@ -38,22 +37,24 @@ if message:
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
         os.system('pkill -f "chromium"')
         sleep(2.0)
-        hc.turn_off_lights()
+#        hc.turn_off_lights()
         os.system("shutdown -h now")
     if message == 'Reboot':
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
         os.system('pkill -f "chromium"')
         sleep(2.0)
-        hc.turn_off_lights()
+#        hc.turn_off_lights()
         os.system("reboot")
 
 if channelon:
+    hc.initialize(False)
     os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
     os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
     hc.set_light(int(channelon)-1,False,1.0)
 
 if channeloff:
+    hc.initialize(False)
     os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
     os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
     hc.set_light(int(channeloff)-1,False,0.0)
@@ -78,7 +79,6 @@ print """
         <link rel="stylesheet" href="/css/style.css">
     </head>
     <body>
-        <center>
             <h2> LightShowPi Web Controls </h2>
             <h3> Tools </h3>
 
@@ -100,7 +100,7 @@ print """
 """ 
 
 
-print '<table>'
+print '<table class="center">'
 for channel in range(cm.hardware.gpio_len):
     channel = channel + 1
     print '<tr>'

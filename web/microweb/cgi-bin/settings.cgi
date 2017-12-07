@@ -52,7 +52,6 @@ print """
         <link rel="stylesheet" href="/css/style.css">
     </head>
     <body>
-        <center>
             <h2> LightShowPi Web Controls </h2>
             <h3> Settings </h3>
 
@@ -67,17 +66,22 @@ print """
 
 """ 
 
+if use_file:
+    config_file = use_file
+    state.set('microweb','config',use_file)
+    with open(state_file, 'wb') as state_fp:
+        state.write(state_fp)
+
 for c_files in os.listdir(HOME_DIR + '/config'):
     if c_files.endswith(".cfg") and "overrides" in c_files:
         print '<form method="post" action="settings.cgi">'
         print '<input type="hidden" name="use_file" value="' + c_files + '"/>'
-        print '<input id="playlist" type="submit" value="Use ' + c_files + '">'
+        if c_files == config_file:
+            input_id = "playnext"
+        else:
+            input_id = "playitem"
+        print '<input id="' + input_id + '" type="submit" value="Use ' + c_files + '">'
         print '</form>'
-
-if use_file:
-    state.set('microweb','config',use_file)
-    with open(state_file, 'wb') as state_fp:
-        state.write(state_fp)
 
 if message:
 
@@ -88,7 +92,6 @@ if message:
         else:
             proc = subprocess.Popen(["python", HOME_DIR + "/py/configuration_manager.py"], stdout=subprocess.PIPE)
         out = proc.communicate()[0]
-        print '</center>'
 	print '<pre>'
         print out
         print '</pre>'

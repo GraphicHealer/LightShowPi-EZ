@@ -318,6 +318,10 @@ class Hardware(object):
 
         self.channels[pin].set_action(use_overrides, brightness)
 
+        if self.led:
+            for led_instance in self.led:
+                led_instance.write_leds(pin,brightness)
+
     def clean_up(self):
         """
         Clean up and end the lightshow

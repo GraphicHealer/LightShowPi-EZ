@@ -17,15 +17,14 @@ from time import sleep
 
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 sys.path.insert(0, HOME_DIR + '/py')
-import hardware_controller
+import configuration_manager
 
 state_file = HOME_DIR + '/web/microweb/config/webstate.cfg'
 state = ConfigParser.RawConfigParser()
 state.readfp(open(state_file))
 config_file = state.get('microweb','config')
 
-hc = hardware_controller.Hardware(param_config=config_file)
-cm = hc.cm
+cm = configuration_manager.Configuration(param_config=config_file)
 
 cgitb.enable()  # for troubleshooting
 form = cgi.FieldStorage()
@@ -55,7 +54,6 @@ print """
         <link rel="stylesheet" href="/css/style.css">
     </head>
     <body>
-        <center>
             <h2> LightShowPi Web Controls </h2>
             <h3> Playlist </h3>
 

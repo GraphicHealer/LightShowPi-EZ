@@ -822,6 +822,13 @@ if __name__ == "__main__":
     cm = Configuration(param_config=args.config)
     sms_cm = Configuration(sms=True,param_config=args.config)
 
+    if args.config:
+        print "Configuration File:", args.config, "\n"
+    elif os.path.isfile(CONFIG_DIR + '/overrides.cfg'):
+        print "Configuration File: overrides.cfg\n"
+    else:
+        print "Configuration File: defaults.cfg\n"
+
     print "Home directory set:", HOME_DIR
     print "Config directory set:", CONFIG_DIR
     print "Logs directory set:", LOG_DIR
