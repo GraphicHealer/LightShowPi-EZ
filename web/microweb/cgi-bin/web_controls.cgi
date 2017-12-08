@@ -79,10 +79,10 @@ print """
         <link rel="apple-touch-icon" sizes="152x152" href="/favicon.png">
         <link rel="stylesheet" href="/css/style.css">
     </head>
-    <body>
+    <body class="centered-wrapper">
             <h2> LightShowPi Web Controls </h2>
 
-            <table class="center">
+            <table class="centered-content">
             <tr><td>
             <form method="post" action="tools.cgi">
                 <input id="tools" type="image" src="/toolsicon64.png" >
@@ -99,7 +99,7 @@ print """
                 <input id="volDown" type="submit" name="message" value="Volume -">
 """
 
-print "&nbsp;" + volume + "&nbsp;"
+print '<div id="volumediv" class="centered-content">' + volume + '</div>'
 
 print """
                 <input id="volUp" type="submit" name="message" value="Volume +">

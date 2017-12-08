@@ -516,15 +516,15 @@ class Lightshow(object):
 
                     always_on = "always_on_channels"
                     if config.has_option(lsc, always_on):
-                        hc.always_on_channels = map(int, config.get(lsc, always_on).split(","))
+                        cm.lightshow.always_on_channels = map(int, config.get(lsc, always_on).split(","))
 
                     always_off = "always_off_channels"
                     if config.has_option(lsc, always_off):
-                        hc.always_off_channels = map(int, config.get(lsc, always_off).split(","))
+                        cm.lightshow.always_off_channels = map(int, config.get(lsc, always_off).split(","))
 
                     inverted = "invert_channels"
                     if config.has_option(lsc, inverted):
-                        hc.inverted_channels = map(int, config.get(lsc, inverted).split(","))
+                        cm.lightshow.inverted_channels = map(int, config.get(lsc, inverted).split(","))
 
                     # setup up custom preshow
                     has_preshow_configuration = config.has_option(lsc, 'preshow_configuration')

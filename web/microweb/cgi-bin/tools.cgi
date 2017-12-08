@@ -100,7 +100,7 @@ print """
 """ 
 
 
-print '<table class="center">'
+print '<table class="centered-content">'
 for channel in range(cm.hardware.gpio_len):
     channel = channel + 1
     print '<tr>'

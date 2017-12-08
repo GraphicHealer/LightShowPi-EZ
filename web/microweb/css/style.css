@@ -1,4 +1,20 @@
 
+.centered-wrapper {
+    position: relative;
+    text-align: center;
+}
+.centered-wrapper:before {
+    content: "";
+    position: relative;
+    display: inline-block;
+    width: 0; height: 100%;
+    vertical-align: middle;
+}
+.centered-content {
+    display: inline-block;
+    vertical-align: middle;
+}
+
 body {
     text-align: center;
 }
@@ -77,6 +93,10 @@ input[type=submit] {
     border-radius: 50px;
     padding: 5px;
 }
+
+#volumediv {
+    padding-top: 12px;
+}
  
 #voldiv {
     display: block;
@@ -104,6 +124,7 @@ input[type=submit] {
     -khtml-border-radius: 50px 15px 15px 50px;
     border-radius: 50px 15px 15px 50px;
     padding: 5px;
+    float: left;
 }
  
 #volUp {
@@ -123,6 +144,7 @@ input[type=submit] {
     -khtml-border-radius: 15px 50px 50px 15px;
     border-radius: 15px 50px 50px 15px;
     padding: 5px;
+    float: right;
 }
  
 #playlist {
