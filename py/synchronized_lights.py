@@ -112,7 +112,7 @@ levels = {'DEBUG': log.DEBUG,
 
 # Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('--log', default='INFO',
+parser.add_argument('--log', default=None,
                     help='Set the logging level. levels:INFO, DEBUG, WARNING, ERROR, CRITICAL')
 parser.add_argument('--config', default=None, help='Config File Override')
 
@@ -948,18 +948,21 @@ class Lightshow(object):
 
 
 if __name__ == "__main__":
-    lightshow = Lightshow()
 
-    level = levels.get(parser.parse_args().log.upper())
-
-    if cm.lightshow.log_level != "":
+    if args.log:
+        level = levels.get(args.log.upper())
+    elif cm.lightshow.log_level != "":
         level = levels.get(cm.lightshow.log_level.upper())
+    else:
+        level = levels.get('INFO')
     log.getLogger().setLevel(level)
 
     # Make sure one of --playlist or --file was specified
     if args.file is None and args.playlist is None:
         print "One of --playlist or --file must be specified"
         sys.exit()
+
+    lightshow = Lightshow()
 
     if "-in" in cm.lightshow.mode:
         lightshow.audio_in()
