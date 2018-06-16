@@ -295,6 +295,7 @@ class Configuration(object):
         led["led_channel_configuration"] = self.led_config.get('led', 'led_channel_configuration').upper()
 
         led_count = self.led_config.getint('led', 'led_channel_count')
+        led["led_channel_count"] = led_count
         if led["led_configuration"]:
 
             led["led_count"] = led_count
@@ -360,14 +361,18 @@ class Configuration(object):
 
         led["matrix_width"] = self.led_config.getint('led', 'matrix_width')
         led["matrix_height"] = self.led_config.getint('led', 'matrix_height')
-        led["matrix_pattern_type"] = self.led_config.get('led', 'matrix_pattern_type').upper()
+        led["matrix_pattern_type"] = self.led_config.get('led', 'matrix_pattern_type').upper().split(",")
 
         file_name = self.led_config.get('led', 'image_path').replace('$SYNCHRONIZED_LIGHTS_HOME',
                                                                  self.home_dir)
         if os.path.isfile(file_name):
             led["image_path"] = file_name
         else:
-            led["image_path"] = self.home_dir + "/16xstar.gif"
+            led["image_path"] = self.home_dir + "/config/resources/16x16star8chan.gif"
+
+        led["multiprocess"] = False
+
+        led["beats"] = self.led_config.getint('led', 'beats')
 
         self.led = Section(led)
 

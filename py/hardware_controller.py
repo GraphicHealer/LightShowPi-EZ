@@ -98,10 +98,12 @@ class Hardware(object):
                     self.cm.set_led(config_file=lc)
                     self.ledmanager = LEDManager()
                     self.ledmanager.start()
+                    self.cm.led.multiprocess = True
                     self.led.append(self.ledmanager.LED(self.cm.led))
             else:
                 for lc in self.cm.configs.led:
                     self.cm.set_led(config_file=lc)
+                    self.cm.led.multiprocess = False
                     self.led.append(led_module.Led(self.cm.led))
 
         self.create_lights()
