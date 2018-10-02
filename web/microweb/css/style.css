@@ -43,6 +43,10 @@ table.center {
     margin-left:auto;
     margin-right:auto;
 }
+
+input[type=checkbox] {
+    text-align: left;
+}
  
 input#tools {
     width: 26px;
@@ -242,4 +246,9 @@ input[type=submit] {
     background-color: #FFFFE0;
 }
 
+#songlist {
+    margin: auto;
+    width: 300px;
+    text-align: left;
+}
 
