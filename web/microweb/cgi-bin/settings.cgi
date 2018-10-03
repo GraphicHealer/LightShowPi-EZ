@@ -41,6 +41,7 @@ form = cgi.FieldStorage()
 message = form.getvalue("message", "")
 use_file = form.getvalue("use_file", "")
 recreate = form.getvalue("recreate", "")
+updown = form.getvalue("updown", "")
 
 
 print "Content-type: text/html"
@@ -108,7 +109,7 @@ if recreate:
     playlist_path = overrides.get('lightshow','playlist_path')
     playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME',HOME_DIR)
     playlist_dir = os.path.dirname(playlist_path)
-    for song in os.listdir(playlist_dir):
+    for song in sorted(os.listdir(playlist_dir)):
         ext = os.path.splitext(song)[1]
         if form.getvalue(song):
             metadata = mutagen.File(playlist_dir + '/' + song, easy=True)
@@ -120,7 +121,7 @@ if recreate:
             else:
                 title = make_title(song)
 
-            entry = title + os.path.join(os.getcwd(), song)
+            entry = title + os.path.join(playlist_dir, song)
             entries.append(entry)
     if len(entries) > 0:
         with open(playlist_path, "w") as playlist:
@@ -128,9 +129,51 @@ if recreate:
         
         os.chown(playlist_path, uid, gid)
 
-    print "<p>Playlist Updated"
+        print "<p>Playlist Updated"
 
+if updown:
+    message = 'Edit Songs'
+    songupdown = form.getvalue('songupdown')
 
+    entries = []
+    config_path = (HOME_DIR + '/config/' + config_file)
+    overrides = ConfigParser.RawConfigParser()
+    overrides.readfp(open(config_path))
+    playlist_path = overrides.get('lightshow','playlist_path')
+    playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME',HOME_DIR)
+    playlist_dir = os.path.dirname(playlist_path)
+    counter = 0
+    for song in sorted(os.listdir(playlist_dir)):
+        if os.path.splitext(song)[1] in file_types:
+            pre = song.split(".")[0]
+            if not pre.isdigit():
+                os.rename(playlist_dir + '/' + song, playlist_dir + '/' + '%02d' % counter + '.' + song)
+            entries.append(song)
+            counter += 1
+
+    if updown == 'UP':
+        if entries.index(songupdown) > 0:
+            a,b = entries.index(songupdown), entries.index(songupdown) - 1
+            entries[a], entries[b] = entries[b], entries[a]
+            counter = 0
+            for song in entries:
+                pre = song.split(".")[0]
+                post = song.split(".")[1:]
+                os.rename(playlist_dir + '/' + song, playlist_dir + '/' + '%02d' % counter + '.' + ".".join(post))
+                counter += 1
+
+    if updown == 'DN':
+        if entries.index(songupdown) < len(entries) - 1:
+            a,b = entries.index(songupdown), entries.index(songupdown) + 1
+            entries[a], entries[b] = entries[b], entries[a]
+            counter = 0
+            for song in entries:
+                pre = song.split(".")[0]
+                post = song.split(".")[1:]
+                os.rename(playlist_dir + '/' + song, playlist_dir + '/' + '%02d' % counter + '.' + ".".join(post))
+                counter += 1
+                
+    
 if message:
 
     if message == 'Show Config':
@@ -157,18 +200,34 @@ if message:
                     line = line.split("\t")[1]
                     line = os.path.basename(line)
                     line = line.rstrip("\r\n")
-                    checkedfiles.append(line)
+                    pre = line.split(".")[0]
+                    if pre.isdigit():
+                        post = ".".join(line.split(".")[1:])
+                    else:
+                        post = line
+                    checkedfiles.append(post)
 
         playlist_dir = os.path.dirname(playlist_path)
         print '<p><div id="songlist">'
         print '<form method="post" action="settings.cgi">'
-        for song in os.listdir(playlist_dir):
+        print '<table>'
+        for song in sorted(os.listdir(playlist_dir)):
             if os.path.splitext(song)[1] in file_types:
-                if song in checkedfiles:
+                pre = song.split(".")[0]
+                if pre.isdigit():
+                    post = ".".join(song.split(".")[1:])
+                else:
+                    post = song
+                if post in checkedfiles:
                     chk = 'checked="checked"'
                 else:
                     chk = ''
-                print '<input type="checkbox" name="' + song + '" value="' + song + '" ' + chk + '>' + song + '<br>'
+                print '<tr>'
+                print '<td><input type="checkbox" name="' + song + '" value="' + song + '" ' + chk + '>' + song + '</td>'
+                print '<td><form method="post" name="updown"><input type="hidden" name="songupdown" value="' + song + '"/><input id="updown" name="updown" type="submit" value="UP"></form></td>'
+                print '<td><form method="post" name="updown"><input type="hidden" name="songupdown" value="' + song + '"/><input id="updown" name="updown" type="submit" value="DN"></form></td>'
+                print '</tr>'
+        print '</table>'
         print '<p><input id="recreate" name="recreate" type="submit" value="Recreate Playlist">'
         print '</form>'
         print '</div>'
