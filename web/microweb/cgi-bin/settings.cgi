@@ -144,7 +144,8 @@ if recreate:
             metadata = mutagen.File(playlist_dir + '/' + song, easy=True)
             if metadata is not None:
                 if "title" in metadata:
-                    title = metadata["title"][0] + "\t"
+                    mtitle = ''.join([i if ord(i) < 128 else '_' for i in metadata["title"][0]])
+                    title = mtitle + "\t"
                 else:
                     title = make_title(song)
             else:
