@@ -42,6 +42,7 @@ message = form.getvalue("message", "")
 use_file = form.getvalue("use_file", "")
 recreate = form.getvalue("recreate", "")
 updown = form.getvalue("updown", "")
+upload = form.getvalue("upload", "")
 
 
 print "Content-type: text/html"
@@ -75,6 +76,17 @@ print """
                 <input id="playlist" type="submit" value="Edit Songs">
             </form>
 
+            <p></p>
+
+            <form method="post" action="settings.cgi" enctype="multipart/form-data">
+                <input id="playlist" type="submit" value="Upload File" />
+                <p>
+                <input type="file" name="upload" value="Select File"/>
+                </p>
+            </form>
+
+            <p></p>
+
             <form method="post" action="settings.cgi">
                 <input type="hidden" name="message" value="Show Config"/>
                 <input id="playlist" type="submit" value="Show Config">
@@ -98,6 +110,23 @@ for c_files in os.listdir(HOME_DIR + '/config'):
             input_id = "playitem"
         print '<input id="' + input_id + '" type="submit" value="Use ' + c_files + '">'
         print '</form>'
+
+if upload:
+    message = 'Edit Songs'
+    config_path = (HOME_DIR + '/config/' + config_file)
+    overrides = ConfigParser.RawConfigParser()
+    overrides.readfp(open(config_path))
+    playlist_path = overrides.get('lightshow','playlist_path')
+    playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME',HOME_DIR)
+    playlist_dir = os.path.dirname(playlist_path)
+    filedata = form['upload']
+    filename = playlist_dir + '/' + filedata.filename
+    if filedata.file:
+        if os.path.splitext(filename)[1] in file_types:
+            with file(filename, 'w') as outfile:
+                outfile.write(filedata.file.read())
+            os.chown(filename, uid, gid)
+    
 
 if recreate:
     message = 'Edit Songs'
