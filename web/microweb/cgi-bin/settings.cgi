@@ -148,7 +148,11 @@ if updown:
             pre = song.split(".")[0]
             if not pre.isdigit():
                 os.rename(playlist_dir + '/' + song, playlist_dir + '/' + '%02d' % counter + '.' + song)
-            entries.append(song)
+                entries.append('%02d' % counter + '.' + song)
+                if (song == songupdown):
+                    songupdown = '%02d' % counter + '.' + song
+            else:
+                entries.append(song)
             counter += 1
 
     if updown == 'UP':
@@ -160,6 +164,10 @@ if updown:
                 pre = song.split(".")[0]
                 post = song.split(".")[1:]
                 os.rename(playlist_dir + '/' + song, playlist_dir + '/' + '%02d' % counter + '.' + ".".join(post))
+                if os.path.isfile(playlist_dir + '/' + '.' + song + '.sync'):
+                    os.rename(playlist_dir + '/' + '.' + song + '.sync', playlist_dir + '/' + '.%02d' % counter + '.' + ".".join(post) + '.sync')
+                if os.path.isfile(playlist_dir + '/' + '.' + song + '.cfg'):
+                    os.rename(playlist_dir + '/' + '.' + song + '.cfg', playlist_dir + '/' + '.%02d' % counter + '.' + ".".join(post) + '.cfg')
                 counter += 1
 
     if updown == 'DN':
@@ -171,6 +179,10 @@ if updown:
                 pre = song.split(".")[0]
                 post = song.split(".")[1:]
                 os.rename(playlist_dir + '/' + song, playlist_dir + '/' + '%02d' % counter + '.' + ".".join(post))
+                if os.path.isfile(playlist_dir + '/' + '.' + song + '.sync'):
+                    os.rename(playlist_dir + '/' + '.' + song + '.sync', playlist_dir + '/' + '.%02d' % counter + '.' + ".".join(post) + '.sync')
+                if os.path.isfile(playlist_dir + '/' + '.' + song + '.cfg'):
+                    os.rename(playlist_dir + '/' + '.' + song + '.cfg', playlist_dir + '/' + '.%02d' % counter + '.' + ".".join(post) + '.cfg')
                 counter += 1
                 
     
