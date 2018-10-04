@@ -54,6 +54,10 @@ All other modes will only restart the defined configuration.
       * can be any character or characters, but you must start with
       overrides and end with .cfg.
       microweb will use that file for all operations until changed.
+    - edit .playlist files
+      reorder files
+      use selected files
+    - upload music files to .playlist directory
 
 
 Have fun.
