@@ -40,7 +40,7 @@ class Networking(object):
 
     def setup(self):
         """Setup as either server or client"""
-        if self.networking == "server":
+        if self.networking == "server" or self.networking == "serverraw":
             self.setup_server()
         elif self.networking == "client":
             self.setup_client()
@@ -112,6 +112,15 @@ class Networking(object):
         if self.networking == "server":
             try:
                 data = cPickle.dumps(args)
+                self.network_stream.sendto(data, ('<broadcast>', self.port))
+            except socket.error, msg:
+                if msg[0] != 9:
+                    log.error(str(msg[0]) + ' ' + msg[1])
+                    print str(msg[0]) + ' ' + msg[1]
+
+        if self.networking == "serverraw":
+            try:
+                data = ' '.join(map(str, [(round(item,3)) for item in args[0]]))
                 self.network_stream.sendto(data, ('<broadcast>', self.port))
             except socket.error, msg:
                 if msg[0] != 9:
