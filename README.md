@@ -54,6 +54,15 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 Release Notes
 ============
 
+2018/10/16 :: Version 1.4
+-------------------------------
+
+* Microweb V3 with multiple features
+* More patterns and features for RGB LED Pixels
+* Option to add argument --config=overridesX.cfg to synchronized_lights.py and others
+* Networking serverraw option and NodeMCU sketch for client device 
+* Various bug-fixes and updates to support install on latest Raspbian versions and Pi 3b+
+
 2017/10/27 :: Version 1.3
 -------------------------------
 
