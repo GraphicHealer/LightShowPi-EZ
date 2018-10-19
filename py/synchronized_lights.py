@@ -179,7 +179,7 @@ class Lightshow(object):
         self.decay = np.zeros(cm.hardware.gpio_len, dtype='float32')
         self.physical_gpio_len = cm.hardware.physical_gpio_len
         self.network = hc.network
-        self.server = self.network.networking == "server" or self.network.networking == "serverraw"
+        self.server = self.network.networking == "server" or self.network.networking == "serverjson"
         self.client = self.network.networking == "client"
 
         if cm.lightshow.use_fifo:

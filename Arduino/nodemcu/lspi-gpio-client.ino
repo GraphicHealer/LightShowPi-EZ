@@ -1,22 +1,24 @@
+
 /*
- * A sketch for NodeMCU devices to receive raw udp data (truncated) when using :
+ * A sketch for NodeMCU devices to receive json udp data (truncated) when using :
  * [network]
- * networking = serverraw
+ * networking = serverjson
  * 
  * Author: KenB
- * Version: 1.0 ( experimental )
+ * Version: 1.1 ( experimental )
  * 
- * ToDo: Make parsing code more robust for damaged packets
+ * ToDo: 
 */
 
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
+#include <ArduinoJson.h>
 
 // Modify these lines :
 
 const char* deviceName = "nodemcu-lspi"; //your preferred device name on your network
 const char* ssid = "myssid";             //your wifi ssid
-const char* password = "mypassword";     //your wifi password
+const char* password = "mypasswd";     //your wifi password
 
 int gpio_pins[] = {4,5,13,14};           //these are NodeMCU GPIO pins you want to use
 /* 
@@ -55,11 +57,11 @@ void setup() {
   }
   pinMode(BUILTIN_LED1, OUTPUT);
   digitalWrite(BUILTIN_LED1, LOW);
-  Serial.println("Connected");
+  Serial.println("\nConnected");
 
   for (int i=0; i<(sizeof(gpio_pins)/sizeof(gpio_pins[0])) -1 ; i++) {
     pinMode(gpio_pins[i], OUTPUT);
-    Serial.printf("Set pinMode %d OUTPUT",gpio_pins[i]);
+    Serial.printf("Set pinMode %d OUTPUT\n",gpio_pins[i]);
     digitalWrite(gpio_pins[i], LOW);
   }
 
@@ -78,32 +80,27 @@ void loop() {
     {
       incomingPacket[len] = 0; 
     }
-    
 //    Serial.printf("UDP packet contents: %s\n", incomingPacket);
-    char *p;
-    char *parsevalue = strtok_r(incomingPacket, " ", &p);
-    int channelcount = 0;
-    while (parsevalue != NULL) {
-      if (channels[channelcount] >= 0 ) {
-
-        float pvf = String(parsevalue).toFloat();
-        if (pvf >= turnon) {
-//          Serial.printf("GPIO %d is ON\n", gpio_pins[channels[channelcount]]);
-          digitalWrite(gpio_pins[channels[channelcount]], HIGH);
-        } else {
-//          Serial.printf("GPIO %d is OFF\n", gpio_pins[channels[channelcount]]);
-          digitalWrite(gpio_pins[channels[channelcount]], LOW);
-        }
-
-      }
-      if (channelcount >= ( (sizeof(channels)/sizeof(channels[0])) -1 )) {
-        break;
-      }
-      parsevalue = strtok_r(NULL, " ", &p);
-      channelcount += 1;
-    }
-    
+    StaticJsonBuffer<512> jsonBuffer;
+    JsonObject& jsonobject = jsonBuffer.parseObject(incomingPacket);
+    JsonArray& dataarray = jsonobject["data"];
+    for (int i=0; i<dataarray.size() ; i++) {
+      if (channels[i] < 0 ) {
+        continue;
+      } 
+      float pvf = String(dataarray.get<char*>(i)).toFloat();
+//      Serial.printf("array elem %d = %f\n", i, pvf);
+      if (pvf >= turnon) {
+//        Serial.printf("GPIO %d is ON\n", gpio_pins[channels[i]]);
+        digitalWrite(gpio_pins[channels[i]], HIGH);
+      } else {
+//        Serial.printf("GPIO %d is OFF\n", gpio_pins[channels[i]]);
+        digitalWrite(gpio_pins[channels[i]], LOW);
+      }   
+         
+    }   
 //    digitalWrite(BUILTIN_LED1, LOW);
   }
 
 }
+

@@ -13,6 +13,7 @@ to send or receive data to/from lightshowpi network enabled raspberry pi(s).
 """
 
 import cPickle
+import json
 import logging as log
 import socket
 import numpy as np
@@ -40,7 +41,7 @@ class Networking(object):
 
     def setup(self):
         """Setup as either server or client"""
-        if self.networking == "server" or self.networking == "serverraw":
+        if self.networking == "server" or self.networking == "serverjson":
             self.setup_server()
         elif self.networking == "client":
             self.setup_client()
@@ -118,10 +119,11 @@ class Networking(object):
                     log.error(str(msg[0]) + ' ' + msg[1])
                     print str(msg[0]) + ' ' + msg[1]
 
-        if self.networking == "serverraw":
+        if self.networking == "serverjson":
             try:
-                data = ' '.join(map(str, [(round(item,3)) for item in args[0]]))
-                self.network_stream.sendto(data, ('<broadcast>', self.port))
+                data = list(map(str, [(round(item,3)) for item in args[0]]))
+                j_data = json.dumps({'data':(data)})
+                self.network_stream.sendto(j_data, ('<broadcast>', self.port))
             except socket.error, msg:
                 if msg[0] != 9:
                     log.error(str(msg[0]) + ' ' + msg[1])
