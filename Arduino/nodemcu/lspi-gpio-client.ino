@@ -5,10 +5,12 @@
  * networking = serverjson
  * 
  * Author: KenB
- * Version: 1.1 ( experimental )
+ * Version: 1.2 ( experimental )
  * 
  * ToDo: 
-*/
+ * 
+ * Notes: When Serial.print(s) are enabled in loop(), GPIO states may not sync 
+ */
 
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
@@ -16,28 +18,35 @@
 
 // Modify these lines :
 
-const char* deviceName = "nodemcu-lspi"; //your preferred device name on your network
-const char* ssid = "myssid";             //your wifi ssid
-const char* password = "mypasswd";     //your wifi password
+const char* deviceName = "nodemcu-lspi"; // your preferred device name on your network
+const char* ssid = "myssid";             // your wifi ssid
+const char* password = "mypasswd";       // your wifi password
 
-int gpio_pins[] = {4,5,13,14};           //these are NodeMCU GPIO pins you want to use
+/*
+ *  gpio_pins[]
+ *  an array of the NodeMCU GPIO pins you want to use
+ */
+//int gpio_pins[] = {4,5,12,13,14,15,0,3}; // all 8 available NodeMCU GPIOs, others may give you trouble
+int gpio_pins[] = {4,5,13,14};             // four basic GPIOs
+
 /* 
  *  channels[]
  *  must be the same number of elements as GPIOs the server is broadcasting ( typically 8 )
  *  negative numbers are ignored channels
  *  zero and up correspond to elements of the gpio_pins[] array above
-*/ 
+ */
+//int channels[] = {0,1,2,3,4,5,6,7};     // use all 8 channels when using 8 GPIOs
 //int channels[] = {-1,-2,-3,-4,0,1,2,3}; // ignore rcvd channels 1-4, use channels 5-8
-int channels[] = {0,1,2,3,-4,-5,-6,-7}; // ignore rcvd channels 5-8, use channels 1-4
+int channels[] = {0,1,2,3,-4,-5,-6,-7};   // ignore rcvd channels 5-8, use channels 1-4
 
 // Rarely modify these lines :
 
-char incomingPacket[512];  //increase the buffer size if your server gpios is really large
-unsigned int port = 8888;  //lspi standard
+char incomingPacket[512];  // increase the buffer size if your server gpios is really large
+unsigned int port = 8888;  // lspi standard
 
-float turnon = 0.4; //threshold for ON ( onoff only supported here )
+float turnon = 0.4; // threshold for ON ( onoff only supported here )
 
-const short int BUILTIN_LED1 = 2; //GPIO2 on the NodeMCU
+const short int BUILTIN_LED1 = 2; // GPIO2 on the NodeMCU
 
 WiFiUDP udp;
 
@@ -59,7 +68,7 @@ void setup() {
   digitalWrite(BUILTIN_LED1, LOW);
   Serial.println("\nConnected");
 
-  for (int i=0; i<(sizeof(gpio_pins)/sizeof(gpio_pins[0])) -1 ; i++) {
+  for (int i=0; i<(sizeof(gpio_pins)/sizeof(gpio_pins[0])); i++) {
     pinMode(gpio_pins[i], OUTPUT);
     Serial.printf("Set pinMode %d OUTPUT\n",gpio_pins[i]);
     digitalWrite(gpio_pins[i], LOW);
