@@ -8,7 +8,7 @@
 
 import cgi
 import cgitb
-import os
+import os, stat
 import subprocess
 import ConfigParser
 from time import sleep
@@ -29,6 +29,22 @@ if config_file:
     config_param = '--config=' + config_file + ' '
 else:
     config_param = ''
+    if os.path.isfile(HOME_DIR + '/config/overrides.cfg'):
+        config_file = 'overrides.cfg'
+    else:
+        config_file = 'defaults.cfg'
+
+cfg_file = HOME_DIR + '/config/' + config_file
+cfg = ConfigParser.RawConfigParser()
+cfg.readfp(open(cfg_file))
+lightshowmode = cfg.get('lightshow','mode')
+lightshowstc = cfg.get('lightshow','stream_command_string')
+
+if lightshowmode == "stream-in" and lightshowstc == "pianobar":
+    try:
+        os.stat('/root/.config/pianobar/ctl')
+    except OSError:
+        os.system('mkfifo /root/.config/pianobar/ctl')
 
 if message:
     if message == "Volume -":
@@ -51,8 +67,12 @@ if message:
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
         os.system("python ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py " + config_param + "--state=off")
-    if message == "Next":
+        sleep(2)
+    if message == "Next" and lightshowmode == "playlist":
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
+        sleep(1)
+    if message == "Next" and lightshowmode == "stream-in" and lightshowstc == "pianobar":
+        os.system('echo -n "n" > /root/.config/pianobar/ctl')
         sleep(1)
     if message == "Start":
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
@@ -105,11 +125,14 @@ print """
                 <input id="volUp" type="submit" name="message" value="Volume +">
             </form>
             </div>
-
+"""
+if lightshowmode == "playlist":
+    print """
             <form method="post" action="playlist.cgi">
                 <input id="playlist" type="submit" value="Playlist">
             </form>
-
+"""
+print """
             <form method="post" action="web_controls.cgi">
                 <input type="hidden" name="message" value="On"/>
                 <input id="on" type="submit" value="Lights ON">

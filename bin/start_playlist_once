@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Run the files in the playlist once
+# Author: Ken B
+# Usage: start_playlist_once [ .playlist ]
+
+PLAYLIST=$1
+
+if [ ! -f ${PLAYLIST} ]; then
+    echo "Playlist ${PLAYLIST} not found"
+    exit 1
+fi
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Check that the home environment variable is set
+if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
+    cat $DIR/env_error_msg
+    exit 1
+fi 
+
+$SYNCHRONIZED_LIGHTS_HOME/bin/stop_music_and_lights $$
+
+SONGCOUNT=`wc -l $PLAYLIST | cut -f1 -d' '`
+for (( i=1; i<=$SONGCOUNT; i++ ))
+do
+    sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py --playlist=$PLAYLIST
+done
+
+# Uncomment if you want to leave lights on after show
+
+#sudo python $SYNCHRONIZED_LIGHTS_HOME/py/hardware_controller.py --state=on
