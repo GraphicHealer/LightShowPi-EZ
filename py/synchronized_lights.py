@@ -523,6 +523,10 @@ class Lightshow(object):
                     inverted = "invert_channels"
                     if config.has_option(lsc, inverted):
                         hc.inverted_channels = map(int, config.get(lsc, inverted).split(","))
+                        
+                    attenuate = "attenuate_pct"
+                    if config.has_option(lsc, attenuate):
+                        self.attenuate_pct = float(config.get(lsc, attenuate))
 
                     # setup up custom preshow
                     has_preshow_configuration = config.has_option(lsc, 'preshow_configuration')
