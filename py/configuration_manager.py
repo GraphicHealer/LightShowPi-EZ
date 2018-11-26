@@ -25,6 +25,7 @@ import sys
 import warnings
 import json
 import shlex
+import argparse
 from collections import defaultdict
 
 # The home directory and configuration directory for the application.
@@ -61,7 +62,7 @@ class Configuration(object):
     to manage these configuration files.
     """
 
-    def __init__(self, sms=False):
+    def __init__(self, sms=False, param_config=None):
         self.gpio_len = None
         self.playlist = None
         self.playlist_path = None
@@ -71,6 +72,8 @@ class Configuration(object):
         self.config_dir = self.home_dir + "/config/"
         self.log_dir = self.home_dir + "/logs/"
         self.state_file = self.config_dir + "state.cfg"
+
+        self.param_config = param_config
 
         # ConfigParsers
         self.config = ConfigParser.RawConfigParser(allow_no_value=True)
@@ -116,7 +119,10 @@ class Configuration(object):
         self.config.readfp(open(self.config_dir + 'defaults.cfg'))
 
         overrides = list()
-        overrides.append(self.config_dir + "overrides.cfg")
+        if self.param_config:
+            overrides.append(self.config_dir + self.param_config)
+        else:
+            overrides.append(self.config_dir + "overrides.cfg")
         self.config.read(overrides)
 
     # handle the program state / next 3 methods
@@ -289,6 +295,7 @@ class Configuration(object):
         led["led_channel_configuration"] = self.led_config.get('led', 'led_channel_configuration').upper()
 
         led_count = self.led_config.getint('led', 'led_channel_count')
+        led["led_channel_count"] = led_count
         if led["led_configuration"]:
 
             led["led_count"] = led_count
@@ -354,14 +361,18 @@ class Configuration(object):
 
         led["matrix_width"] = self.led_config.getint('led', 'matrix_width')
         led["matrix_height"] = self.led_config.getint('led', 'matrix_height')
-        led["matrix_pattern_type"] = self.led_config.get('led', 'matrix_pattern_type').upper()
+        led["matrix_pattern_type"] = self.led_config.get('led', 'matrix_pattern_type').upper().split(",")
 
         file_name = self.led_config.get('led', 'image_path').replace('$SYNCHRONIZED_LIGHTS_HOME',
                                                                  self.home_dir)
         if os.path.isfile(file_name):
             led["image_path"] = file_name
         else:
-            led["image_path"] = self.home_dir + "/16xstar.gif"
+            led["image_path"] = self.home_dir + "/config/resources/16x16star8chan.gif"
+
+        led["multiprocess"] = False
+
+        led["beats"] = self.led_config.getint('led', 'beats')
 
         self.led = Section(led)
 
@@ -808,8 +819,21 @@ class Section(object):
 
 if __name__ == "__main__":
     # prints the current configuration
-    cm = Configuration()
-    sms_cm = Configuration(True)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', default=None, help='Config File Override')
+    args = parser.parse_args()
+
+    cm = Configuration(param_config=args.config)
+    sms_cm = Configuration(sms=True,param_config=args.config)
+
+    if args.config:
+        print "Configuration File:", args.config, "\n"
+    elif os.path.isfile(CONFIG_DIR + '/overrides.cfg'):
+        print "Configuration File: overrides.cfg\n"
+    else:
+        print "Configuration File: defaults.cfg\n"
+
     print "Home directory set:", HOME_DIR
     print "Config directory set:", CONFIG_DIR
     print "Logs directory set:", LOG_DIR

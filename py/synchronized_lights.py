@@ -112,11 +112,12 @@ levels = {'DEBUG': log.DEBUG,
 
 # Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('--log', default='INFO',
+parser.add_argument('--log', default=None,
                     help='Set the logging level. levels:INFO, DEBUG, WARNING, ERROR, CRITICAL')
+parser.add_argument('--config', default=None, help='Config File Override')
 
 file_group = parser.add_mutually_exclusive_group()
-file_group.add_argument('--playlist', default="playlist_path",
+file_group.add_argument('--playlist', default=None,
                         help='Playlist to choose song from.')
 file_group.add_argument('--file', help='path to the song to play (required if no '
                                        'playlist is designated)')
@@ -135,17 +136,18 @@ log.basicConfig(filename=LOG_DIR + '/music_and_lights.play.dbg',
                 format='[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d} - %(message)s',
                 level=log.INFO)
 
+args = parser.parse_args()
+
 # import hardware_controller
 import hardware_controller
 
-hc = hardware_controller.Hardware()
+hc = hardware_controller.Hardware(param_config=args.config)
 
 # get copy of configuration manager
 cm = hc.cm
 
-parser.set_defaults(playlist=cm.lightshow.playlist_path)
-args = parser.parse_args()
-
+if not args.playlist:
+    args.playlist=cm.lightshow.playlist_path
 
 class Lightshow(object):
     def __init__(self):
@@ -177,7 +179,7 @@ class Lightshow(object):
         self.decay = np.zeros(cm.hardware.gpio_len, dtype='float32')
         self.physical_gpio_len = cm.hardware.physical_gpio_len
         self.network = hc.network
-        self.server = self.network.networking == 'server'
+        self.server = self.network.networking == "server" or self.network.networking == "serverjson"
         self.client = self.network.networking == "client"
 
         if cm.lightshow.use_fifo:
@@ -514,16 +516,16 @@ class Lightshow(object):
 
                     always_on = "always_on_channels"
                     if config.has_option(lsc, always_on):
-                        hc.always_on_channels = map(int, config.get(lsc, always_on).split(","))
+                        cm.lightshow.always_on_channels = map(int, config.get(lsc, always_on).split(","))
 
                     always_off = "always_off_channels"
                     if config.has_option(lsc, always_off):
-                        hc.always_off_channels = map(int, config.get(lsc, always_off).split(","))
+                        cm.lightshow.always_off_channels = map(int, config.get(lsc, always_off).split(","))
 
                     inverted = "invert_channels"
                     if config.has_option(lsc, inverted):
-                        hc.inverted_channels = map(int, config.get(lsc, inverted).split(","))
-                        
+                        cm.lightshow.inverted_channels = map(int, config.get(lsc, inverted).split(","))
+
                     attenuate = "attenuate_pct"
                     if config.has_option(lsc, attenuate):
                         self.attenuate_pct = float(config.get(lsc, attenuate))
@@ -950,18 +952,21 @@ class Lightshow(object):
 
 
 if __name__ == "__main__":
-    lightshow = Lightshow()
 
-    level = levels.get(parser.parse_args().log.upper())
-
-    if cm.lightshow.log_level != "":
+    if args.log:
+        level = levels.get(args.log.upper())
+    elif cm.lightshow.log_level != "":
         level = levels.get(cm.lightshow.log_level.upper())
+    else:
+        level = levels.get('INFO')
     log.getLogger().setLevel(level)
 
     # Make sure one of --playlist or --file was specified
     if args.file is None and args.playlist is None:
         print "One of --playlist or --file must be specified"
         sys.exit()
+
+    lightshow = Lightshow()
 
     if "-in" in cm.lightshow.mode:
         lightshow.audio_in()

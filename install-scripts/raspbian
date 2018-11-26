@@ -16,8 +16,8 @@ SYSTEM_DEPS=(curl faad flac gcc git lame mpg123 make python-alsaaudio python-dev
 
 # Recent versions of the full Raspbian distro are installing these
 # Remove them so pip can install them properly
-apt-get remove python-simplejson
-apt-get remove python-serial
+apt-get -y remove python-simplejson
+apt-get -y remove python-serial
 
 # The ffmpeg library changed starting with Debian 8
 # Try to install ffmpeg first, then libav-tools

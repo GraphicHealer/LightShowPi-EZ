@@ -39,12 +39,13 @@ import led_module
 import networking
 
 args = None
+cm = None
 
 
 def exit_function():
     """atexit function"""
     if args:
-        if not args.state == "on":
+        if not args.state == "on" and not args.state == "off":
             hc.turn_off_lights()
         if args.state == "random_pattern":
             exit_event.set()
@@ -57,10 +58,6 @@ atexit.register(exit_function)
 # Remove traceback on Ctrl-C
 #signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-# load configuration
-cm = configuration_manager.Configuration()
-
 
 # Test if running on a RaspberryPi
 is_a_raspberryPI = Platform.platform_detect() == 1
@@ -77,8 +74,11 @@ class LEDManager(BaseManager):
     pass
 
 class Hardware(object):
-    def __init__(self):
-        self.cm = cm
+
+    def __init__(self, param_config=None):
+        self.cm = configuration_manager.Configuration(param_config=param_config)
+        global cm
+        cm = self.cm
 
         # list to store the Channels instances in
         self.channels = list()
@@ -98,10 +98,12 @@ class Hardware(object):
                     self.cm.set_led(config_file=lc)
                     self.ledmanager = LEDManager()
                     self.ledmanager.start()
+                    self.cm.led.multiprocess = True
                     self.led.append(self.ledmanager.LED(self.cm.led))
             else:
                 for lc in self.cm.configs.led:
                     self.cm.set_led(config_file=lc)
+                    self.cm.led.multiprocess = False
                     self.led.append(led_module.Led(self.cm.led))
 
         self.create_lights()
@@ -328,12 +330,13 @@ class Hardware(object):
         self.turn_off_lights()
         self.set_pins_as_inputs()
 
-    def initialize(self):
+    def initialize(self,reset=True):
         """Set pins as outputs and start all lights in the off state."""
         wiringpi.wiringPiSetup()
         self.enable_device()
         self.set_pins_as_outputs()
-        self.turn_off_lights()
+        if reset:
+            self.turn_off_lights()
 
 
 class Channel(object):
@@ -878,7 +881,6 @@ def main():
 
 
 if __name__ == "__main__":
-    hc = Hardware()
 
     signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 
@@ -907,8 +909,13 @@ if __name__ == "__main__":
                         help='number of light in a group')
     parser.add_argument('--pwm_speed', default=0.5,
                         help='time in seconds to full on or off')
+    parser.add_argument('--config', default="",
+                    help='Config File Override')
 
     args = parser.parse_args()
+
+    hc = Hardware(param_config=args.config)
+
     state = args.state
     sleep = float(args.sleep)
 

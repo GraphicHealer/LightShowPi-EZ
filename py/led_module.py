@@ -46,9 +46,13 @@ class Led(object):
         self.drops = None
         self.images = None
         self.p_type = None
+        self.p_num = 0
+        self.beats = 0
         self.write_all = None
         self.all_set_on = False
         self.test = False
+
+        self.leds = numpy.array([0 for _ in range(self.led_config.led_count)])
 
         self.per_channel = self.led_config.per_channel
         self.pattern_color = self.led_config.pattern_color
@@ -76,14 +80,14 @@ class Led(object):
             self.sacn_setup()
 
         if self.led_config.led_configuration == "STRIP":
-            self.led = LEDStrip(self.driver)
+            self.led = LEDStrip(self.driver,threadedUpdate=self.led_config.multiprocess)
             self.write_all = self.write_full
         elif self.led_config.led_configuration == "MATRIX":
             self.matrix_setup()
             self.write_all = self.write_matrix
 
         self.led.setMasterBrightness(int(self.max_brightness * 255))
-        atexit.register(self.exit_function)
+#        atexit.register(self.exit_function)
 
     def exit_function(self):
         if not self.all_set_on:
@@ -123,33 +127,43 @@ class Led(object):
                              height=self.led_config.matrix_height,
                              serpentine=True,
                              vert_flip=True,
-                             threadedUpdate=False)
+                             rotation=MatrixRotation.ROTATE_90,
+                             threadedUpdate=self.led_config.multiprocess)
 
         image_path = self.led_config.image_path
         for frame in ImageSequence.Iterator(Image.open(image_path)):
             rgba = Image.new("RGBA", frame.size)
             rgba.paste(frame)
             self.images.append(rgba)
+        self.base_image = Image.new("RGBA", self.images[0].size)
 
-        self.drops = [[0 for _ in range(self.led_config.led_count)] for _ in range(self.led_config.matrix_height)]
+        self.drops = [[0 for _ in range(self.led_config.matrix_height)] for _ in range(self.led_config.matrix_width)]
+
+        self._cY = int(self.led_config.matrix_width / 2)
+        self._cX = int(self.led_config.matrix_height / 2)
+        self._len = (self.led_config.matrix_width * 2) + (self.led_config.matrix_height * 2) - 2
+        self._step = 1
 
     def all_leds_off(self):
+        self.leds = numpy.array([0 for _ in range(self.led_config.led_count)])
         self.led.all_off()
         self.led.update()
 
     def all_leds_on(self):
-        leds = numpy.array([1 for _ in range(self.led_config.led_count)])
+        self.leds = numpy.array([1 for _ in range(self.led_config.led_count)])
         self.update_skip = 0
-        self.write_all(leds)
+        self.write_all(self.leds)
+
+    def write_leds(self, pin, value):
+        self.leds[pin] = value
+        self.update_skip = 0
+        self.write_all(self.leds)
 
     def write(self, pin, color):
-        if self.led_config.led_configuration == "SERIALMATRIX":
-            return
 
         self.led.set(pin, scale(color_map[color], color))
 
-        if pin == self.last or self.test:
-            self.led.update()
+        self.led.update()
 
     def write_full(self, pin_list):
         if self.update_skip != 0:
@@ -211,34 +225,98 @@ class Led(object):
             if self.update_skip >= 0:
                 return
 
+        if len(self.led_config.matrix_pattern_type) == 1:
+            self.p_type = self.led_config.matrix_pattern_type[0]
+        else:
+            for pin in xrange(len(pin_list)):
+                self.beats += pin_list[pin] * (len(pin_list) / (pin + 1)) * 0.002
+            if self.beats > self.led_config.beats:
+            	self.beats = 0
+                self.p_num += 1
+                if self.p_num >= len(self.led_config.matrix_pattern_type):
+                    self.p_num = 0
+            self.p_type = self.led_config.matrix_pattern_type[self.p_num]
+
         self.led.all_off()
 
+        h = self.led_config.matrix_height
+        w = self.led_config.matrix_width
+
         if self.p_type == 'SBARS':
-            for y in range(self.led_config.matrix_width):
-                y_ind = int(((self.last + 1.0) / self.led_config.matrix_width) * y)
-                for x_cord in range(int(pin_list[y_ind] * float(self.led_config.matrix_height))):
-                    rgb = color_map[int( 255.0 * float(x_cord) / float(self.led_config.matrix_height) )]
-                    self.led.set(x_cord, y_ind, rgb)
+            for y in range(h):
+                y_ind = int((float(len(pin_list)) / h) * y)
+                for x_cord in range(int(pin_list[y_ind] * float(w))):
+                    rgb = color_map[int( 255.0 * float(x_cord) / float(w) )]
+                    self.led.set(y_ind, x_cord, rgb)
+
         if self.p_type == 'MBARS':
             norm_arr = [int(x * 255) for x in pin_list]
             self.drops.append(norm_arr)
-            for y_cord in range(self.led_config.matrix_height):
-                for x in range(self.led_config.matrix_width):
-                    x_ind = int(((self.last + 1.0) / self.led_config.matrix_width) * x)
+            for y_cord in range(w):
+                for x in range(h):
+                    x_ind = int((float(len(pin_list)) / h) * x)
                     if self.drops[y_cord][x_ind] > 64:
                         rgb = scale(color_map[255 - self.drops[y_cord][x_ind]],
                                     int(self.drops[y_cord][x_ind] * 0.5))
-                        self.led.set(x, y_cord, rgb)
+                        self.led.set(x, w - 1 - y_cord, rgb)
             del self.drops[0]
+
         elif self.p_type == 'IMAGE':
-            complete_image = Image.new("RGBA", self.images[0].size)
+            complete_image = self.base_image
             for pin in xrange(len(pin_list)):
-                if pin_list[pin] > 0.25:
+                if pin_list[pin] > 0.55:
                     complete_image = ImageChops.add_modulo(complete_image, ImageEnhance.Brightness(
                         self.images[pin]).enhance(pin_list[pin]))
 
             image.showImage(self.led, "",
                             ImageEnhance.Brightness(complete_image).enhance(self.max_brightness * 0.5))
+
+        elif self.p_type == 'PINWHEEL':
+            amt = 0
+
+            for pin in xrange(len(pin_list)):
+                amt += pin_list[pin] * (len(pin_list) / (pin + 1)) * 0.25
+            amt = int(amt)
+
+            pos = 0
+            for x in range(h):
+                c = colors.hue_helper(pos, self._len, self._step)
+                self.led.drawLine(self._cX, self._cY, x, 0, c)
+                pos += 1
+
+            for y in range(w):
+                c = colors.hue_helper(pos, self._len, self._step)
+                self.led.drawLine(self._cX, self._cY, h - 1, y, c)
+                pos += 1
+
+            for x in range(h - 1, -1, -1):
+                c = colors.hue_helper(pos, self._len, self._step)
+                self.led.drawLine(self._cX, self._cY, x, w - 1, c)
+                pos += 1
+
+            for y in range(w - 1, -1, -1):
+                c = colors.hue_helper(pos, self._len, self._step)
+                self.led.drawLine(self._cX, self._cY, 0, y, c)
+                pos += 1
+
+            self._step += amt
+            if(self._step >= 255):
+                self._step = 0
+
+        elif self.p_type == 'CBARS':
+            midl = int(h / 2)
+            for y in range(w):
+                level = pin_list[int((y / float(w)) * float(self.led_config.led_channel_count))]
+                brightness = int(255 * level)
+                rgb = scale(color_map[brightness], brightness)
+                mlvl = int(level * midl)
+                self.led.drawLine(midl - mlvl, y,midl + mlvl, y,rgb)
+
+        elif self.p_type == 'CIRCLES':
+            for pin in xrange(len(pin_list)):
+                rgb = self.rgb[pin]
+                c = scale(rgb,int((pin_list[pin]) * 255))
+                self.led.drawCircle(self._cX,self._cY,pin,c)
 
         self.led.update()
         self.update_skip = self.skip
