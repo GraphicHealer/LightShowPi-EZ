@@ -337,6 +337,7 @@ class Hardware(object):
         self.set_pins_as_outputs()
         if reset:
             self.turn_off_lights()
+        self.set_overrides()
 
 
 class Channel(object):
