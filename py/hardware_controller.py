@@ -107,6 +107,7 @@ class Hardware(object):
                     self.led.append(led_module.Led(self.cm.led))
 
         self.create_lights()
+        self.set_overrides()
 
     # Methods
     @staticmethod
