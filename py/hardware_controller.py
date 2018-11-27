@@ -107,7 +107,6 @@ class Hardware(object):
                     self.led.append(led_module.Led(self.cm.led))
 
         self.create_lights()
-        self.set_overrides()
 
     # Methods
     @staticmethod
@@ -337,6 +336,7 @@ class Hardware(object):
         self.set_pins_as_outputs()
         if reset:
             self.turn_off_lights()
+        self.set_overrides()
 
 
 class Channel(object):
