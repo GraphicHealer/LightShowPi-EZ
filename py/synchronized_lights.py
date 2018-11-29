@@ -488,6 +488,7 @@ class Lightshow(object):
         preshow_script =
         postshow_configuration =
         postshow_script =
+        attenuate_pct =
 
         [custom_audio_processing]
         min_frequency =
