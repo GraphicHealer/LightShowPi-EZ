@@ -164,6 +164,7 @@ class Lightshow(object):
         self.cache_filename = None
         self.config_filename = None
         self.song_filename = None
+        self.song_playlist_name = "LightShowPi" #If LSPi is not playing from a playlist then set the PiFm rt flag to LightShowPi
         self.terminal = None
 
         self.output = lambda raw_data: None
@@ -298,6 +299,10 @@ class Lightshow(object):
                           cm.fm.frequency,
                           "-srate",
                           srate,
+                          "-ps",
+                          cm.fm.fm_radio_text,
+                          "-rt",
+                          self.song_playlist_name,
                           "-nochan",
                           "2" if self.num_channels > 1 else "1"]
 
@@ -758,6 +763,7 @@ class Lightshow(object):
 
             # Get filename to play and store the current song playing in state cfg
             self.song_filename = current_song[1]
+            self.song_playlist_name = current_song[0]
             cm.update_state('current_song', str(songs.index(current_song)))
 
         self.song_filename = self.song_filename.replace("$SYNCHRONIZED_LIGHTS_HOME", cm.home_dir)
