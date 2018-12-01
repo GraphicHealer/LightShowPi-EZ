@@ -82,6 +82,7 @@ import bright_curses
 import mutagen
 from Queue import Queue, Empty
 from threading import Thread
+import multiprocessing
 
 import alsaaudio as aa
 import decoder
@@ -302,6 +303,8 @@ class Lightshow(object):
                           cm.fm.program_service_name,
                           "-rt",
                           cm.fm.radio_text,
+                          "-ctl",
+                          cm.home_dir + "/bin/pifmrds_fifo",
                           "-nochan",
                           "2" if self.num_channels > 1 else "1"]
 
@@ -313,10 +316,19 @@ class Lightshow(object):
                                                stdout=dev_null)
         self.output = lambda raw_data: self.fm_process.stdin.write(raw_data)
 
+    def ps_loop(n, cm, ps):
+        ps_chunk_array = [ ps[i:i+8] for i in xrange(0, len(ps), 8) ]
+        while True:
+            for chunk in ps_chunk_array:
+                os.system("echo PS " + chunk + " > " + cm.home_dir + "/bin/pifmrds_fifo")
+                time.sleep(int(cm.fm.ps_increment_delay))
+
     def set_audio_device(self):
 
         if cm.fm.enabled:
             self.set_fm()
+            fm_ps_process = multiprocessing.Process(target=self.ps_loop, args=(cm, cm.fm.program_service_name))
+            fm_ps_process.start()
 
         elif cm.lightshow.audio_out_card is not '':
             if cm.lightshow.mode == 'stream-in':
