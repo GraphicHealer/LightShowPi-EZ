@@ -166,6 +166,7 @@ class Lightshow(object):
         self.config_filename = None
         self.song_filename = None
         self.terminal = None
+        self.fm_ps_process = None
 
         self.output = lambda raw_data: None
 
@@ -211,6 +212,7 @@ class Lightshow(object):
         hc.clean_up()
 
         if cm.fm.enabled:
+            self.fm_ps_process.terminate()
             self.fm_process.kill()
 
         if self.network.network_stream:
@@ -327,8 +329,8 @@ class Lightshow(object):
 
         if cm.fm.enabled:
             self.set_fm()
-            fm_ps_process = multiprocessing.Process(target=self.ps_loop, args=(cm, cm.fm.program_service_name))
-            fm_ps_process.start()
+            self.fm_ps_process = multiprocessing.Process(target=self.ps_loop, args=(cm, cm.fm.program_service_name))
+            self.fm_ps_process.start()
 
         elif cm.lightshow.audio_out_card is not '':
             if cm.lightshow.mode == 'stream-in':
