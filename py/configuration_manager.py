@@ -97,7 +97,6 @@ class Configuration(object):
             self.audio_processing = None
             self.network = None
             self.fm = None
-            self.program_service_name = None
             self.terminal = None
             self.led = None
             self.configs = None
@@ -385,6 +384,7 @@ class Configuration(object):
         fm["enabled"] = self.config.getboolean('fm', 'fm')
         fm["frequency"] = self.config.get('fm', 'frequency')
         fm["program_service_name"] = self.config.get('fm', 'program_service_name')
+        fm["radio_text"] = self.config.get('fm', 'radio_text')
         self.fm = Section(fm)
 
     def set_network(self):
