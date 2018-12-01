@@ -300,7 +300,7 @@ class Lightshow(object):
                           "-srate",
                           srate,
                           "-ps",
-                          cm.fm.fm_radio_text,
+                          cm.fm.program_service_name,
                           "-rt",
                           self.song_playlist_name,
                           "-nochan",
