@@ -384,6 +384,7 @@ class Configuration(object):
         fm["enabled"] = self.config.getboolean('fm', 'fm')
         fm["frequency"] = self.config.get('fm', 'frequency')
         fm["program_service_name"] = self.config.get('fm', 'program_service_name')
+        fm["ps_increment_delay"] = self.config.get('fm', 'ps_increment_delay')
         fm["radio_text"] = self.config.get('fm', 'radio_text')
         self.fm = Section(fm)
 
