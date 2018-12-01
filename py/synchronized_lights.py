@@ -909,6 +909,7 @@ class Lightshow(object):
 
         # Cleanup the pifm process
         if cm.fm.enabled:
+            self.fm_ps_process.terminate()
             self.fm_process.kill()
 
         # check for postshow
