@@ -323,7 +323,7 @@ class Lightshow(object):
         while True:
             for chunk in ps_chunk_array:
                 os.system("echo PS " + chunk + " > " + cm.home_dir + "/bin/pifmrds_fifo")
-                time.sleep(int(cm.fm.ps_increment_delay))
+                time.sleep(float(cm.fm.ps_increment_delay))
 
     def set_audio_device(self):
 
