@@ -155,6 +155,9 @@ export SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}
 export PATH=\$PATH:${INSTALL_DIR}/bin
 EOF
 
+# Create PiFmRds fifo pipe
+mkfifo ${INSTALL_DIR}/bin/pifmrds_fifo
+
 # Clean up after ourselves
 cd ${INSTALL_DIR} && rm -rf ${BUILD_DIR}
 
