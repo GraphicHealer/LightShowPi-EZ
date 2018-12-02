@@ -82,7 +82,6 @@ import bright_curses
 import mutagen
 from Queue import Queue, Empty
 from threading import Thread
-import multiprocessing
 
 import alsaaudio as aa
 import decoder
@@ -166,7 +165,6 @@ class Lightshow(object):
         self.config_filename = None
         self.song_filename = None
         self.terminal = None
-        self.fm_ps_process = None
 
         self.output = lambda raw_data: None
 
@@ -212,7 +210,6 @@ class Lightshow(object):
         hc.clean_up()
 
         if cm.fm.enabled:
-            self.fm_ps_process.terminate()
             self.fm_process.kill()
 
         if self.network.network_stream:
@@ -286,6 +283,8 @@ class Lightshow(object):
     def set_fm(self):
         pi_version = Platform.pi_version()
         srate = str(int(self.sample_rate / (1 if self.num_channels > 1 else 2)))
+        os.system('rm /tmp/fmfifo')
+        os.mkfifo('/tmp/fmfifo', 0777)
 
         fm_command = ["sudo",
                       cm.home_dir + "/bin/pifm",
@@ -306,7 +305,7 @@ class Lightshow(object):
                           "-rt",
                           cm.fm.radio_text,
                           "-ctl",
-                          cm.home_dir + "/bin/pifmrds_fifo",
+                          "/tmp/fmfifo",
                           "-nochan",
                           "2" if self.num_channels > 1 else "1"]
 
@@ -317,20 +316,22 @@ class Lightshow(object):
                                                stdin=subprocess.PIPE,
                                                stdout=dev_null)
         self.output = lambda raw_data: self.fm_process.stdin.write(raw_data)
+        
+        fmoutthr = Thread(target=self.update_fmout, args=(cm, cm.fm.program_service_name))
+        fmoutthr.daemon = True
+        fmoutthr.start()
 
-    def ps_loop(n, cm, ps):
+    def update_fmout(self, cm, ps):
         ps_chunk_array = [ ps[i:i+8] for i in xrange(0, len(ps), 8) ]
         while True:
             for chunk in ps_chunk_array:
-                os.system("echo PS " + chunk + " > " + cm.home_dir + "/bin/pifmrds_fifo")
+                os.system("echo PS " + chunk + " > /tmp/fmfifo")
                 time.sleep(float(cm.fm.ps_increment_delay))
 
     def set_audio_device(self):
 
         if cm.fm.enabled:
             self.set_fm()
-            self.fm_ps_process = multiprocessing.Process(target=self.ps_loop, args=(cm, cm.fm.program_service_name))
-            self.fm_ps_process.start()
 
         elif cm.lightshow.audio_out_card is not '':
             if cm.lightshow.mode == 'stream-in':
@@ -909,7 +910,6 @@ class Lightshow(object):
 
         # Cleanup the pifm process
         if cm.fm.enabled:
-            self.fm_ps_process.terminate()
             self.fm_process.kill()
 
         # check for postshow
