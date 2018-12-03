@@ -211,6 +211,7 @@ class Lightshow(object):
 
         if cm.fm.enabled:
             self.fm_process.kill()
+            os.unlink(cm.fm.fmfifo)
 
         if self.network.network_stream:
             self.network.close_connection()
@@ -283,8 +284,8 @@ class Lightshow(object):
     def set_fm(self):
         pi_version = Platform.pi_version()
         srate = str(int(self.sample_rate / (1 if self.num_channels > 1 else 2)))
-        os.system('rm /tmp/fmfifo')
-        os.mkfifo('/tmp/fmfifo', 0777)
+        os.unlink(cm.fm.fmfifo)
+        os.mkfifo(cm.fm.fmfifo, 0777)
 
         fm_command = ["sudo",
                       cm.home_dir + "/bin/pifm",
@@ -305,7 +306,7 @@ class Lightshow(object):
                           "-rt",
                           cm.fm.radio_text,
                           "-ctl",
-                          "/tmp/fmfifo",
+                          cm.fm.fmfifo,
                           "-nochan",
                           "2" if self.num_channels > 1 else "1"]
 
@@ -325,7 +326,7 @@ class Lightshow(object):
         ps_chunk_array = [ ps[i:i+8] for i in xrange(0, len(ps), 8) ]
         while True:
             for chunk in ps_chunk_array:
-                os.system("echo PS " + chunk + " > /tmp/fmfifo")
+                os.system("echo PS " + chunk + " > " + cm.fm.fmfifo)
                 time.sleep(float(cm.fm.ps_increment_delay))
 
     def set_audio_device(self):
