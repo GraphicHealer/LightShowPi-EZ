@@ -175,7 +175,7 @@ input[type=submit] {
     outline: none;
     width: 300px;
     height: 50px;
-    font-size: 30px;
+    font-size: 95%;
     -webkit-border-radius: 50px;
     -moz-border-radius: 50px;
     -ms-border-radius: 50px 0 50px;
@@ -192,7 +192,7 @@ input[type=submit] {
     outline: none;
     width: 300px;
     height: 50px;
-    font-size: 30px;
+    font-size: 95%;
     -webkit-border-radius: 50px;
     -moz-border-radius: 50px;
     -ms-border-radius: 50px 0 50px;
