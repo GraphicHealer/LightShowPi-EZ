@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+# Start the music and lights show (killing any existing instances first)
+#
+# Author: Todd Giles (todd.giles@gmail.com)
+# Modifications: Chris Usey (chris.usey@gmail.com), Sean Millar (sean.millar@gmail.com), Ken B
+#
+# Usage: start_config_microweb 
+# will use the microweb defined active .cfg file in the $SYNCHRONIZED_LIGHTS_HOME/config directory
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Check that the home environment variable is set
+if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
+    cat $DIR/env_error_msg
+    exit 1
+fi 
+
+CONFIG=`grep 'config = ' $SYNCHRONIZED_LIGHTS_HOME/web/microweb/config/webstate.cfg | sed 's/config = //'`
+
+if [ -z "${CONFIG}" ]; then
+    echo "Config file not selected"
+    exit 1
+fi
+
+if [ ! -f $SYNCHRONIZED_LIGHTS_HOME/config/$CONFIG ]; then
+    echo "Config file not found"
+    exit 1
+fi
+
+$SYNCHRONIZED_LIGHTS_HOME/bin/stop_music_and_lights $$
+$SYNCHRONIZED_LIGHTS_HOME/bin/play_sms --config=$CONFIG &
+$SYNCHRONIZED_LIGHTS_HOME/bin/check_sms --config=$CONFIG &

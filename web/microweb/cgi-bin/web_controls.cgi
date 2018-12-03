@@ -77,8 +77,8 @@ if message:
     if message == "Start":
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
         os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
-        os.system("${SYNCHRONIZED_LIGHTS_HOME}/bin/play_sms " + config_param + "&")
-        os.system("${SYNCHRONIZED_LIGHTS_HOME}/bin/check_sms " + config_param + "&")
+        os.popen("${SYNCHRONIZED_LIGHTS_HOME}/bin/play_sms " + config_param + "&")
+        os.popen("${SYNCHRONIZED_LIGHTS_HOME}/bin/check_sms " + config_param + "&")
         sleep(1)
 
 print "Content-type: text/html"
