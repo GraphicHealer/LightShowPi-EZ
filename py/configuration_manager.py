@@ -386,6 +386,7 @@ class Configuration(object):
         fm["program_service_name"] = self.config.get('fm', 'program_service_name')
         fm["ps_increment_delay"] = self.config.get('fm', 'ps_increment_delay')
         fm["radio_text"] = self.config.get('fm', 'radio_text')
+        fm["fmfifo"] = '/tmp/fmfifo'
         self.fm = Section(fm)
 
     def set_network(self):
