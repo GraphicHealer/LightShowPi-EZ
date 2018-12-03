@@ -86,6 +86,13 @@ class Led(object):
             self.matrix_setup()
             self.write_all = self.write_matrix
 
+        if self.pattern_color_map == 'MAP1A':
+            color_map[255] = self.pattern_color
+            self.pattern_color_map = 'MAP1'
+        if self.pattern_color_map == 'MAP2A':
+            color_map[0] = self.pattern_color
+            self.pattern_color_map = 'MAP2'
+
         self.led.setMasterBrightness(int(self.max_brightness * 255))
 #        atexit.register(self.exit_function)
 
@@ -190,6 +197,13 @@ class Led(object):
             elif self.pattern_color_map == 'FREQ1':
                 # rgb = color_map[int((float(pin) / (self.last + 1)) * 255)]
                 rgb = self.rgb[pin]
+                rgb = (int(rgb[0] * level), int(rgb[1] * level), int(rgb[2] * level))
+
+            elif self.pattern_color_map == 'FREQ1A':
+                if brightness < 255:
+                    rgb = self.rgb[pin]
+                else:
+                    rgb = self.pattern_color
                 rgb = (int(rgb[0] * level), int(rgb[1] * level), int(rgb[2] * level))
 
             elif self.pattern_color_map == 'MAP1':
