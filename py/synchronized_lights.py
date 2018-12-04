@@ -211,6 +211,7 @@ class Lightshow(object):
 
         if cm.fm.enabled:
             self.fm_process.kill()
+            os.unlink(cm.fm.fmfifo)
 
         if self.network.network_stream:
             self.network.close_connection()
@@ -283,6 +284,9 @@ class Lightshow(object):
     def set_fm(self):
         pi_version = Platform.pi_version()
         srate = str(int(self.sample_rate / (1 if self.num_channels > 1 else 2)))
+        if os.path.exists(cm.fm.fmfifo):
+            os.remove(cm.fm.fmfifo)
+        os.mkfifo(cm.fm.fmfifo, 0777)
 
         fm_command = ["sudo",
                       cm.home_dir + "/bin/pifm",
@@ -298,6 +302,12 @@ class Lightshow(object):
                           cm.fm.frequency,
                           "-srate",
                           srate,
+                          "-ps",
+                          cm.fm.program_service_name,
+                          "-rt",
+                          cm.fm.radio_text,
+                          "-ctl",
+                          cm.fm.fmfifo,
                           "-nochan",
                           "2" if self.num_channels > 1 else "1"]
 
@@ -308,6 +318,17 @@ class Lightshow(object):
                                                stdin=subprocess.PIPE,
                                                stdout=dev_null)
         self.output = lambda raw_data: self.fm_process.stdin.write(raw_data)
+        
+        fmoutthr = Thread(target=self.update_fmout, args=(cm, cm.fm.program_service_name))
+        fmoutthr.daemon = True
+        fmoutthr.start()
+
+    def update_fmout(self, cm, ps):
+        ps_chunk_array = [ ps[i:i+8] for i in xrange(0, len(ps), 8) ]
+        while True:
+            for chunk in ps_chunk_array:
+                os.system("echo PS " + chunk + " > " + cm.fm.fmfifo)
+                time.sleep(float(cm.fm.ps_increment_delay))
 
     def set_audio_device(self):
 
@@ -758,6 +779,8 @@ class Lightshow(object):
 
             # Get filename to play and store the current song playing in state cfg
             self.song_filename = current_song[1]
+            if (cm.fm.radio_text == "playlist"):
+                cm.fm.radio_text = current_song[0]
             cm.update_state('current_song', str(songs.index(current_song)))
 
         self.song_filename = self.song_filename.replace("$SYNCHRONIZED_LIGHTS_HOME", cm.home_dir)
