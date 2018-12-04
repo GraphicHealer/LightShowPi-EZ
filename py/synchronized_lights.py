@@ -284,7 +284,8 @@ class Lightshow(object):
     def set_fm(self):
         pi_version = Platform.pi_version()
         srate = str(int(self.sample_rate / (1 if self.num_channels > 1 else 2)))
-        os.unlink(cm.fm.fmfifo)
+        if os.path.exists(cm.fm.fmfifo):
+            os.remove(cm.fm.fmfifo)
         os.mkfifo(cm.fm.fmfifo, 0777)
 
         fm_command = ["sudo",
