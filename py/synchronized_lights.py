@@ -234,7 +234,7 @@ class Lightshow(object):
         :param matrix: row of data from cache matrix
         :type matrix: list
         """
-        brightness = matrix - self.mean + (self.std * 0.5)
+        brightness = matrix - self.mean + (self.std * self.sd_low)
         brightness = (brightness / (self.std * (self.sd_low + self.sd_high))) \
             * (1.0 - (self.attenuate_pct / 100.0))
 
