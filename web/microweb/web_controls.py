@@ -9,7 +9,12 @@
 import BaseHTTPServer
 import CGIHTTPServer_root
 import cgitb; cgitb.enable()  ## This line enables CGI error reporting
-import os
+import os, sys
+
+def excepthook(etype,ex,tb):
+    sys.stdout.flush()
+
+sys.excepthook = excepthook
  
 server = BaseHTTPServer.HTTPServer
 handler = CGIHTTPServer_root.CGIHTTPRequestHandler

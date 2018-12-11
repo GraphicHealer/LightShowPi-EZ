@@ -191,7 +191,12 @@ class CGIHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                     if len(authorization) == 2:
                         env['REMOTE_USER'] = authorization[0]
         if self.user is not None and self.password is not None:
-            if not authorization or self.user != authorization[0] or self.password != authorization[1]:
+            if not authorization: 
+                self.send_response(401, "Unauthorized")
+                self.send_header("WWW-Authenticate", "Basic")
+                self.end_headers()
+                return
+            elif self.user != authorization[0] or self.password != authorization[1]:
                 self.send_error(401, "Unauthorized")
                 return
                         

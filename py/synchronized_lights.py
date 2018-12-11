@@ -225,6 +225,8 @@ class Lightshow(object):
             if cm.lightshow.use_fifo:
                 os.unlink(cm.lightshow.fifo)
 
+        os.system("/bin/echo \"\" >" + cm.home_dir + "/logs/now_playing.txt")
+
     def update_lights(self, matrix):
         """Update the state of all the lights
 
@@ -440,10 +442,12 @@ class Lightshow(object):
                     print streamout
                     if cm.lightshow.stream_song_delim in streamout:
                         songcount+=1
+                        streamout = streamout.replace('\033[2K','')
+                        streamout = streamout.replace(cm.lightshow.stream_song_delim,'')
+                        streamout = streamout.replace('"','')
+                        os.system("/bin/echo " + "Now Playing \"" + streamout + "\"" + " >" + cm.home_dir + "/logs/now_playing.txt")
+
                         if cm.lightshow.songname_command:
-                            streamout = streamout.replace('\033[2K','')
-                            streamout = streamout.replace(cm.lightshow.stream_song_delim,'')
-                            streamout = streamout.replace('"','')
                             os.system(cm.lightshow.songname_command + ' "Now Playing ' + streamout + '"')
 
                     if cm.lightshow.stream_song_exit_count > 0 and songcount > cm.lightshow.stream_song_exit_count:
@@ -791,11 +795,13 @@ class Lightshow(object):
         self.cache_filename = \
             os.path.dirname(filename) + "/." + os.path.basename(self.song_filename) + ".sync"
 
-        if cm.lightshow.songname_command:
-            metadata = mutagen.File(self.song_filename, easy=True)
-            if not metadata is None:
-                if "title" in metadata:
-                    now_playing = "Now Playing " + metadata["title"][0] + " by " + metadata["artist"][0]
+        os.system("/bin/echo \"\" >" + cm.home_dir + "/logs/now_playing.txt")
+        metadata = mutagen.File(self.song_filename, easy=True)
+        if not metadata is None:
+            if "title" in metadata:
+                now_playing = "Now Playing " + metadata["title"][0] + " by " + metadata["artist"][0]
+                os.system("/bin/echo " + " \"" + now_playing + "\"" + " >" + cm.home_dir + "/logs/now_playing.txt")
+                if cm.lightshow.songname_command:
                     os.system(cm.lightshow.songname_command + " \"" + now_playing + "\"")
 
     def play_song(self):
