@@ -5,8 +5,6 @@
 # http://www.lightshowpi.org/
 #
 # Author: Ken B
-# 
-# Basic Auth for web-facing controls
 
 listenport = 28080
 username = "externaluser"
@@ -31,12 +29,6 @@ handler.cgi_directories = ["/cgi-bin"]
 handler.user = username
 handler.password = password
 
-try: 
-    httpd = server(server_address, handler)
-    httpd.serve_forever()
-
-#except KeyboardInterrupt:
-#    os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
-#    os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
-
+httpd = server(server_address, handler)
+httpd.serve_forever()
 
