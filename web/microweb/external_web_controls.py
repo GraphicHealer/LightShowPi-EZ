@@ -5,10 +5,17 @@
 # http://www.lightshowpi.org/
 #
 # Author: Ken B
+#
+# Note : The three values that follow can be anything, but an empty password is not allowed.
+#        Since this is web facing, please use adequate user/pass complexity and reuse principles 
 
 listenport = 28080
 username = "externaluser"
-password = "2Usm9b7E7324jyrT1kO90"
+password = ""
+
+if not password:
+    print("Empty password is not allowed!")
+    exit(1)
 
 import BaseHTTPServer
 import CGIHTTPServer_root

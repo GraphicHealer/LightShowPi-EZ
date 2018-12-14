@@ -190,6 +190,9 @@ class CGIHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                     authorization = authorization.split(':')
                     if len(authorization) == 2:
                         env['REMOTE_USER'] = authorization[0]
+        if self.user is not None and (self.password is None or not self.password):
+            self.send_error(500, "Internal Server Error : authentication misconfiguration")
+            return
         if self.user is not None and self.password is not None:
             if not authorization: 
                 self.send_response(401, "Unauthorized")
