@@ -298,6 +298,7 @@ class Configuration(object):
         try:
             led["custom_per_channel"] = map(int, g_leds.split(","))
             led["led_channel_count"] = len(led["custom_per_channel"])
+            led_count = len(led["custom_per_channel"])
         except (AttributeError, ValueError):
             led["custom_per_channel"] = list()
             led["led_channel_count"] = led_count
