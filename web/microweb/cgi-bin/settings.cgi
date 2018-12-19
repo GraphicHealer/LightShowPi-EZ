@@ -119,6 +119,10 @@ if upload:
     playlist_path = overrides.get('lightshow','playlist_path')
     playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME',HOME_DIR)
     playlist_dir = os.path.dirname(playlist_path)
+    if not os.path.isdir(playlist_dir):
+        print '<p><h2>Please create ' + playlist_dir + '</h2></p>'
+        print "</body></html>"
+        sys.exit()
     filedata = form['upload']
     filename = playlist_dir + '/' + filedata.filename
     if filedata.file:
@@ -250,6 +254,10 @@ if message:
                     checkedfiles.append(post)
 
         playlist_dir = os.path.dirname(playlist_path)
+        if not os.path.isdir(playlist_dir):
+            print '<p><h2>Please create ' + playlist_dir + '</h2></p>'
+            print "</body></html>"
+            sys.exit()
         print '<p><div id="songlist">'
         print '<form method="post" action="settings.cgi">'
         print '<table>'
