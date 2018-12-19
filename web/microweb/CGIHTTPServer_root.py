@@ -42,6 +42,9 @@ class CGIHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     """
 
+    user = None
+    password = None
+
     # Determine platform specifics
     have_fork = hasattr(os, 'fork')
     have_popen2 = hasattr(os, 'popen2')
@@ -184,10 +187,22 @@ class CGIHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                         authorization = base64.decodestring(authorization[1])
                     except binascii.Error:
                         pass
-                    else:
-                        authorization = authorization.split(':')
-                        if len(authorization) == 2:
-                            env['REMOTE_USER'] = authorization[0]
+                    authorization = authorization.split(':')
+                    if len(authorization) == 2:
+                        env['REMOTE_USER'] = authorization[0]
+        if self.user is not None and (self.password is None or not self.password):
+            self.send_error(500, "Internal Server Error : authentication misconfiguration")
+            return
+        if self.user is not None and self.password is not None:
+            if not authorization: 
+                self.send_response(401, "Unauthorized")
+                self.send_header("WWW-Authenticate", "Basic")
+                self.end_headers()
+                return
+            elif self.user != authorization[0] or self.password != authorization[1]:
+                self.send_error(401, "Unauthorized")
+                return
+                        
         # XXX REMOTE_IDENT
         if self.headers.typeheader is None:
             env['CONTENT_TYPE'] = self.headers.type

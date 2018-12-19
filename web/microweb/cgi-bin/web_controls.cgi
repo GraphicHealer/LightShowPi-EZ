@@ -146,6 +146,11 @@ print """
 
 cmd = 'pgrep -f "python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py"'
 if os.system(cmd) == 0:
+    try:
+        with open(HOME_DIR + '/logs/now_playing.txt') as f: now_playing = f.read()
+    except IOError:
+        now_playing = None
+        pass
     print """
         <form method="post" action="web_controls.cgi">
             <input type="hidden" name="message" value="Next"/>
@@ -153,6 +158,7 @@ if os.system(cmd) == 0:
         </form>
 """
 else:
+    now_playing = None
     print """
         <form method="post" action="web_controls.cgi">
             <input type="hidden" name="message" value="Start"/>
@@ -162,5 +168,8 @@ else:
 
 if message:
     print """<h2>Executed command: %s</h2>""" % cgi.escape(message)
+
+if now_playing:
+    print """<h3>%s<h3>""" % cgi.escape(now_playing)
 
 print "</body></html>"

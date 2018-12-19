@@ -68,7 +68,11 @@ class Led(object):
         self.max_brightness = self.led_config.max_brightness / 100.0
 
         if self.led_config.led_configuration == "STRIP":
-            self.led_count = self.led_config.led_count * self.led_config.per_channel
+            if self.led_config.custom_per_channel:
+                self.led_count = sum(self.led_config.custom_per_channel)
+            else:
+                self.led_count = self.led_config.led_count * self.led_config.per_channel
+
         elif self.led_config.led_configuration == "MATRIX":
             self.led_count = self.led_config.matrix_width * self.led_config.matrix_height
 
@@ -182,12 +186,17 @@ class Led(object):
 
         brightnesses = pin_list * 255
         brightnesses = brightnesses.astype(int)
-        half_channels = self.led_config.per_channel / 2
-        midl = int(half_channels)
+        midl = int(self.led_config.per_channel / 2)
+        lastl = self.led_config.per_channel - 1
         pin = 0
 
         for level, brightness in zip(pin_list, brightnesses):
-            sled = pin * self.per_channel
+            if self.led_config.custom_per_channel:
+                sled = sum(self.led_config.custom_per_channel[0:pin])
+                midl = int(self.led_config.custom_per_channel[pin] / 2)
+                lastl = self.led_config.custom_per_channel[pin] - 1
+            else:
+                sled = pin * self.per_channel
 
             if self.pattern_color_map == 'MONO':
                 rgb = (int(level * self.pattern_color[0]),
@@ -220,13 +229,14 @@ class Led(object):
                 self.led.fill(rgb, sled + midl - mlvl, sled + midl + mlvl)
 
             elif self.led_config.pattern_type == 'FULL':
-                self.led.fill(rgb, sled, sled + self.led_config.per_channel - 1)
+                self.led.fill(rgb, sled, sled + lastl)
 
             elif self.led_config.pattern_type == 'LBARS':
-                midl = int(half_channels) + sled
-                for gled in range(0, int((half_channels) * level)):
-                    self.led.set(midl + gled, int_map[int((float(gled) / half_channels) * 255)])
-                    self.led.set(midl - gled, int_map[int((float(gled) / half_channels) * 255)])
+                midled = midl + sled
+                for gled in range(0, int(midl * level)):
+                    cmrgb = color_map[int((float(gled) / midl) * 255)]
+                    self.led.set(midled + gled, cmrgb)
+                    self.led.set(midled - gled, cmrgb)
 
             pin += 1
 

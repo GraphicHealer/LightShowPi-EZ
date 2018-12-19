@@ -292,10 +292,19 @@ class Configuration(object):
         else:
             led["channel_order"] = "RGB"
         
+        led_count = self.led_config.getint('led', 'led_channel_count')
+
+        g_leds = self.led_config.get('led', 'custom_per_channel')
+        try:
+            led["custom_per_channel"] = map(int, g_leds.split(","))
+            led["led_channel_count"] = len(led["custom_per_channel"])
+            led_count = len(led["custom_per_channel"])
+        except (AttributeError, ValueError):
+            led["custom_per_channel"] = list()
+            led["led_channel_count"] = led_count
+
         led["led_channel_configuration"] = self.led_config.get('led', 'led_channel_configuration').upper()
 
-        led_count = self.led_config.getint('led', 'led_channel_count')
-        led["led_channel_count"] = led_count
         if led["led_configuration"]:
 
             led["led_count"] = led_count

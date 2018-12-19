@@ -5,6 +5,17 @@
 # http://www.lightshowpi.org/
 #
 # Author: Ken B
+#
+# Note : The three values that follow can be anything, but an empty password is not allowed.
+#        Since this is web facing, please use adequate user/pass complexity and reuse principles 
+
+listenport = 28080
+username = "externaluser"
+password = ""
+
+if not password:
+    print("Empty password is not allowed!")
+    exit(1)
 
 import BaseHTTPServer
 import CGIHTTPServer_root
@@ -18,17 +29,13 @@ sys.excepthook = excepthook
  
 server = BaseHTTPServer.HTTPServer
 handler = CGIHTTPServer_root.CGIHTTPRequestHandler
-server_address = ("", 80)
+server_address = ("", listenport)
 lspitools = os.getenv("SYNCHRONIZED_LIGHTS_HOME") + "/web/microweb"
 os.chdir(lspitools)
 handler.cgi_directories = ["/cgi-bin"]
+handler.user = username
+handler.password = password
 
-try: 
-    httpd = server(server_address, handler)
-    httpd.serve_forever()
-
-except KeyboardInterrupt:
-    os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
-    os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
-
+httpd = server(server_address, handler)
+httpd.serve_forever()
 

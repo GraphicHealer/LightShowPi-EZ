@@ -110,7 +110,7 @@ def pi_version():
 	(type,header) = get_model()
 	if type == 'Pi 2 Model B':
             return 2
-	if type == 'Pi 3 Model B' or type == 'Pi 3 Model B+':
+	if type == 'Pi 3 Model B' or type == 'Pi 3 Model B+' or type == 'Pi 3 Model A+':
             return 3
         else:
             return 1
@@ -191,6 +191,9 @@ def get_model():
     
     elif model in ["d3"]:
         return "Pi 3 Model B+", header40
+    
+    elif model in ["e0"]:
+        return "Pi 3 Model A+", header40
     
     elif model in ["92", "93", "c1"]:
         return "Pi Zero", header40
