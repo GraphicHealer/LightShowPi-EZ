@@ -216,4 +216,4 @@ if __name__ == "__main__":
                     help='Config File Override')
     args = parser.parse_args()
 
-    PrePostShow(show_to_call).execute()
+    PrePostShow(show_to_call,config=args.config).execute()
