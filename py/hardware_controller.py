@@ -191,8 +191,7 @@ class Hardware(object):
                                          cm.hardware.is_pin_pwm[channel],
                                          cm.hardware.active_low_mode,
                                          cm.hardware.pwm_range,
-                                         cm.hardware.piglow,
-                                         self.led))
+                                         cm.hardware.piglow))
 
     def set_overrides(self):
         """
@@ -337,7 +336,6 @@ class Hardware(object):
         self.set_pins_as_outputs()
         if reset:
             self.turn_off_lights()
-        self.set_overrides()
 
 
 class Channel(object):
@@ -345,7 +343,7 @@ class Channel(object):
     Channel class
     """
 
-    def __init__(self, pin_number, pin_mode, active_low_mode, pwm_max, piglow=False, led=None):
+    def __init__(self, pin_number, pin_mode, active_low_mode, pwm_max, piglow=False):
         self.pin_number = pin_number
         self.pwm = pin_mode
 
@@ -359,41 +357,31 @@ class Channel(object):
         self.always_on = False
         self.always_off = False
         self.inverted = False
-        self.is_led = False
-        self.led_m = led
 
-        if pin_number > 999:
-            self.is_led = True
-            self.pin_number -= 1000
-            self.action = lambda b: self.led_m.write(self.pin_number, int(b * 255))
-            self.active_low_mode = False
+        if self.pwm:
+            self.action = lambda b: wiringpi.softPwmWrite(self.pin_number,
+                                                          int(b * self.pwm_max))
+        elif piglow:
+            self.action = lambda b: wiringpi.analogWrite(self.pin_number + 577, int(b * 255))
         else:
-            if self.pwm:
-                self.action = lambda b: wiringpi.softPwmWrite(self.pin_number,
-                                                              int(b * self.pwm_max))
-            elif piglow:
-                self.action = lambda b: wiringpi.analogWrite(self.pin_number + 577, int(b * 255))
-            else:
-                self.action = lambda b: wiringpi.digitalWrite(self.pin_number, int(b > 0.5))
+            self.action = lambda b: wiringpi.digitalWrite(self.pin_number, int(b > 0.5))
 
     def set_as_input(self):
         """
         set up this pin as input
         """
         self.inout = 'pin is input'
-        if not self.is_led:
-            wiringpi.pinMode(self.pin_number, 0)
+        wiringpi.pinMode(self.pin_number, 0)
 
     def set_as_output(self):
         """
         set up this pin as output
         """
         self.inout = 'pin is output'
-        if not self.is_led:
-            if self.pwm:
-                wiringpi.softPwmCreate(self.pin_number, 0, self.pwm_max)
-            else:
-                wiringpi.pinMode(self.pin_number, 1)
+        if self.pwm:
+            wiringpi.softPwmCreate(self.pin_number, 0, self.pwm_max)
+        else:
+            wiringpi.pinMode(self.pin_number, 1)
 
     def set_always_on(self, value):
         """
@@ -430,10 +418,10 @@ class Channel(object):
         1.0 is full on
 
         """
-        if self.active_low_mode and not self.is_led:
+        if self.active_low_mode:
             brightness = 1.0 - brightness
 
-        if use_overrides and not self.is_led:
+        if use_overrides:
             if self.always_off:
                 brightness = 0
             elif self.always_on:
@@ -481,20 +469,20 @@ def fade(from_test=False):
     """Fade lights in and out in sequence"""
     # Test fading in and out for each light configured in pwm mode
     if not from_test:
-        print "Press <CTRL>-C to stop"
+        print("Press <CTRL>-C to stop")
 
     if ccm:
-        print "custom channel mapping is being used"
-        print "multiple channels may display that the same time"
+        print("custom channel mapping is being used")
+        print("multiple channels may display that the same time")
 
     while True:
         for light in lights:
             if ccm:
                 for p in ccm_map[light]:
-                    print "channel %s : gpio pin number %d" % (str(p + 1), cm.hardware.gpio_pins[p])
+                    print("channel %s : gpio pin number %d" % (str(p + 1), cm.hardware.gpio_pins[p]))
             else:
-                print "channel %s : gpio pin number %d" % (
-                    str(light + 1), cm.hardware.gpio_pins[light])
+                print("channel %s : gpio pin number %d" % (
+                    str(light + 1), cm.hardware.gpio_pins[light]))
 
             print
 
@@ -509,7 +497,7 @@ def fade(from_test=False):
                         light_on(light, False, float(brightness) / cm.hardware.pwm_range)
                         time.sleep(sleep / cm.hardware.pwm_range)
             else:
-                print "channel %s not set to pwm mode" % light
+                print("channel %s not set to pwm mode" % light)
 
         if from_test:
             return
@@ -518,20 +506,20 @@ def fade(from_test=False):
 def flash(from_test=False):
     """Flash lights in sequence"""
     if not from_test:
-        print "Press <CTRL>-C to stop"
+        print("Press <CTRL>-C to stop")
 
     if ccm:
-        print "custom channel mapping is being used"
-        print "multiple channels may display that the same time"
+        print("custom channel mapping is being used")
+        print("multiple channels may display that the same time")
 
     while True:
         for light in lights:
             if ccm:
                 for p in ccm_map[light]:
-                    print "channel %s : gpio pin number %d" % (str(p + 1), cm.hardware.gpio_pins[p])
+                    print("channel %s : gpio pin number %d" % (str(p + 1), cm.hardware.gpio_pins[p]))
             else:
-                print "channel %s : gpio pin number %d" % (
-                    str(light + 1), cm.hardware.gpio_pins[light])
+                print("channel %s : gpio pin number %d" % (
+                    str(light + 1), cm.hardware.gpio_pins[light]))
 
             print
 
@@ -554,7 +542,7 @@ def cylon():
     time.sleep(1)
 
     # working loop
-    print "Press <CTRL>-C to stop"
+    print("Press <CTRL>-C to stop")
     while True:
         # here we just loop over the gpio pins and do something with them
         # except the last one
@@ -653,7 +641,7 @@ def random_pattern():
         light_group[-1].setDaemon(True)
         light_group[-1].start()
 
-    print "press <ctrl-c> to exit"
+    print("press <ctrl-c> to exit")
     while True:
         time.sleep(.1)
 
@@ -718,17 +706,17 @@ def dance():
 
 def step():
     """Test fading in and out for each light configured in pwm mode"""
-    print "Press <CTRL>-C to stop"
+    print("Press <CTRL>-C to stop")
     while True:
         for light in lights:
-            print "channel %s " % light
+            print("channel %s " % light)
             for brightness in range(0, cm.hardware.pwm_range):
                 # fade in
                 light_on(light, False, float(brightness) / cm.hardware.pwm_range)
                 time.sleep(sleep / cm.hardware.pwm_range)
 
         for light in reversed(lights):
-            print "channel %s " % light
+            print("channel %s " % light)
             for brightness in range(cm.hardware.pwm_range - 1, -1, -1):
                 # fade out
                 if cm.hardware.is_pin_pwm[light]:
@@ -741,27 +729,27 @@ def step():
 def test():
     model, header = Platform.get_model()
 
-    print "We are going to do some basic tests to make sure"
-    print "your hardware is working as expected."
-    print "Raspberry Pi %s" % model
-    print "You have %s channels defined" % str(cm.hardware.gpio_len)
-    print "They are using gpio pins %s" % ", ".join(map(str, cm.hardware.gpio_pins))
-    print "You have configured your relays as active %s" % (
-        "low" if cm.hardware.active_low_mode else "high")
-    print "pin_modes are %s " % ", ".join(cm.hardware.pin_modes)
-    print "custom_channel_mapping %s being used" % ("is" if ccm else "is not")
+    print("We are going to do some basic tests to make sure")
+    print("your hardware is working as expected.")
+    print("Raspberry Pi %s" % model)
+    print("You have %s channels defined" % str(cm.hardware.gpio_len))
+    print("They are using gpio pins %s" % ", ".join(map(str, cm.hardware.gpio_pins)))
+    print("You have configured your relays as active %s" % (
+        "low" if cm.hardware.active_low_mode else "high"))
+    print("pin_modes are %s " % ", ".join(cm.hardware.pin_modes))
+    print("custom_channel_mapping %s being used" % ("is" if ccm else "is not"))
 
     if ccm:
-        print "[%s]" % ", ".join(map(str, cm.audio_processing.custom_channel_mapping))
+        print("[%s]" % ", ".join(map(str, cm.audio_processing.custom_channel_mapping)))
 
-    print "\nFirst we are going to flash each light in order to see if they are all working"
+    print("\nFirst we are going to flash each light in order to see if they are all working")
 
     raw_input("Press Enter to continue....")
 
     flash(True)
 
-    print "If everything went correctly you should have seen each of your channels"
-    print "flash one at a time in order of assignment."
+    print("If everything went correctly you should have seen each of your channels")
+    print("flash one at a time in order of assignment.")
 
     while True:
         answer = raw_input("Did you see all channels flash in order? (yes/no) ").lower()
@@ -770,25 +758,25 @@ def test():
 
         if answer in yes or answer in no:
             if answer in yes:
-                print "Great, your basic config is ready for you to start with\n\n"
+                print("Great, your basic config is ready for you to start with\n\n")
 
                 sys.exit(1)
 
             if answer in no:
-                print "Lets make sure you're using the correct gpio pins"
-                print "Here is what the %s header looks like\n" % model
-                print header
+                print("Lets make sure you're using the correct gpio pins")
+                print("Here is what the %s header looks like\n" % model)
+                print(header)
                 print
-                print "Make sure you are using the correct pins as listed above"
+                print("Make sure you are using the correct pins as listed above")
 
                 if ccm:
-                    print "Disable custom channel mapping to help with debugging your config"
+                    print("Disable custom channel mapping to help with debugging your config")
 
-                print "After you have made these corrections please rerun this test\n\n"
+                print("After you have made these corrections please rerun this test\n\n")
 
                 sys.exit(1)
 
-        print "Please answer yes or no"
+        print("Please answer yes or no")
 
 
 # def main():

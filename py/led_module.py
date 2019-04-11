@@ -15,20 +15,27 @@ import atexit
 import importlib
 import math
 import numpy
+import serial
+import time
 
 import bibliopixel.colors as colors
-import bibliopixel.image as image
+import bibliopixel.util.image as image
 
-from bibliopixel.led import *
-from bibliopixel.drivers.driver_base import *
-from lightshow_serial_driver import *
-from bibliopixel import log
+from bibliopixel.layout.strip import *
+from bibliopixel.layout.matrix import *
+from bibliopixel.layout.geometry.rotation import *
+from bibliopixel.util import log,util
 from PIL import Image, ImageSequence, ImageChops, ImageEnhance
 
+from bibliopixel.drivers.ledtype import *
+from bibliopixel.drivers.driver_base import *
+from bibliopixel.drivers.serial import Serial
+from bibliopixel.drivers.serial.devices import Devices
 from driver_sacn import DriverSACN
 
-log.setLogLevel(log.WARNING)
-# log.setLogLevel(log.DEBUG)
+#log.set_log_level(log.INFO)
+log.set_log_level(log.WARNING)
+#log.set_log_level(log.DEBUG)
 
 color_map = [list(colors.hue2rgb(c)) for c in range(256)]
 scale = colors.color_scale
@@ -68,16 +75,12 @@ class Led(object):
         self.max_brightness = self.led_config.max_brightness / 100.0
 
         if self.led_config.led_configuration == "STRIP":
-            if self.led_config.custom_per_channel:
-                self.led_count = sum(self.led_config.custom_per_channel)
-            else:
-                self.led_count = self.led_config.led_count * self.led_config.per_channel
-
+            self.led_count = self.led_config.led_count * self.led_config.per_channel
         elif self.led_config.led_configuration == "MATRIX":
             self.led_count = self.led_config.matrix_width * self.led_config.matrix_height
 
         if self.led_config.led_connection == "SPI":
-            self.strip_setup()
+            self.spi_setup()
         elif self.led_config.led_connection == "SERIAL":
             self.serial_setup()
         elif self.led_config.led_connection == "SACN":
@@ -97,14 +100,14 @@ class Led(object):
             color_map[0] = self.pattern_color
             self.pattern_color_map = 'MAP2'
 
-        self.led.setMasterBrightness(int(self.max_brightness * 255))
+        self.led.set_brightness(int(self.max_brightness * 255))
 #        atexit.register(self.exit_function)
 
     def exit_function(self):
         if not self.all_set_on:
             self.all_leds_off()
 
-    def strip_setup(self):
+    def spi_setup(self):
         main_driver = importlib.import_module("bibliopixel.drivers." + self.led_config.strip_type)
         driver = getattr(main_driver, "Driver" + self.led_config.strip_type)
         self.driver = driver(num=self.led_count,
@@ -112,15 +115,23 @@ class Led(object):
                              use_py_spi=True)
 
     def serial_setup(self):
+
+        if len(self.led_config.device_address):
+            packet = util.generate_header(4, 0)
+            com = serial.Serial(self.led_config.device_address, baudrate=self.led_config.baud_rate, timeout=0.2)
+            com.write(packet)
+            com.read(1)
+            time.sleep(1.6)
+ 
         strip_type = getattr(LEDTYPE, self.led_config.strip_type)
-        self.driver = DriverSerial(type=strip_type,
+        self.driver = Serial(ledtype=strip_type,
                                    num=self.led_count,
                                    dev=self.led_config.device_address,
                                    c_order=self.channel_order,
                                    restart_timeout=5,
-                                   deviceID=self.led_config.device_id,
+                                   device_id=self.led_config.device_id,
                                    hardwareID=self.led_config.hardware_id,
-                                   baud_rate=self.led_config.baud_rate)
+                                   baudrate=self.led_config.baud_rate)
 
     def sacn_setup(self):
         self.driver = DriverSACN(num=self.led_count,
@@ -138,7 +149,7 @@ class Led(object):
                              height=self.led_config.matrix_height,
                              serpentine=True,
                              vert_flip=True,
-                             rotation=MatrixRotation.ROTATE_90,
+                             rotation=Rotation.ROTATE_90,
                              threadedUpdate=self.led_config.multiprocess)
 
         image_path = self.led_config.image_path
@@ -158,7 +169,7 @@ class Led(object):
     def all_leds_off(self):
         self.leds = numpy.array([0 for _ in range(self.led_config.led_count)])
         self.led.all_off()
-        self.led.update()
+        self.led.push_to_driver()
 
     def all_leds_on(self):
         self.leds = numpy.array([1 for _ in range(self.led_config.led_count)])
@@ -174,7 +185,7 @@ class Led(object):
 
         self.led.set(pin, scale(color_map[color], color))
 
-        self.led.update()
+        self.led.push_to_driver()
 
     def write_full(self, pin_list):
         if self.update_skip != 0:
@@ -186,17 +197,12 @@ class Led(object):
 
         brightnesses = pin_list * 255
         brightnesses = brightnesses.astype(int)
-        midl = int(self.led_config.per_channel / 2)
-        lastl = self.led_config.per_channel - 1
+        half_channels = self.led_config.per_channel / 2
+        midl = int(half_channels)
         pin = 0
 
         for level, brightness in zip(pin_list, brightnesses):
-            if self.led_config.custom_per_channel:
-                sled = sum(self.led_config.custom_per_channel[0:pin])
-                midl = int(self.led_config.custom_per_channel[pin] / 2)
-                lastl = self.led_config.custom_per_channel[pin] - 1
-            else:
-                sled = pin * self.per_channel
+            sled = pin * self.per_channel
 
             if self.pattern_color_map == 'MONO':
                 rgb = (int(level * self.pattern_color[0]),
@@ -206,13 +212,6 @@ class Led(object):
             elif self.pattern_color_map == 'FREQ1':
                 # rgb = color_map[int((float(pin) / (self.last + 1)) * 255)]
                 rgb = self.rgb[pin]
-                rgb = (int(rgb[0] * level), int(rgb[1] * level), int(rgb[2] * level))
-
-            elif self.pattern_color_map == 'FREQ1A':
-                if brightness < 255:
-                    rgb = self.rgb[pin]
-                else:
-                    rgb = self.pattern_color
                 rgb = (int(rgb[0] * level), int(rgb[1] * level), int(rgb[2] * level))
 
             elif self.pattern_color_map == 'MAP1':
@@ -229,18 +228,17 @@ class Led(object):
                 self.led.fill(rgb, sled + midl - mlvl, sled + midl + mlvl)
 
             elif self.led_config.pattern_type == 'FULL':
-                self.led.fill(rgb, sled, sled + lastl)
+                self.led.fill(rgb, sled, sled + self.led_config.per_channel - 1)
 
             elif self.led_config.pattern_type == 'LBARS':
-                midled = midl + sled
-                for gled in range(0, int(midl * level)):
-                    cmrgb = color_map[int((float(gled) / midl) * 255)]
-                    self.led.set(midled + gled, cmrgb)
-                    self.led.set(midled - gled, cmrgb)
+                midl = int(half_channels) + sled
+                for gled in range(0, int((half_channels) * level)):
+                    self.led.set(midl + gled, int_map[int((float(gled) / half_channels) * 255)])
+                    self.led.set(midl - gled, int_map[int((float(gled) / half_channels) * 255)])
 
             pin += 1
 
-        self.led.update()
+        self.led.push_to_driver()
         self.update_skip = self.skip
 
     def write_matrix(self, pin_list):
@@ -252,10 +250,10 @@ class Led(object):
         if len(self.led_config.matrix_pattern_type) == 1:
             self.p_type = self.led_config.matrix_pattern_type[0]
         else:
-            for pin in xrange(len(pin_list)):
+            for pin in range(len(pin_list)):
                 self.beats += pin_list[pin] * (len(pin_list) / (pin + 1)) * 0.002
             if self.beats > self.led_config.beats:
-            	self.beats = 0
+                self.beats = 0
                 self.p_num += 1
                 if self.p_num >= len(self.led_config.matrix_pattern_type):
                     self.p_num = 0
@@ -287,7 +285,7 @@ class Led(object):
 
         elif self.p_type == 'IMAGE':
             complete_image = self.base_image
-            for pin in xrange(len(pin_list)):
+            for pin in range(len(pin_list)):
                 if pin_list[pin] > 0.55:
                     complete_image = ImageChops.add_modulo(complete_image, ImageEnhance.Brightness(
                         self.images[pin]).enhance(pin_list[pin]))
@@ -298,7 +296,7 @@ class Led(object):
         elif self.p_type == 'PINWHEEL':
             amt = 0
 
-            for pin in xrange(len(pin_list)):
+            for pin in range(len(pin_list)):
                 amt += pin_list[pin] * (len(pin_list) / (pin + 1)) * 0.25
             amt = int(amt)
 
@@ -337,10 +335,10 @@ class Led(object):
                 self.led.drawLine(midl - mlvl, y,midl + mlvl, y,rgb)
 
         elif self.p_type == 'CIRCLES':
-            for pin in xrange(len(pin_list)):
+            for pin in range(len(pin_list)):
                 rgb = self.rgb[pin]
                 c = scale(rgb,int((pin_list[pin]) * 255))
                 self.led.drawCircle(self._cX,self._cY,pin,c)
 
-        self.led.update()
+        self.led.push_to_driver()
         self.update_skip = self.skip

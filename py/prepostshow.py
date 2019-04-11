@@ -21,7 +21,7 @@ or
 sudo python prepostshow.py "postshow"
 """
 
-import __builtin__
+import builtins
 import logging
 import os
 import subprocess
@@ -29,7 +29,6 @@ import signal
 import sys
 import time
 import threading
-import argparse
 
 
 class PrePostShow(object):
@@ -44,7 +43,7 @@ class PrePostShow(object):
     done = 0
     play_now_interrupt = 1
 
-    def __init__(self, show="preshow", hardware=None, config=None):
+    def __init__(self, show="preshow", hardware=None):
         """
 
         :param show: which show should be preformed
@@ -56,8 +55,7 @@ class PrePostShow(object):
         if hardware:
             self.hc = hardware
         else:
-            self.hc = __import__('hardware_controller').Hardware(param_config=config)
-
+            self.hc = __import__('hardware_controller').Hardware()
             self.hc.initialize()
 
         self.config = self.hc.cm.lightshow.get(show)
@@ -208,17 +206,9 @@ class PrePostShow(object):
 
 
 if __name__ == "__main__":
-
-    signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
-    signal.signal(signal.SIGTERM, lambda x, y: sys.exit(0))
- 
     show_to_call = 'preshow'
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('show_to_call', metavar='show', type=str, nargs='?',
-                    help='preshow or postshow')
-    parser.add_argument('--config', default="",
-                    help='Config File Override')
-    args = parser.parse_args()
+    if len(sys.argv) > 1:
+        show_to_call = sys.argv[1]
 
-    PrePostShow(show=show_to_call,config=args.config).execute()
+    PrePostShow(show_to_call).execute()

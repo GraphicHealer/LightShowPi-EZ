@@ -60,12 +60,11 @@ numpy: for FFT calculation
     http://www.numpy.org/
 """
 
-import ConfigParser
+import configparser
 import argparse
 import atexit
 import audioop
 from collections import deque
-import cPickle
 import errno
 import json
 import logging as log
@@ -80,7 +79,7 @@ import wave
 import curses
 import bright_curses
 import mutagen
-from Queue import Queue, Empty
+from queue import Queue, Empty
 from threading import Thread
 
 import alsaaudio as aa
@@ -179,13 +178,13 @@ class Lightshow(object):
         self.decay = np.zeros(cm.hardware.gpio_len, dtype='float32')
         self.physical_gpio_len = cm.hardware.physical_gpio_len
         self.network = hc.network
-        self.server = self.network.networking == "server" or self.network.networking == "serverjson"
+        self.server = self.network.networking == 'server'
         self.client = self.network.networking == "client"
 
         if cm.lightshow.use_fifo:
             if os.path.exists(cm.lightshow.fifo):
                 os.remove(cm.lightshow.fifo)
-            os.mkfifo(cm.lightshow.fifo, 0777)
+            os.mkfifo(cm.lightshow.fifo, "0777")
 
         self.chunk_size = cm.audio_processing.chunk_size  # Use a multiple of 8 
 
@@ -211,21 +210,18 @@ class Lightshow(object):
 
         if cm.fm.enabled:
             self.fm_process.kill()
-            os.unlink(cm.fm.fmfifo)
 
         if self.network.network_stream:
             self.network.close_connection()
 
         if cm.lightshow.mode == 'stream-in':
             try:
-                self.streaming.stdin.write("q")
+                self.streaming.stdin.write(b"q")
             except IOError:
                 pass
             os.kill(self.streaming.pid, signal.SIGINT)
             if cm.lightshow.use_fifo:
                 os.unlink(cm.lightshow.fifo)
-
-        os.system("/bin/echo \"\" >" + cm.home_dir + "/logs/now_playing.txt")
 
     def update_lights(self, matrix):
         """Update the state of all the lights
@@ -236,7 +232,7 @@ class Lightshow(object):
         :param matrix: row of data from cache matrix
         :type matrix: list
         """
-        brightness = matrix - self.mean + (self.std * self.sd_low)
+        brightness = matrix - self.mean + (self.std * 0.5)
         brightness = (brightness / (self.std * (self.sd_low + self.sd_high))) \
             * (1.0 - (self.attenuate_pct / 100.0))
 
@@ -286,9 +282,6 @@ class Lightshow(object):
     def set_fm(self):
         pi_version = Platform.pi_version()
         srate = str(int(self.sample_rate / (1 if self.num_channels > 1 else 2)))
-        if os.path.exists(cm.fm.fmfifo):
-            os.remove(cm.fm.fmfifo)
-        os.mkfifo(cm.fm.fmfifo, 0777)
 
         fm_command = ["sudo",
                       cm.home_dir + "/bin/pifm",
@@ -304,12 +297,6 @@ class Lightshow(object):
                           cm.fm.frequency,
                           "-srate",
                           srate,
-                          "-ps",
-                          cm.fm.program_service_name,
-                          "-rt",
-                          cm.fm.radio_text,
-                          "-ctl",
-                          cm.fm.fmfifo,
                           "-nochan",
                           "2" if self.num_channels > 1 else "1"]
 
@@ -320,17 +307,6 @@ class Lightshow(object):
                                                stdin=subprocess.PIPE,
                                                stdout=dev_null)
         self.output = lambda raw_data: self.fm_process.stdin.write(raw_data)
-        
-        fmoutthr = Thread(target=self.update_fmout, args=(cm, cm.fm.program_service_name))
-        fmoutthr.daemon = True
-        fmoutthr.start()
-
-    def update_fmout(self, cm, ps):
-        ps_chunk_array = [ ps[i:i+8] for i in xrange(0, len(ps), 8) ]
-        while True:
-            for chunk in ps_chunk_array:
-                os.system("echo PS " + chunk + " > " + cm.fm.fmfifo)
-                time.sleep(float(cm.fm.ps_increment_delay))
 
     def set_audio_device(self):
 
@@ -398,7 +374,7 @@ class Lightshow(object):
         stream_reader,outq = self.set_audio_source()
 
         log.debug("Running in %s mode - will run until Ctrl+C is pressed" % cm.lightshow.mode)
-        print "Running in %s mode, use Ctrl+C to stop" % cm.lightshow.mode
+        print("Running in %s mode, use Ctrl+C to stop" % cm.lightshow.mode)
 
         # setup light_delay.
         chunks_per_sec = ((16 * self.num_channels * self.sample_rate) / 8) / self.chunk_size
@@ -435,19 +411,17 @@ class Lightshow(object):
 
             if cm.lightshow.mode == 'stream-in':
                 try:
-                    streamout = outq.get_nowait().strip('\n\r')
+                    streamout = outq.get_nowait().strip(b'\n\r').decode("utf-8")
                 except Empty:
                     pass
                 else:
-                    print streamout
+                    print(streamout)
                     if cm.lightshow.stream_song_delim in streamout:
                         songcount+=1
-                        streamout = streamout.replace('\033[2K','')
-                        streamout = streamout.replace(cm.lightshow.stream_song_delim,'')
-                        streamout = streamout.replace('"','')
-                        os.system("/bin/echo " + "Now Playing \"" + streamout + "\"" + " >" + cm.home_dir + "/logs/now_playing.txt")
-
                         if cm.lightshow.songname_command:
+                            streamout = streamout.replace('\033[2K','')
+                            streamout = streamout.replace(cm.lightshow.stream_song_delim,'')
+                            streamout = streamout.replace('"','')
                             os.system(cm.lightshow.songname_command + ' "Now Playing ' + streamout + '"')
 
                     if cm.lightshow.stream_song_exit_count > 0 and songcount > cm.lightshow.stream_song_exit_count:
@@ -513,7 +487,6 @@ class Lightshow(object):
         preshow_script =
         postshow_configuration =
         postshow_script =
-        attenuate_pct =
 
         [custom_audio_processing]
         min_frequency =
@@ -551,10 +524,6 @@ class Lightshow(object):
                     inverted = "invert_channels"
                     if config.has_option(lsc, inverted):
                         cm.lightshow.inverted_channels = map(int, config.get(lsc, inverted).split(","))
-
-                    attenuate = "attenuate_pct"
-                    if config.has_option(lsc, attenuate):
-                        self.attenuate_pct = float(config.get(lsc, attenuate))
 
                     # setup up custom preshow
                     has_preshow_configuration = config.has_option(lsc, 'preshow_configuration')
@@ -783,8 +752,6 @@ class Lightshow(object):
 
             # Get filename to play and store the current song playing in state cfg
             self.song_filename = current_song[1]
-            if (cm.fm.radio_text == "playlist"):
-                cm.fm.radio_text = current_song[0]
             cm.update_state('current_song', str(songs.index(current_song)))
 
         self.song_filename = self.song_filename.replace("$SYNCHRONIZED_LIGHTS_HOME", cm.home_dir)
@@ -795,15 +762,12 @@ class Lightshow(object):
         self.cache_filename = \
             os.path.dirname(filename) + "/." + os.path.basename(self.song_filename) + ".sync"
 
-        os.system("/bin/echo \"\" >" + cm.home_dir + "/logs/now_playing.txt")
-        metadata = mutagen.File(self.song_filename, easy=True)
-        if not metadata is None and "title" in metadata:
-            now_playing = "Now Playing " + metadata["title"][0] + " by " + metadata["artist"][0]
-            if cm.lightshow.songname_command:
-                os.system(cm.lightshow.songname_command + " \"" + now_playing + "\"")
-        else:
-            now_playing = "Now Playing " + os.path.basename(self.song_filename)
-        os.system("/bin/echo " + " \"" + now_playing + "\"" + " >" + cm.home_dir + "/logs/now_playing.txt")
+        if cm.lightshow.songname_command:
+            metadata = mutagen.File(self.song_filename, easy=True)
+            if not metadata is None:
+                if "title" in metadata:
+                    now_playing = "Now Playing " + metadata["title"][0] + " by " + metadata["artist"][0]
+                    os.system(cm.lightshow.songname_command + " \"" + now_playing + "\"")
 
     def play_song(self):
         """Play the next song from the play list (or --file argument)."""
@@ -878,7 +842,7 @@ class Lightshow(object):
             data = ''
             self.cache_found = False
             play_now = False
-            print "\nsaving sync file"
+            print("\nsaving sync file")
 
         while data != '' and not play_now:
             # output data to sound device
@@ -937,8 +901,8 @@ class Lightshow(object):
         read data from the network and blink the lights
         """
         log.info("Network client mode starting")
-        print "Network client mode starting..."
-        print "press CTRL<C> to end"
+        print("Network client mode starting...")
+        print("press CTRL<C> to end")
 
         hc.initialize()
 
@@ -968,7 +932,7 @@ class Lightshow(object):
 
         except KeyboardInterrupt:
             log.info("CTRL<C> pressed, stopping")
-            print "stopping"
+            print("stopping")
 
             self.network.close_connection()
             hc.clean_up()
@@ -994,7 +958,7 @@ if __name__ == "__main__":
 
     # Make sure one of --playlist or --file was specified
     if args.file is None and args.playlist is None:
-        print "One of --playlist or --file must be specified"
+        print("One of --playlist or --file must be specified")
         sys.exit()
 
     lightshow = Lightshow()

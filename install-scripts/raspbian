@@ -4,13 +4,13 @@
 INSTALL_COMMAND="apt-get install -q=2 -y"
 
 ## Python dependencies to be installed
-PYTHON_DEPS=(Beautifulsoup mutagen simplejson twython emoji \
-             spidev "BiblioPixel<3.0 pillow pyserial")
+PYTHON_DEPS=(numpy Beautifulsoup4 mutagen simplejson twython emoji \
+             spidev BiblioPixel pillow pyserial wiringpi pyalsaaudio)
 
 ## System packages to be installed
-SYSTEM_DEPS=(curl faad flac gcc git lame mpg123 make python-alsaaudio python-dev \
-             python-numpy python-pip python-setuptools unzip vorbis-tools wiringpi \
-             cython pianobar swig2.0 libjpeg-dev)
+SYSTEM_DEPS=(python3-pip python3-dev curl faad flac gcc git lame mpg123 make \
+             python3-numpy python3-setuptools unzip vorbis-tools wiringpi \
+             cython3 pianobar libjpeg-dev libtiff-dev libatlas-base-dev)
 
 ## Miscellaneous checks
 
@@ -19,6 +19,10 @@ SYSTEM_DEPS=(curl faad flac gcc git lame mpg123 make python-alsaaudio python-dev
 apt-get -y remove python-simplejson
 apt-get -y remove python-serial
 
+# Some versions are now installing GL by default, disable it
+# if you dont, you get "Unable to enable V3D" from the FFT code
+raspi-config nonint do_gldriver G3
+ 
 # The ffmpeg library changed starting with Debian 8
 # Try to install ffmpeg first, then libav-tools
 echo -ne "\e[0;31mNOTE:\e[m " >&2

@@ -22,7 +22,7 @@ numpy: for array support - http://www.numpy.org/
 rpi-audio-levels - https://bitbucket.org/tom_slick/rpi-audio-levels (modified for lightshowpi)
 """
 
-import ConfigParser
+import configparser
 import logging
 import os.path
 from numpy import *
@@ -79,7 +79,7 @@ class FFT(object):
         self.custom_channel_mapping = custom_channel_mapping
         self.custom_channel_frequencies = custom_channel_frequencies
         self.frequency_limits = self.calculate_channel_frequency()
-        self.config = ConfigParser.RawConfigParser(allow_no_value=True)
+        self.config = configparser.RawConfigParser(allow_no_value=True)
         self.config_filename = ""
         self.audio_levels = AudioLevels(math.log(chunk_size / 2, 2), num_bins)
 
@@ -233,7 +233,7 @@ class FFT(object):
                 fft_cache["custom_channel_frequencies"] = temp
 
             fft_cache["input_channels"] = self.config.getint("fft", "input_channels")
-        except ConfigParser.Error:
+        except configparser.Error:
             has_config = False
 
         fft_current["chunk_size"] = self.chunk_size

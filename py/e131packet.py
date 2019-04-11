@@ -71,13 +71,13 @@ class DMPLayer(LayerBase):
         # address type & data type
         packet.append(0xa1)
         # startcode
-        packet.extend('\x00\x00')
+        packet.extend(b'\x00\x00')
         # increment value
-        packet.extend('\x00\x01')
+        packet.extend(b'\x00\x01')
         value_count = int_to_16bit(1 + len(self.data))
         packet.extend(value_count)
         # DMX 512 startcode
-        packet.append('\x00')
+        packet.append(0x00)
         # DMX 512 data
         packet.extend(self.data)
         return packet
@@ -98,14 +98,14 @@ class FramingLayer(LayerBase):
         packet = bytearray()
         packet.extend(length_as_low12(77 + len(self.dmp_packet)))
         # vector
-        packet.extend('\x00\x00\x00\x02')
-        packet.extend(struct.pack('!64s', self.name))
+        packet.extend(b'\x00\x00\x00\x02')
+        packet.extend(struct.pack('!64s', bytes(self.name,'utf-8')))
         packet.append(self.priority)
         # reserved by spec
-        packet.extend('\x00\x00')
+        packet.extend(b'\x00\x00')
         packet.append(self.sequence)
         # options
-        packet.append('\x00')
+        packet.append(0x00)
         # universe
         packet.extend(struct.pack('!h', self.universe))
         packet.extend(self.dmp_packet)
@@ -122,13 +122,13 @@ class RootLayer(LayerBase):
 
     def packet_data(self):
         packet = bytearray()
-        packet.extend('\x00\x10\x00\x00')
-        packet.extend('ASC-E1.17\x00\x00\x00')
+        packet.extend(b'\x00\x10\x00\x00')
+        packet.extend(b'ASC-E1.17\x00\x00\x00')
         # pdu size starts after byte 16 - there are 38 bytes of data in root layer
         # so size is 38 - 16 + framing layer
         packet.extend(length_as_low12(38 - 16 + len(self.framing_packet)))
         # vector
-        packet.extend('\x00\x00\x00\x04')
+        packet.extend(b'\x00\x00\x00\x04')
         packet.extend(self.cid)
         packet.extend(self.framing_packet)
         return packet

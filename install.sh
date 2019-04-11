@@ -72,10 +72,6 @@ install_init() {
             ;;
     esac
 
-    # Some symlinks that will make life a little easier
-    # Note that this may (intentionally) clobber Python 3 symlinks in newer OS's
-    ln -fs `which python2.7` /usr/bin/python
-    ln -fs `which pip2` /usr/bin/pip
 }
 
 
@@ -96,7 +92,7 @@ pkginstall() {
 pipinstall() {
     log Installing $1 via pip...
     if [ $1 == "numpy" ]; then echo -e "\e[1;33mWARNING:\e[m numpy installation may take up to 30 minutes"; fi
-    /usr/bin/yes | pip install --upgrade $1
+    /usr/bin/yes | pip3 install --upgrade $1
     verify "Installation of Python package '$1' failed"
 }
 
@@ -111,11 +107,16 @@ for _dep in ${SYSTEM_DEPS[@]}; do
     pkginstall $_dep;
 done
 
-/usr/bin/easy_install -U pip
+# Some symlinks that will make life a little easier
+# Note that this may (intentionally) clobber Python 3 symlinks in newer OS's
+mv /usr/bin/python /usr/bin/python2
+mv /usr/bin/pip /usr/bin/pip2
+ln -fs `which python3` /usr/bin/python
+ln -fs `which pip3` /usr/bin/pip
 
 # Install decoder
 log Installing decoder...
-pip install --upgrade git+https://tom_slick@bitbucket.org/tom_slick/decoder.py.git
+pip3 install --upgrade git+https://broken2048@bitbucket.org/broken2048/decoder-v3.py.git
 verify "Installation of decoder-1.5XB-Unix failed"
 
 # Install Python dependencies
@@ -125,17 +126,12 @@ for _dep in ${PYTHON_DEPS[@]}; do
 done
 
 log Installing rpi-audio-levels...
-pip install git+https://tom_slick@bitbucket.org/tom_slick/rpi-audio-levels.git
+pip3 install git+https://broken2048@bitbucket.org/broken2048/rpi-audio-levels.git
 verify "Installation of rpi-audio-levels failed"
-
-# Install wiringpi-python
-log Installing wiringpi...
-pip install --upgrade git+https://broken2048@bitbucket.org/broken2048/wiringpi-python.git
-verify "Installation of wiringpi failed"
 
 # Install pygooglevoice
 log Installing pygooglevoice...
-pip install --upgrade git+https://github.com/pettazz/pygooglevoice.git
+pip3 install --upgrade git+https://github.com/pettazz/pygooglevoice.git
 verify "Installation of pygooglevoice failed"
 
 # Optionally add a line to /etc/sudoers

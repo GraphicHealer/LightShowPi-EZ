@@ -35,7 +35,7 @@ import struct
 
 import os
 os.sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import bibliopixel.log as log
+from bibliopixel.util import log
 
 
 class CMDTYPE:
@@ -87,20 +87,26 @@ class DriverSACN(DriverBase):
         except socket.gaierror:
             error = "Unable to connect to or resolve host: {}".format(
                 self._host)
-            log.error(error)
+            log.logger.error(error)
             raise IOError(error)
 
-    # Push new data to strand
-    def update(self, data):
-        try:
-            self._fixData(data)
-            data = self._buf
-            s = self._connect()
+    def _compute_packet(self):
+        self._render()
+        self._packet = self._buf
+ 
 
-            universes = int(self.bufByteCount / self._universe_boundary) + 1
-            countlast = self.bufByteCount % self._universe_boundary
+    # Push new data to strand
+#    def update(self, data):
+    def _send_packet(self):
+        try:
+            s = self._connect()
+            bbc = self.bufByteCount()
+
+            universes = int(bbc / self._universe_boundary) + 1
+            countlast = bbc % self._universe_boundary
 
             countboundary = self._universe_boundary * (universes - 1)
+            data = self._buf
             udata = data[countboundary:countboundary + countlast]
             packet = E131Packet(universe=self._universe + universes - 1, data=udata)
             s.sendto(packet.packet_data, (self._host, self._port))
@@ -119,9 +125,9 @@ class DriverSACN(DriverBase):
             s.close()
 
         except Exception as e:
-            log.exception(e)
+            log.logger.error(e)
             error = "Problem communicating with network receiver!"
-            log.error(error)
+            log.logger.error(error)
             raise IOError(error)
 
 
