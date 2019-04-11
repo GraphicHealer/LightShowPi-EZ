@@ -75,7 +75,11 @@ class Led(object):
         self.max_brightness = self.led_config.max_brightness / 100.0
 
         if self.led_config.led_configuration == "STRIP":
-            self.led_count = self.led_config.led_count * self.led_config.per_channel
+            if self.led_config.custom_per_channel:
+                self.led_count = sum(self.led_config.custom_per_channel)
+            else:
+                self.led_count = self.led_config.led_count * self.led_config.per_channel
+
         elif self.led_config.led_configuration == "MATRIX":
             self.led_count = self.led_config.matrix_width * self.led_config.matrix_height
 
@@ -202,7 +206,12 @@ class Led(object):
         pin = 0
 
         for level, brightness in zip(pin_list, brightnesses):
-            sled = pin * self.per_channel
+            if self.led_config.custom_per_channel:
+                sled = sum(self.led_config.custom_per_channel[0:pin])
+                midl = int(self.led_config.custom_per_channel[pin] / 2)
+                lastl = self.led_config.custom_per_channel[pin] - 1
+            else:
+                sled = pin * self.per_channel
 
             if self.pattern_color_map == 'MONO':
                 rgb = (int(level * self.pattern_color[0]),
@@ -212,6 +221,13 @@ class Led(object):
             elif self.pattern_color_map == 'FREQ1':
                 # rgb = color_map[int((float(pin) / (self.last + 1)) * 255)]
                 rgb = self.rgb[pin]
+                rgb = (int(rgb[0] * level), int(rgb[1] * level), int(rgb[2] * level))
+
+            elif self.pattern_color_map == 'FREQ1A':
+                if brightness < 255:
+                    rgb = self.rgb[pin]
+                else:
+                    rgb = self.pattern_color
                 rgb = (int(rgb[0] * level), int(rgb[1] * level), int(rgb[2] * level))
 
             elif self.pattern_color_map == 'MAP1':

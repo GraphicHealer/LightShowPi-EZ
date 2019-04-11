@@ -291,7 +291,18 @@ class Configuration(object):
             led["channel_order"] = c_order
         else:
             led["channel_order"] = "RGB"
-        
+
+        led_count = self.led_config.getint('led', 'led_channel_count')
+
+        g_leds = self.led_config.get('led', 'custom_per_channel')
+        try:
+            led["custom_per_channel"] = map(int, g_leds.split(","))
+            led["led_channel_count"] = len(led["custom_per_channel"])
+            led_count = len(led["custom_per_channel"])
+        except (AttributeError, ValueError, TypeError ):
+            led["custom_per_channel"] = list()
+            led["led_channel_count"] = led_count
+ 
         led["led_channel_configuration"] = self.led_config.get('led', 'led_channel_configuration').upper()
 
         led_count = self.led_config.getint('led', 'led_channel_count')
@@ -383,6 +394,10 @@ class Configuration(object):
         fm = dict()
         fm["enabled"] = self.config.getboolean('fm', 'fm')
         fm["frequency"] = self.config.get('fm', 'frequency')
+        fm["program_service_name"] = self.config.get('fm', 'program_service_name')
+        fm["ps_increment_delay"] = self.config.get('fm', 'ps_increment_delay')
+        fm["radio_text"] = self.config.get('fm', 'radio_text')
+        fm["fmfifo"] = '/tmp/fmfifo'
         self.fm = Section(fm)
 
     def set_network(self):
