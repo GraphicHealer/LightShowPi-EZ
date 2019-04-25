@@ -32,13 +32,13 @@ file_types = [".wav",
 
 make_title = lambda s: s.replace("_", " ").replace(ext, "") + "\t"
 
-location = raw_input("Enter the full path to the folder of songs:")
+location = input("Enter the full path to the folder of songs:")
 
 if not os.path.exists(location):
-    print "Path does not exists"
+    print ("Path does not exist")
     sys.exit(1)
 
-print "Generating Playlist"
+print ("Generating Playlist")
 
 os.chdir(location)
 
@@ -60,11 +60,11 @@ for song in os.listdir(os.getcwd()):
 
         entry = title + os.path.join(os.getcwd(), song)
         entries.append(entry)
-        print entry
+        print (entry)
 
-print "Writing Playlist to File"
+print ("Writing Playlist to File")
 
 with open(".playlist", "w") as playlist:
     playlist.write("\n".join(str(entry) for entry in entries))
 
-print "DONE"
+print ("DONE")

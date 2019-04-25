@@ -33,12 +33,12 @@ sys.path.insert(0, HOME_DIR + "/py")
 # import the configuration_manager and fft now that we can
 import fft
 
-import hardware_controller as hc
+import hardware_controller
+
+hc = hardware_controller.Hardware()
 
 # get copy of configuration manager
 cm = hc.cm
-
-# get copy of configuration manager
 
 #### reusing code from synchronized_lights.py
 #### no need to reinvent the wheel
@@ -171,16 +171,16 @@ def cache_song(song_filename):
 #### end reuse 
 
 def main():        
-    print "Do you want to generating sync files"
+    print ("Do you want to generate sync files?")
     print 
-    print "This could take a while if you have a lot of songs"
+    print ("This could take a while if you have a lot of songs")
 
-    question = raw_input("Would you like to proceed? (Y to continue) :")
+    question = input("Would you like to proceed? (Y to continue) :")
 
     if not question in ["y", "Y"]:
         sys.exit(0)
 
-    location = raw_input("Enter the path to the folder of songs:")
+    location = input("Enter the path to the folder of songs:")
     location += "/"
 
     sync_list = list()
@@ -196,9 +196,9 @@ def main():
     playlistFile = open(location + "playlist", "w")
 
     for song in sync_list:
-        print "Generating sync file for",song
+        print ("Generating sync file for",song)
         cache_song(song)
-        print "cached"
+        print ("cached")
 
         metadata = mutagen.File(song, easy=True)
         if "title" in metadata:
@@ -211,9 +211,9 @@ def main():
 
     playlistFile.close()
 
-    print "All Finished."
-    print "A playlist was also generated"
-    print location + "playlist"
+    print ("All Finished.")
+    print ("A playlist was also generated")
+    print (location + "playlist")
     sys.path[:] = path
 
 if __name__ == "__main__":

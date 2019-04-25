@@ -16,4 +16,4 @@ python audio_in_cards.py
 import alsaaudio as aa
 
 if __name__ == "__main__":
-    print aa.cards()
+    print (aa.cards())
