@@ -12,7 +12,7 @@ import os
 import sys
 import fcntl
 import csv
-import ConfigParser
+import configparser
 from time import sleep
 
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
@@ -20,7 +20,7 @@ sys.path.insert(0, HOME_DIR + '/py')
 import configuration_manager
 
 state_file = HOME_DIR + '/web/microweb/config/webstate.cfg'
-state = ConfigParser.RawConfigParser()
+state = configparser.RawConfigParser()
 state.readfp(open(state_file))
 config_file = state.get('microweb','config')
 
@@ -38,7 +38,7 @@ if itemnext:
 print ("Content-type: text/html")
 print
 
-print """
+print ("""
 <!DOCTYPE html>
 <html>
     <head>
@@ -62,14 +62,14 @@ print """
             </form>
 
      
-""" 
+""") 
 
 if itemnext:
     itemnext -= 1
 else:
     itemnext = int(cm.get_state('song_to_play', "0"))
 
-with open(cm.lightshow.playlist_path, 'rb') as playlist_fp:
+with open(cm.lightshow.playlist_path, 'r') as playlist_fp:
     fcntl.lockf(playlist_fp, fcntl.LOCK_SH)
     playlist = csv.reader(playlist_fp, delimiter='\t')
     

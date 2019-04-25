@@ -19,7 +19,7 @@ form = cgi.FieldStorage()
 message = form.getvalue("message", "")
 
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
-volume = subprocess.check_output([HOME_DIR + '/bin/vol'],shell=True)
+volume = subprocess.check_output([HOME_DIR + '/bin/vol'],shell=True).decode()
 
 state_file = HOME_DIR + '/web/microweb/config/webstate.cfg'
 state = configparser.RawConfigParser()
@@ -119,7 +119,7 @@ print ("""
                 <input id="volDown" type="submit" name="message" value="Volume -">
 """)
 
-print ('<div id="volumediv" class="centered-content">' + volume.decode() + '</div>')
+print ('<div id="volumediv" class="centered-content">' + volume + '</div>')
 
 print ("""
                 <input id="volUp" type="submit" name="message" value="Volume +">

@@ -127,8 +127,7 @@ if upload:
     filename = playlist_dir + '/' + filedata.filename
     if filedata.file:
         if os.path.splitext(filename)[1] in file_types:
-            with file(filename, 'w') as outfile:
-                outfile.write(filedata.file.read())
+            open(filename, 'wb').write(filedata.file.read())
             os.chown(filename, uid, gid)
     
 
