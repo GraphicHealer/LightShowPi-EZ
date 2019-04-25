@@ -114,7 +114,7 @@ class Networking(object):
             try:
                 data = pickle.dumps(args)
                 self.network_stream.sendto(data, ('<broadcast>', self.port))
-            except socket.error(msg):
+            except socket.error as msg:
                 if msg[0] != 9:
                     log.error(str(msg[0]) + ' ' + msg[1])
                     print(str(msg[0]) + ' ' + msg[1])
@@ -124,7 +124,7 @@ class Networking(object):
                 data = list(map(str, [(round(item,3)) for item in args[0]]))
                 j_data = json.dumps({'data':(data)})
                 self.network_stream.sendto(j_data, ('<broadcast>', self.port))
-            except socket.error(msg):
+            except socket.error as msg:
                 if msg[0] != 9:
                     log.error(str(msg[0]) + ' ' + msg[1])
                     print(str(msg[0]) + ' ' + msg[1])

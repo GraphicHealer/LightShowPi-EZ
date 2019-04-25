@@ -18,6 +18,7 @@ SYSTEM_DEPS=(python3-pip python3-dev curl faad flac gcc git lame mpg123 make \
 # Remove them so pip can install them properly
 apt-get -y remove python-simplejson
 apt-get -y remove python-serial
+apt-get -y remove python-spidev
 
 # Some versions are now installing GL by default, disable it
 # if you dont, you get "Unable to enable V3D" from the FFT code

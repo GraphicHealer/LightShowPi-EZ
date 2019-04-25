@@ -184,7 +184,7 @@ class Lightshow(object):
         if cm.lightshow.use_fifo:
             if os.path.exists(cm.lightshow.fifo):
                 os.remove(cm.lightshow.fifo)
-            os.mkfifo(cm.lightshow.fifo, "0777")
+            os.mkfifo(cm.lightshow.fifo, 0o777)
 
         self.chunk_size = cm.audio_processing.chunk_size  # Use a multiple of 8 
 
@@ -288,7 +288,7 @@ class Lightshow(object):
 
         if os.path.exists(cm.fm.fmfifo):
             os.remove(cm.fm.fmfifo)
-        os.mkfifo(cm.fm.fmfifo, "0777")
+        os.mkfifo(cm.fm.fmfifo, 0o777)
 
         fm_command = ["sudo",
                       cm.home_dir + "/bin/pifm",
@@ -321,16 +321,30 @@ class Lightshow(object):
                                                stdout=dev_null)
         self.output = lambda raw_data: self.fm_process.stdin.write(raw_data)
 
-        fmoutthr = Thread(target=self.update_fmout, args=(cm, cm.fm.program_service_name))
-        fmoutthr.daemon = True
-        fmoutthr.start()
+        fmoutthrps = Thread(target=self.update_fmoutps, args=(cm, cm.fm.program_service_name))
+        fmoutthrps.daemon = True
+        fmoutthrps.start()
 
-    def update_fmout(self, cm, ps):
-        ps_chunk_array = [ ps[i:i+8] for i in xrange(0, len(ps), 8) ]
+        fmoutthrrt = Thread(target=self.update_fmoutrt, args=(cm, cm.fm.radio_text))
+        fmoutthrrt.daemon = True
+        fmoutthrrt.start()
+
+    def update_fmoutps(self, cm, ps):
+        ps_chunk_array = [ ps[i:i+8] for i in range(0, len(ps), 8) ]
         while True:
             for chunk in ps_chunk_array:
                 os.system("echo PS " + chunk + " > " + cm.fm.fmfifo)
                 time.sleep(float(cm.fm.ps_increment_delay))
+
+    def update_fmoutrt(self, cm, rt):
+        nptxt = cm.home_dir + "/logs/now_playing.txt"
+        while True:
+            with open(nptxt, 'r') as file:
+                npdata = file.read()
+            npdata = npdata.replace("'","")
+            npdata = npdata.replace('"',"")
+            os.system("echo RT '" + npdata + "' > " + cm.fm.fmfifo)
+            time.sleep(float(cm.fm.ps_increment_delay))
 
     def set_audio_device(self):
 
