@@ -17,7 +17,6 @@ if not password:
     print("Empty password is not allowed!")
     exit(1)
 
-import BaseHTTPServer
 import CGIHTTPServer_root
 import cgitb; cgitb.enable()  ## This line enables CGI error reporting
 import os, sys
@@ -27,7 +26,7 @@ def excepthook(etype,ex,tb):
 
 sys.excepthook = excepthook
  
-server = BaseHTTPServer.HTTPServer
+server = CGIHTTPServer_root.HTTPServer
 handler = CGIHTTPServer_root.CGIHTTPRequestHandler
 server_address = ("", listenport)
 lspitools = os.getenv("SYNCHRONIZED_LIGHTS_HOME") + "/web/microweb"

@@ -10,7 +10,7 @@ import cgi
 import cgitb
 import os
 import sys
-import ConfigParser
+import configparser
 from time import sleep
 
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
@@ -18,7 +18,7 @@ sys.path.insert(0, HOME_DIR + '/py')
 import hardware_controller 
 
 state_file = HOME_DIR + '/web/microweb/config/webstate.cfg'
-state = ConfigParser.RawConfigParser()
+state = configparser.RawConfigParser()
 state.readfp(open(state_file))
 config_file = state.get('microweb','config')
 
@@ -60,10 +60,10 @@ if channeloff:
     hc.set_light(int(channeloff)-1,False,0.0)
 
 
-print "Content-type: text/html"
+print ("Content-type: text/html")
 print
 
-print """
+print ("""
 <!DOCTYPE html>
 <html>
     <head>
@@ -97,23 +97,23 @@ print """
             </form>
 
      
-""" 
+""") 
 
 
-print '<table class="centered-content">'
+print ('<table class="centered-content">')
 for channel in range(cm.hardware.gpio_len):
     channel = channel + 1
-    print '<tr>'
-    print '<td>Channel ' + str(channel) + '</td>'
-    print '<td id="onoff"><form method="post" action="tools.cgi?channelon=' + str(channel) + '">'
-    print '<input id="channelonoff" type="submit" name="itemon' + str(channel) + '" value="On">'
-    print '</form></td>'
-    print '<td id="onoff"><form method="post" action="tools.cgi?channeloff=' + str(channel) + '">'
-    print '<input id="channelonoff" type="submit" name="itemoff' + str(channel) + '" value="Off">'
-    print '</form><td>'
-    print '</tr>'
+    print ('<tr>')
+    print ('<td>Channel ' + str(channel) + '</td>')
+    print ('<td id="onoff"><form method="post" action="tools.cgi?channelon=' + str(channel) + '">')
+    print ('<input id="channelonoff" type="submit" name="itemon' + str(channel) + '" value="On">')
+    print ('</form></td>')
+    print ('<td id="onoff"><form method="post" action="tools.cgi?channeloff=' + str(channel) + '">')
+    print ('<input id="channelonoff" type="submit" name="itemoff' + str(channel) + '" value="Off">')
+    print ('</form><td>')
+    print ('</tr>')
 
-print '</table>'
+print ('</table>')
 
 
-print "</body></html>"
+print ("</body></html>")

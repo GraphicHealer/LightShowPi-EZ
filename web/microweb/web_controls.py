@@ -6,7 +6,6 @@
 #
 # Author: Ken B
 
-import BaseHTTPServer
 import CGIHTTPServer_root
 import cgitb; cgitb.enable()  ## This line enables CGI error reporting
 import os, sys
@@ -16,7 +15,7 @@ def excepthook(etype,ex,tb):
 
 sys.excepthook = excepthook
  
-server = BaseHTTPServer.HTTPServer
+server = CGIHTTPServer_root.HTTPServer
 handler = CGIHTTPServer_root.CGIHTTPRequestHandler
 server_address = ("", 80)
 lspitools = os.getenv("SYNCHRONIZED_LIGHTS_HOME") + "/web/microweb"

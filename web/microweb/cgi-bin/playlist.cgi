@@ -35,7 +35,7 @@ if itemnext:
 #    cm.update_state('song_to_play', str(itemnext -1))
     cm.update_state('play_now', str(itemnext))
 
-print "Content-type: text/html"
+print ("Content-type: text/html")
 print
 
 print """
@@ -75,15 +75,15 @@ with open(cm.lightshow.playlist_path, 'rb') as playlist_fp:
     
     itemnumber = 0
     for song in playlist:
-        print '<form method="post" action="playlist.cgi?itemnumber=' + str(itemnumber) + '">'
+        print ('<form method="post" action="playlist.cgi?itemnumber=' + str(itemnumber) + '">')
         if itemnumber == itemnext:
             input_id = 'playnext'
         else:
             input_id = 'playitem'
-        print '<input id="' + input_id + '" type="submit" name="item' + str(itemnumber) + '" value="' + song[0] + '">'
-        print '</form>'
+        print ('<input id="' + input_id + '" type="submit" name="item' + str(itemnumber) + '" value="' + song[0] + '">')
+        print ('</form>')
         itemnumber += 1
 
     fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
 
-print "</body></html>"
+print ("</body></html>")

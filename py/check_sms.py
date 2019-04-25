@@ -17,7 +17,7 @@ import signal
 import sys
 import time
 
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 from googlevoice import Voice
 from googlevoice.util import LoginError, ValidationError
 from threading import Thread
@@ -215,8 +215,8 @@ class Sms(Thread):
                     logging.error('Invalid playlist.  Each line should be in the form: '
                                   '<song name><tab><path to song>')
                     logging.warning('Removing invalid entry')
-                    print "Error found in playlist"
-                    print "Deleting entry:", song
+                    print ("Error found in playlist")
+                    print ("Deleting entry:", song)
                     continue
                 elif len(song) == 2:
                     song.append(set())

@@ -11,7 +11,7 @@ import cgitb
 import os
 import sys
 import subprocess
-import ConfigParser
+import configparser
 import mutagen
 from time import sleep
 
@@ -27,7 +27,7 @@ HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 sys.path.insert(0, HOME_DIR + '/py')
 
 state_file = HOME_DIR + '/web/microweb/config/webstate.cfg'
-state = ConfigParser.RawConfigParser()
+state = configparser.RawConfigParser()
 state.readfp(open(state_file))
 config_file = state.get('microweb','config')
 if config_file:
@@ -45,10 +45,10 @@ updown = form.getvalue("updown", "")
 upload = form.getvalue("upload", "")
 
 
-print "Content-type: text/html"
+print ("Content-type: text/html")
 print
 
-print """
+print ("""
 <!DOCTYPE html>
 <html>
     <head>
@@ -92,36 +92,36 @@ print """
                 <input id="playlist" type="submit" value="Show Config">
             </form>
 
-""" 
+""") 
 
 if use_file:
     config_file = use_file
     state.set('microweb','config',use_file)
-    with open(state_file, 'wb') as state_fp:
+    with open(state_file, 'w') as state_fp:
         state.write(state_fp)
 
 for c_files in os.listdir(HOME_DIR + '/config'):
     if c_files.endswith(".cfg") and "overrides" in c_files:
-        print '<form method="post" action="settings.cgi">'
-        print '<input type="hidden" name="use_file" value="' + c_files + '"/>'
+        print ('<form method="post" action="settings.cgi">')
+        print ('<input type="hidden" name="use_file" value="' + c_files + '"/>')
         if c_files == config_file:
             input_id = "playnext"
         else:
             input_id = "playitem"
-        print '<input id="' + input_id + '" type="submit" value="Use ' + c_files + '">'
-        print '</form>'
+        print ('<input id="' + input_id + '" type="submit" value="Use ' + c_files + '">')
+        print ('</form>')
 
 if upload:
     message = 'Edit Songs'
     config_path = (HOME_DIR + '/config/' + config_file)
-    overrides = ConfigParser.RawConfigParser()
+    overrides = configparser.RawConfigParser()
     overrides.readfp(open(config_path))
     playlist_path = overrides.get('lightshow','playlist_path')
     playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME',HOME_DIR)
     playlist_dir = os.path.dirname(playlist_path)
     if not os.path.isdir(playlist_dir):
-        print '<p><h2>Please create ' + playlist_dir + '</h2></p>'
-        print "</body></html>"
+        print ('<p><h2>Please create ' + playlist_dir + '</h2></p>')
+        print ("</body></html>")
         sys.exit()
     filedata = form['upload']
     filename = playlist_dir + '/' + filedata.filename
@@ -137,7 +137,7 @@ if recreate:
     entries = []
     make_title = lambda s: s.replace("_", " ").replace(ext, "") + "\t"
     config_path = (HOME_DIR + '/config/' + config_file)
-    overrides = ConfigParser.RawConfigParser()
+    overrides = configparser.RawConfigParser()
     overrides.readfp(open(config_path))
     playlist_path = overrides.get('lightshow','playlist_path')
     playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME',HOME_DIR)
@@ -163,7 +163,7 @@ if recreate:
         
         os.chown(playlist_path, uid, gid)
 
-        print "<p>Playlist Updated"
+        print ("<p>Playlist Updated")
 
 if updown:
     message = 'Edit Songs'
@@ -171,7 +171,7 @@ if updown:
 
     entries = []
     config_path = (HOME_DIR + '/config/' + config_file)
-    overrides = ConfigParser.RawConfigParser()
+    overrides = configparser.RawConfigParser()
     overrides.readfp(open(config_path))
     playlist_path = overrides.get('lightshow','playlist_path')
     playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME',HOME_DIR)
@@ -224,18 +224,18 @@ if message:
 
     if message == 'Show Config':
 
-	if config_param:
+        if config_param:
             proc = subprocess.Popen(["python", HOME_DIR + "/py/configuration_manager.py", config_param], stdout=subprocess.PIPE)
         else:
             proc = subprocess.Popen(["python", HOME_DIR + "/py/configuration_manager.py"], stdout=subprocess.PIPE)
         out = proc.communicate()[0]
-	print '<pre>'
-        print out
-        print '</pre>'
+        print ('<pre>')
+        print (out.decode())
+        print ('</pre>')
 
     if message == 'Edit Songs':
         config_path = (HOME_DIR + '/config/' + config_file)
-        overrides = ConfigParser.RawConfigParser()
+        overrides = configparser.RawConfigParser()
         overrides.readfp(open(config_path))
         playlist_path = overrides.get('lightshow','playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME',HOME_DIR)
@@ -255,12 +255,12 @@ if message:
 
         playlist_dir = os.path.dirname(playlist_path)
         if not os.path.isdir(playlist_dir):
-            print '<p><h2>Please create ' + playlist_dir + '</h2></p>'
-            print "</body></html>"
+            print ('<p><h2>Please create ' + playlist_dir + '</h2></p>')
+            print ("</body></html>")
             sys.exit()
-        print '<p><div id="songlist">'
-        print '<form method="post" action="settings.cgi">'
-        print '<table>'
+        print ('<p><div id="songlist">')
+        print ('<form method="post" action="settings.cgi">')
+        print ('<table>')
         for song in sorted(os.listdir(playlist_dir)):
             if os.path.splitext(song)[1] in file_types:
                 pre = song.split(".")[0]
@@ -272,15 +272,15 @@ if message:
                     chk = 'checked="checked"'
                 else:
                     chk = ''
-                print '<tr>'
-                print '<td><input type="checkbox" name="' + song + '" value="' + song + '" ' + chk + '>' + song + '</td>'
-                print '<td><form method="post" name="updown"><input type="hidden" name="songupdown" value="' + song + '"/><input id="updown" name="updown" type="submit" value="UP"></form></td>'
-                print '<td><form method="post" name="updown"><input type="hidden" name="songupdown" value="' + song + '"/><input id="updown" name="updown" type="submit" value="DN"></form></td>'
-                print '</tr>'
-        print '</table>'
-        print '<p><input id="recreate" name="recreate" type="submit" value="Recreate Playlist">'
-        print '</form>'
-        print '</div>'
+                print ('<tr>')
+                print ('<td><input type="checkbox" name="' + song + '" value="' + song + '" ' + chk + '>' + song + '</td>')
+                print ('<td><form method="post" name="updown"><input type="hidden" name="songupdown" value="' + song + '"/><input id="updown" name="updown" type="submit" value="UP"></form></td>')
+                print ('<td><form method="post" name="updown"><input type="hidden" name="songupdown" value="' + song + '"/><input id="updown" name="updown" type="submit" value="DN"></form></td>')
+                print ('</tr>')
+        print ('</table>')
+        print ('<p><input id="recreate" name="recreate" type="submit" value="Recreate Playlist">')
+        print ('</form>')
+        print ('</div>')
         
         
-print "</body></html>"
+print ("</body></html>")
