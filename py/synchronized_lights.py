@@ -867,7 +867,7 @@ class Lightshow(object):
             counter = 0
             percentage = 0
 
-            while data != '':
+            while data != b'':
                 # Compute FFT in this chunk, and cache results
                 matrix = self.fft_calc.calculate_levels(data)
 
@@ -888,12 +888,12 @@ class Lightshow(object):
             sys.stdout.write("\rGenerating sync file for :%s %d%%" % (self.song_filename, 100))
             sys.stdout.flush()
 
-            data = ''
+            data = b''
             self.cache_found = False
             play_now = False
             print("\nsaving sync file")
 
-        while data != '' and not play_now:
+        while data != b'' and not play_now:
             # output data to sound device
             self.output(data)
 
