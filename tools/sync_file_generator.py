@@ -145,7 +145,7 @@ def cache_song(song_filename):
     row = 0
     data = musicfile.readframes(CHUNK_SIZE) # move chunk_size to configuration_manager
 
-    while data != '':
+    while data != b'':
         # No cache - Compute FFT in this chunk, and cache results
         matrix = fft_calc.calculate_levels(data)
 
