@@ -64,6 +64,7 @@ class DriverSACN(DriverBase):
         self._broadcast_interface = broadcast_interface
         self._universe = universe
         self._universe_boundary = universe_boundary
+        self.sequenceno = 0
 
 
 # s = socket(AF_INET, SOCK_DGRAM)
@@ -108,13 +109,15 @@ class DriverSACN(DriverBase):
             countboundary = self._universe_boundary * (universes - 1)
             data = self._buf
             udata = data[countboundary:countboundary + countlast]
-            packet = E131Packet(universe=self._universe + universes - 1, data=udata)
+            if self.sequenceno == 256:
+                self.sequenceno = 0
+            packet = E131Packet(universe=self._universe + universes - 1, data=udata, sequence=self.sequenceno)
             s.sendto(packet.packet_data, (self._host, self._port))
             universes -= 1
             while universes > 0:
                 countboundary = self._universe_boundary * (universes - 1)
                 udata = data[countboundary:countboundary + self._universe_boundary]
-                packet = E131Packet(universe=self._universe + universes - 1, data=udata)
+                packet = E131Packet(universe=self._universe + universes - 1, data=udata, sequence=self.sequenceno)
                 s.sendto(packet.packet_data, (self._host, self._port))
                 universes -=1
                 
@@ -123,6 +126,7 @@ class DriverSACN(DriverBase):
 #            s.sendto(packet.packet_data, (self._host, self._port))
 
             s.close()
+            self.sequenceno += 1
 
         except Exception as e:
             log.logger.error(e)
