@@ -546,7 +546,7 @@ class Lightshow(object):
               to regenerate them after making changes.
         """
         if os.path.isfile(self.config_filename):
-            config = ConfigParser.RawConfigParser(allow_no_value=True)
+            config = configparser.RawConfigParser(allow_no_value=True)
             with open(self.config_filename) as f:
                 config.readfp(f)
 
@@ -577,11 +577,11 @@ class Lightshow(object):
                         preshow = None
                         try:
                             preshow_configuration = config.get(lsc, 'preshow_configuration')
-                        except ConfigParser.NoOptionError:
+                        except configparser.NoOptionError:
                             preshow_configuration = None
                         try:
                             preshow_script = config.get(lsc, 'preshow_script')
-                        except ConfigParser.NoOptionError:
+                        except configparser.NoOptionError:
                             preshow_script = None
 
                         if preshow_configuration and not preshow_script:
