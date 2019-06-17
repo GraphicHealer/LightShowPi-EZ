@@ -186,7 +186,7 @@ def get_model():
     elif model in ["41", "42"]:
         return "Pi 2 Model B", header40
     
-    elif model in ["82"]:
+    elif model in ["82", "83"]:
         return "Pi 3 Model B", header40
     
     elif model in ["d3"]:
