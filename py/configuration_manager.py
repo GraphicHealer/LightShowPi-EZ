@@ -643,7 +643,7 @@ class Configuration(object):
     def write_playlist(self, songs, playlist=None):
         playlist = playlist or self.playlist_path
 
-        with open(playlist, 'wb') as playlist_fp:
+        with open(playlist, 'wt') as playlist_fp:
             fcntl.lockf(playlist_fp, fcntl.LOCK_EX)
             writer = csv.writer(playlist_fp, delimiter='\t')
 
