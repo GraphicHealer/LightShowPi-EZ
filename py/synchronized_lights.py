@@ -714,7 +714,7 @@ class Lightshow(object):
             except IOError:
                 self.cache_found = self.fft_calc.compare_config(self.cache_filename)
                 msg = "Cached sync data song_filename not found: '"
-                log.warn(msg + self.cache_filename + "'.  One will be generated.")
+                log.warning(msg + self.cache_filename + "'.  One will be generated.")
 
     def save_cache(self):
         """
