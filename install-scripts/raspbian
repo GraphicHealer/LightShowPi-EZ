@@ -29,4 +29,3 @@ raspi-config nonint do_gldriver G3
 echo -ne "\e[0;31mNOTE:\e[m " >&2
 echo "Installing ffmpeg..."
 $INSTALL_COMMAND ffmpeg
-$INSTALL_COMMAND libav-tools

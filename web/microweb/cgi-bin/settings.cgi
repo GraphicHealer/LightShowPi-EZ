@@ -34,7 +34,7 @@ if config_file:
     config_param = '--config=' + config_file 
 else:
     config_param = None
-
+    config_file = 'defaults.cfg'
 
 cgitb.enable()  # for troubleshooting
 form = cgi.FieldStorage()

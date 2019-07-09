@@ -203,7 +203,7 @@ class Sms(Thread):
 
         notifying users of any of their requests that are now playing
         """
-        with open(self.playlist, 'rb') as playlist_fp:
+        with open(self.playlist, 'rt') as playlist_fp:
             fcntl.lockf(playlist_fp, fcntl.LOCK_SH)
             playlist = csv.reader(playlist_fp, delimiter='\t')
             self.songs = list()
@@ -242,7 +242,7 @@ class Sms(Thread):
 
     def update_playlist(self):
         """Update playlist with latest votes"""
-        with open(self.playlist, 'wb') as playlist_fp:
+        with open(self.playlist, 'wt') as playlist_fp:
             fcntl.lockf(playlist_fp, fcntl.LOCK_EX)
             writer = csv.writer(playlist_fp, delimiter='\t')
             for song in self.songs:
