@@ -437,7 +437,8 @@ class Lightshow(object):
                            cm.audio_processing.max_frequency,
                            cm.audio_processing.custom_channel_mapping,
                            cm.audio_processing.custom_channel_frequencies,
-                           1)
+                           1,
+                           cm.audio_processing.use_gpu)
 
         if self.server:
             self.network.set_playing()
@@ -659,7 +660,9 @@ class Lightshow(object):
                                 cm.audio_processing.min_frequency,
                                 cm.audio_processing.max_frequency,
                                 cm.audio_processing.custom_channel_mapping,
-                                cm.audio_processing.custom_channel_frequencies)
+                                cm.audio_processing.custom_channel_frequencies,
+                                2,
+                                cm.audio_processing.use_gpu)
 
         # setup output device
         self.set_audio_device()

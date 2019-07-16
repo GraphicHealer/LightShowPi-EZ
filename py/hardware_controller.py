@@ -744,7 +744,7 @@ def test():
 
     print("\nFirst we are going to flash each light in order to see if they are all working")
 
-    raw_input("Press Enter to continue....")
+    input("Press Enter to continue....")
 
     flash(True)
 
@@ -752,7 +752,7 @@ def test():
     print("flash one at a time in order of assignment.")
 
     while True:
-        answer = raw_input("Did you see all channels flash in order? (yes/no) ").lower()
+        answer = input("Did you see all channels flash in order? (yes/no) ").lower()
         yes = ['yes', 'y', 'yep', 'ja', 'si', 'oui']
         no = ['no', 'n', 'nope', 'nein', 'non']
 
