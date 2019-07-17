@@ -297,7 +297,7 @@ class Lightshow(object):
                       srate,
                       "stereo" if self.num_channels > 1 else "mono"]
 
-        if pi_version >= 2:
+        if pi_version == 2 or pi_version == 3:
             fm_command = ["sudo",
                           cm.home_dir + "/bin/pi_fm_rds",
                           "-audio", "-", "-freq",
@@ -311,6 +311,22 @@ class Lightshow(object):
                           "-ctl",
                           cm.fm.fmfifo,
                           "-nochan",
+                          "2" if self.num_channels > 1 else "1"]
+
+        if pi_version == 4:
+            fm_command = ["sudo",
+                          cm.home_dir + "/bin/pi_fm_adv",
+                          "--audio", "-", "--freq",
+                          cm.fm.frequency,
+                          "--srate",
+                          srate,
+                          "--ps",
+                          cm.fm.program_service_name,
+                          "--rt",
+                          cm.fm.radio_text,
+                          "--ctl",
+                          cm.fm.fmfifo,
+                          "--nochan",
                           "2" if self.num_channels > 1 else "1"]
 
         log.info("Sending output as fm transmission")
