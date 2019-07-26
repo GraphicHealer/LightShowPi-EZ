@@ -514,6 +514,7 @@ class Configuration(object):
         Retrieve the audio processing configuration loading and parsing it from a file as necessary.
         """
         audio_prcssng = dict()
+        audio_prcssng["use_gpu"] = self.config.getboolean('audio_processing', 'use_gpu')
         audio_prcssng["chunk_size"] = self.config.getint('audio_processing', 'chunk_size')
         audio_prcssng["min_frequency"] = \
             self.config.getfloat('audio_processing', 'min_frequency')

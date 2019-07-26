@@ -437,6 +437,8 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
         self.send_response_only(code, message)
         self.send_header('Server', self.version_string())
         self.send_header('Date', self.date_time_string())
+        enc = sys.getfilesystemencoding()
+        self.send_header('charset', enc)
 
     def send_response_only(self, code, message=None):
         """Send the response header only."""

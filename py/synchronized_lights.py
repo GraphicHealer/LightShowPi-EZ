@@ -297,7 +297,7 @@ class Lightshow(object):
                       srate,
                       "stereo" if self.num_channels > 1 else "mono"]
 
-        if pi_version >= 2:
+        if pi_version == 2 or pi_version == 3:
             fm_command = ["sudo",
                           cm.home_dir + "/bin/pi_fm_rds",
                           "-audio", "-", "-freq",
@@ -311,6 +311,22 @@ class Lightshow(object):
                           "-ctl",
                           cm.fm.fmfifo,
                           "-nochan",
+                          "2" if self.num_channels > 1 else "1"]
+
+        if pi_version == 4:
+            fm_command = ["sudo",
+                          cm.home_dir + "/bin/pi_fm_adv",
+                          "--audio", "-", "--freq",
+                          cm.fm.frequency,
+                          "--srate",
+                          srate,
+                          "--ps",
+                          cm.fm.program_service_name,
+                          "--rt",
+                          cm.fm.radio_text,
+                          "--ctl",
+                          cm.fm.fmfifo,
+                          "--nochan",
                           "2" if self.num_channels > 1 else "1"]
 
         log.info("Sending output as fm transmission")
@@ -437,7 +453,8 @@ class Lightshow(object):
                            cm.audio_processing.max_frequency,
                            cm.audio_processing.custom_channel_mapping,
                            cm.audio_processing.custom_channel_frequencies,
-                           1)
+                           1,
+                           cm.audio_processing.use_gpu)
 
         if self.server:
             self.network.set_playing()
@@ -659,7 +676,9 @@ class Lightshow(object):
                                 cm.audio_processing.min_frequency,
                                 cm.audio_processing.max_frequency,
                                 cm.audio_processing.custom_channel_mapping,
-                                cm.audio_processing.custom_channel_frequencies)
+                                cm.audio_processing.custom_channel_frequencies,
+                                2,
+                                cm.audio_processing.use_gpu)
 
         # setup output device
         self.set_audio_device()
@@ -714,7 +733,7 @@ class Lightshow(object):
             except IOError:
                 self.cache_found = self.fft_calc.compare_config(self.cache_filename)
                 msg = "Cached sync data song_filename not found: '"
-                log.warn(msg + self.cache_filename + "'.  One will be generated.")
+                log.warning(msg + self.cache_filename + "'.  One will be generated.")
 
     def save_cache(self):
         """

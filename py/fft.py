@@ -40,7 +40,8 @@ class FFT(object):
                  max_frequency,
                  custom_channel_mapping,
                  custom_channel_frequencies,
-                 input_channels=2):
+                 input_channels=2,
+                 use_gpu=True):
         """
         :param chunk_size: chunk size of audio data
         :type chunk_size: int
@@ -81,7 +82,9 @@ class FFT(object):
         self.frequency_limits = self.calculate_channel_frequency()
         self.config = configparser.RawConfigParser(allow_no_value=True)
         self.config_filename = ""
-        self.audio_levels = AudioLevels(math.log(chunk_size / 2, 2), num_bins)
+        self.use_gpu = use_gpu
+        if (self.use_gpu):
+            self.audio_levels = AudioLevels(math.log(chunk_size / 2, 2), num_bins)
 
         fl = array(self.frequency_limits)
         self.piff = ((fl * self.chunk_size) / self.sample_rate).astype(int)
@@ -90,6 +93,9 @@ class FFT(object):
             if self.piff[a][0] == self.piff[a][1]:
                 self.piff[a][1] += 1
         self.piff = self.piff.tolist()
+
+    def calculate_piff(self, val, chunk_size, sample_rate):
+        return int(chunk_size * val / sample_rate) 
         
     def calculate_levels(self, data):
         """Calculate frequency response for each channel defined in frequency_limits
@@ -124,8 +130,19 @@ class FFT(object):
 
         # Apply FFT - real data
         # Calculate the power spectrum
-        cache_matrix = array(self.audio_levels.compute(data, self.piff)[0])
-        cache_matrix[isinf(cache_matrix)] = 0.0
+        if (self.use_gpu):
+            cache_matrix = array(self.audio_levels.compute(data, self.piff)[0])
+            cache_matrix[isinf(cache_matrix)] = 0.0
+
+        else:
+            matrix = fft.rfft(data)
+            matrix = delete(matrix, len(matrix) - 1)
+
+            power = abs(matrix) ** 2
+
+            cache_matrix = zeros(self.num_bins)
+            for i in range(self.num_bins):
+                cache_matrix[i] = log10(sum(power[self.calculate_piff(self.frequency_limits[i][0], self.chunk_size, self.sample_rate):self.calculate_piff(self.frequency_limits[i][1], self.chunk_size, self.sample_rate):1]))
 
         return cache_matrix
 

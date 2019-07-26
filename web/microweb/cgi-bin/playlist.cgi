@@ -21,7 +21,7 @@ import configuration_manager
 
 state_file = HOME_DIR + '/web/microweb/config/webstate.cfg'
 state = configparser.RawConfigParser()
-state.readfp(open(state_file))
+state.read_file(open(state_file))
 config_file = state.get('microweb','config')
 
 cm = configuration_manager.Configuration(param_config=config_file)
