@@ -28,7 +28,7 @@ sys.path.insert(0, HOME_DIR + '/py')
 
 state_file = HOME_DIR + '/web/microweb/config/webstate.cfg'
 state = configparser.RawConfigParser()
-state.readfp(open(state_file))
+state.read_file(open(state_file))
 config_file = state.get('microweb','config')
 if config_file:
     config_param = '--config=' + config_file 
@@ -115,7 +115,7 @@ if upload:
     message = 'Edit Songs'
     config_path = (HOME_DIR + '/config/' + config_file)
     overrides = configparser.RawConfigParser()
-    overrides.readfp(open(config_path))
+    overrides.read_file(open(config_path))
     playlist_path = overrides.get('lightshow','playlist_path')
     playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME',HOME_DIR)
     playlist_dir = os.path.dirname(playlist_path)
@@ -137,7 +137,7 @@ if recreate:
     make_title = lambda s: s.replace("_", " ").replace(ext, "") + "\t"
     config_path = (HOME_DIR + '/config/' + config_file)
     overrides = configparser.RawConfigParser()
-    overrides.readfp(open(config_path))
+    overrides.read_file(open(config_path))
     playlist_path = overrides.get('lightshow','playlist_path')
     playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME',HOME_DIR)
     playlist_dir = os.path.dirname(playlist_path)
@@ -171,7 +171,7 @@ if updown:
     entries = []
     config_path = (HOME_DIR + '/config/' + config_file)
     overrides = configparser.RawConfigParser()
-    overrides.readfp(open(config_path))
+    overrides.read_file(open(config_path))
     playlist_path = overrides.get('lightshow','playlist_path')
     playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME',HOME_DIR)
     playlist_dir = os.path.dirname(playlist_path)
@@ -235,7 +235,7 @@ if message:
     if message == 'Edit Songs':
         config_path = (HOME_DIR + '/config/' + config_file)
         overrides = configparser.RawConfigParser()
-        overrides.readfp(open(config_path))
+        overrides.read_file(open(config_path))
         playlist_path = overrides.get('lightshow','playlist_path')
         playlist_path = playlist_path.replace('$SYNCHRONIZED_LIGHTS_HOME',HOME_DIR)
         checkedfiles = []

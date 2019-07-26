@@ -7,6 +7,7 @@
 # Author: Ken B
 
 import cgi
+import html
 import cgitb
 import os, stat
 import subprocess
@@ -23,7 +24,7 @@ volume = subprocess.check_output([HOME_DIR + '/bin/vol'],shell=True).decode()
 
 state_file = HOME_DIR + '/web/microweb/config/webstate.cfg'
 state = configparser.RawConfigParser()
-state.readfp(open(state_file))
+state.read_file(open(state_file))
 config_file = state.get('microweb','config')
 if config_file:
     config_param = '--config=' + config_file + ' '
@@ -36,7 +37,7 @@ else:
 
 cfg_file = HOME_DIR + '/config/' + config_file
 cfg = configparser.RawConfigParser()
-cfg.readfp(open(cfg_file))
+cfg.read_file(open(cfg_file))
 lightshowmode = cfg.get('lightshow','mode')
 lightshowstc = cfg.get('lightshow','stream_command_string')
 
@@ -167,9 +168,9 @@ else:
 """)
 
 if message:
-    print ("""<h2>Executed command: %s</h2>""" % cgi.escape(message))
+    print ("""<h2>Executed command: %s</h2>""" % html.escape(message))
 
 if now_playing:
-    print ("""<h3>%s<h3>""" % cgi.escape(now_playing))
+    print ("""<h3>%s<h3>""" % html.escape(now_playing))
 
 print ("</body></html>")
