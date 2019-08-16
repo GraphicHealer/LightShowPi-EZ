@@ -31,6 +31,7 @@ from bibliopixel.drivers.ledtype import *
 from bibliopixel.drivers.driver_base import *
 from bibliopixel.drivers.serial import Serial
 from bibliopixel.drivers.serial.devices import Devices
+from bibliopixel.drivers.SPI import SPI
 from driver_sacn import DriverSACN
 
 #log.set_log_level(log.INFO)
@@ -112,11 +113,9 @@ class Led(object):
             self.all_leds_off()
 
     def spi_setup(self):
-        main_driver = importlib.import_module("bibliopixel.drivers." + self.led_config.strip_type)
-        driver = getattr(main_driver, "Driver" + self.led_config.strip_type)
-        self.driver = driver(num=self.led_count,
-                             c_order=self.channel_order,
-                             use_py_spi=True)
+        self.driver = SPI(ledtype=self.led_config.strip_type,
+                             num=self.led_count,
+                             c_order=self.channel_order)
 
     def serial_setup(self):
 
