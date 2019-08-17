@@ -115,6 +115,7 @@ class Led(object):
     def spi_setup(self):
         self.driver = SPI(ledtype=self.led_config.strip_type,
                              num=self.led_count,
+                             spi_interface='PYDEV',
                              c_order=self.channel_order)
 
     def serial_setup(self):

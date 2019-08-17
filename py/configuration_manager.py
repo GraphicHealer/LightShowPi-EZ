@@ -264,7 +264,7 @@ class Configuration(object):
             led["led_configuration"] = None
             led["led_connection"] = None
 
-        if st in sst[0:3] and lconn == "SPI":
+        if st in sst[0:5] and lconn == "SPI":
             led["strip_type"] = st
         elif lconn in ["SERIAL"] and st in sst:
             led["strip_type"] = st
