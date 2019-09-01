@@ -66,5 +66,6 @@ print ("Writing Playlist to File")
 
 with open(".playlist", "w") as playlist:
     playlist.write("\n".join(str(entry) for entry in entries))
+    playlist.write("\n")
 
 print ("DONE")
