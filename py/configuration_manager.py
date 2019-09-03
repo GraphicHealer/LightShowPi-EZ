@@ -296,7 +296,7 @@ class Configuration(object):
 
         g_leds = self.led_config.get('led', 'custom_per_channel')
         try:
-            led["custom_per_channel"] = map(int, g_leds.split(","))
+            led["custom_per_channel"] = list(map(int, g_leds.split(",")))
             led["led_channel_count"] = len(led["custom_per_channel"])
             led_count = len(led["custom_per_channel"])
         except (AttributeError, ValueError, TypeError ):
@@ -412,7 +412,7 @@ class Configuration(object):
         if len(self.config.get('network', 'channels')) == 0:
             channels = [_ for _ in range(self.gpio_len)]
         else:
-            channels = map(int, self.config.get('network', 'channels').split(","))
+            channels = list(map(int, self.config.get('network', 'channels').split(",")))
 
         temp = defaultdict()
         for channel in range(len(channels)):
@@ -458,11 +458,11 @@ class Configuration(object):
         lghtshw["randomize_playlist"] = self.config.getboolean(ls, 'randomize_playlist')
 
         on_c = "always_on_channels"
-        lghtshw[on_c] = map(int, self.config.get(ls, on_c).split(","))
+        lghtshw[on_c] = list(map(int, self.config.get(ls, on_c).split(",")))
         off_c = "always_off_channels"
-        lghtshw[off_c] = map(int, self.config.get(ls, off_c).split(","))
+        lghtshw[off_c] = list(map(int, self.config.get(ls, off_c).split(",")))
         ic = "invert_channels"
-        lghtshw[ic] = map(int, self.config.get(ls, ic).split(","))
+        lghtshw[ic] = list(map(int, self.config.get(ls, ic).split(",")))
 
         # setup up preshow
         preshow = None
@@ -522,10 +522,10 @@ class Configuration(object):
             self.config.getfloat('audio_processing', 'max_frequency')
         temp = self.config.get('audio_processing', 'custom_channel_mapping')
         audio_prcssng["custom_channel_mapping"] = \
-            map(int, temp.split(',')) if temp else 0
+            list(map(int, temp.split(','))) if temp else 0
         temp = self.config.get('audio_processing', 'custom_channel_frequencies')
         audio_prcssng["custom_channel_frequencies"] = \
-            map(int, temp.split(',')) if temp else 0
+            list(map(int, temp.split(','))) if temp else 0
 
         self.audio_processing = Section(audio_prcssng)
 
