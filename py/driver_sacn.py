@@ -65,11 +65,7 @@ class DriverSACN(DriverBase):
         self._universe = universe
         self._universe_boundary = universe_boundary
         self.sequenceno = 0
-
-
-# s = socket(AF_INET, SOCK_DGRAM)
-# s.bind(('', 0))
-# s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+        self.lastbuf = None
 
     def _connect(self):
         try:
@@ -94,13 +90,19 @@ class DriverSACN(DriverBase):
     def _compute_packet(self):
         self._render()
         self._packet = self._buf
- 
 
     # Push new data to strand
-#    def update(self, data):
     def _send_packet(self):
         try:
-            s = self._connect()
+            # open sock only once
+            if self._sock == None:
+                s = self._connect()
+            else:
+                s = self._sock
+            # do not duplicate packets
+            bytesdata = bytes(self._buf)
+            if self.lastbuf == bytesdata:
+                return
             bbc = self.bufByteCount()
 
             universes = int(bbc / self._universe_boundary) + 1
@@ -122,10 +124,9 @@ class DriverSACN(DriverBase):
                 universes -=1
                 
 
-#            packet = E131Packet(universe=self._universe, data=data)
-#            s.sendto(packet.packet_data, (self._host, self._port))
 
-            s.close()
+#            s.close()
+            self.lastbuf = bytesdata
             self.sequenceno += 1
 
         except Exception as e:

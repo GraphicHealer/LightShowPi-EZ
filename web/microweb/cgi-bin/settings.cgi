@@ -159,6 +159,7 @@ if recreate:
     if len(entries) > 0:
         with open(playlist_path, "w") as playlist:
             playlist.write("\n".join(str(entry) for entry in entries))
+            playlist.write("\n")
         
         os.chown(playlist_path, uid, gid)
 
