@@ -565,7 +565,7 @@ class Lightshow(object):
         if os.path.isfile(self.config_filename):
             config = configparser.RawConfigParser(allow_no_value=True)
             with open(self.config_filename) as f:
-                config.readfp(f)
+                config.read_file(f)
 
                 if config.has_section('custom_lightshow'):
                     lsc = "custom_lightshow"

@@ -116,7 +116,7 @@ class Configuration(object):
 
     def load_config(self):
         """Load config files into ConfigParser instance"""
-        self.config.readfp(open(self.config_dir + 'defaults.cfg'))
+        self.config.read_file(open(self.config_dir + 'defaults.cfg'))
 
         overrides = list()
         if self.param_config:
@@ -130,7 +130,7 @@ class Configuration(object):
         """Force the state to be reloaded form disk."""
         with open(self.state_file) as state_fp:
             fcntl.lockf(state_fp, fcntl.LOCK_SH)
-            self.state.readfp(state_fp, self.state_file)
+            self.state.read_file(state_fp, self.state_file)
             fcntl.lockf(state_fp, fcntl.LOCK_UN)
 
     def get_state(self, name, default=""):
@@ -245,7 +245,7 @@ class Configuration(object):
         """
 
         self.led_config = configparser.RawConfigParser(allow_no_value=True)
-        self.led_config.readfp(open(self.config_dir + config_file))
+        self.led_config.read_file(open(self.config_dir + config_file))
 
         led = dict()
 

@@ -223,7 +223,7 @@ class FFT(object):
         else:
             has_config = True
             with open(self.config_filename) as f:
-                self.config.readfp(f)
+                self.config.read_file(f)
 
         fft_cache = dict()
         fft_current = dict()
