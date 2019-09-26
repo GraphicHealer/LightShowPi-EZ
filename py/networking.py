@@ -123,7 +123,7 @@ class Networking(object):
             try:
                 data = list(map(str, [(round(item,3)) for item in args[0]]))
                 j_data = json.dumps({'data':(data)})
-                self.network_stream.sendto(j_data, ('<broadcast>', self.port))
+                self.network_stream.sendto(bytes(j_data, 'utf-8'), ('<broadcast>', self.port))
             except socket.error as msg:
                 if msg[0] != 9:
                     log.error(str(msg[0]) + ' ' + msg[1])
