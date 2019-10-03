@@ -134,6 +134,11 @@ log Installing pygooglevoice...
 pip3 install --upgrade git+https://github.com/pettazz/pygooglevoice.git
 verify "Installation of pygooglevoice failed"
 
+# Install wiringpipy
+log Installing wiringpipy...
+pip3 install --upgrade git+https://broken2048@bitbucket.org/broken2048/wiringpipy.git
+verify "Installation of wiringpipy failed"
+
 # Optionally add a line to /etc/sudoers
 if [ -f /etc/sudoers ]; then
     KEEP_EN="Defaults             env_keep="SYNCHRONIZED_LIGHTS_HOME""
