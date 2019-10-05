@@ -102,8 +102,7 @@ void loop() {
       if (channels[i] < 0 ) {
         continue;
       }
-      JsonVariant elem = dataarray.getElement(i);
-      float pvf = elem.as<float>();
+      float pvf = dataarray.getElement(i).as<float>();
 //      Serial.printf("array elem %d = %f\n", i, pvf);
       if (pvf >= turnon) {
 //        Serial.printf("GPIO %d is ON\n", gpio_pins[channels[i]]);
