@@ -5,7 +5,7 @@
  * networking = serverjson
  * 
  * Author: KenB
- * Version: 1.3
+ * Version: 1.4
  * 
  * ToDo: 
  * Notes: When Serial.print(s) are enabled in loop(), GPIO states may not sync
@@ -20,10 +20,10 @@
 
 const char* deviceName = "nodemcu-lspi"; //your preferred device name on your network
 const char* ssid = "myssid";             //your wifi ssid
-const char* password = "mypassd";     //your wifi password
+const char* password = "mypasswd";     //your wifi password
 
-int gpio_pins[] = {4,5,13,14};           //these are NodeMCU GPIO pins you want to use
-//int gpio_pins[] = {4,5,12,13,14,15,0,3}; //all 8 available NodeMCU GPIOs
+int gpio_pins[] = {4,5,12,13,14,15,0,3}; //all 8 available NodeMCU GPIOs, others may give you trouble
+//int gpio_pins[] = {4,5,13,14};           //these are NodeMCU GPIO pins you want to use
 
 /* 
  *  channels[]
@@ -37,12 +37,21 @@ int channels[] = {0,1,2,3,4,5,6,7}; // use all 8 channels when using 8 GPIOs
 
 // Rarely modify these lines :
 
-char incomingPacket[512];  //increase the buffer size if your server gpios is really large
+#define BUFFER_SIZE 512 //increase the buffer size if your server gpios is really large
+char incomingPacket[BUFFER_SIZE];  
 unsigned int port = 8888;  //lspi standard
 
 float turnon = 0.4; //threshold for ON ( onoff only supported here )
 
 const short int BUILTIN_LED1 = 2; //GPIO2 on the NodeMCU
+
+// uncomment these two for active_low_mode = no
+int turn_on = HIGH;
+int turn_off = LOW;
+// uncomment these two for active_low_mode = yes
+//int turn_on = LOW;
+//int turn_off = HIGH; 
+
 
 WiFiUDP udp;
 
@@ -67,7 +76,7 @@ void setup() {
   for (int i=0; i<(sizeof(gpio_pins)/sizeof(gpio_pins[0])); i++) {
     pinMode(gpio_pins[i], OUTPUT);
     Serial.printf("Set pinMode %d OUTPUT\n",gpio_pins[i]);
-    digitalWrite(gpio_pins[i], LOW);
+    digitalWrite(gpio_pins[i], turn_off);
   }
 
   udp.begin(port);
@@ -86,7 +95,7 @@ void loop() {
       incomingPacket[len] = 0; 
     }
 //    Serial.printf("UDP packet contents: %s\n", incomingPacket);
-    StaticJsonDocument<512> jsonBuffer;
+    StaticJsonDocument<BUFFER_SIZE> jsonBuffer;
     deserializeJson(jsonBuffer,incomingPacket);
     JsonArray dataarray = jsonBuffer["data"];
     for (int i=0; i<dataarray.size() ; i++) {
@@ -98,10 +107,10 @@ void loop() {
 //      Serial.printf("array elem %d = %f\n", i, pvf);
       if (pvf >= turnon) {
 //        Serial.printf("GPIO %d is ON\n", gpio_pins[channels[i]]);
-        digitalWrite(gpio_pins[channels[i]], HIGH);
+        digitalWrite(gpio_pins[channels[i]], turn_on);
       } else {
 //        Serial.printf("GPIO %d is OFF\n", gpio_pins[channels[i]]);
-        digitalWrite(gpio_pins[channels[i]], LOW);
+        digitalWrite(gpio_pins[channels[i]], turn_off);
       }   
          
     }   
@@ -109,3 +118,4 @@ void loop() {
   }
 
 }
+
