@@ -4,7 +4,7 @@ All files here are free to use under the BSD License (see the LICENSE file for d
 ask in return is that you send any updates / improvements you may make to them back to us so 
 that we can all benefit from your improvements!
 
-Join us on our [Google+ community page](https://plus.google.com/communities/101789596301454731630) and / or [Facebook page](https://www.facebook.com/lightshowpi) as well to share your experiences using lightshowPi, as well as videos of your shows!
+Join us on our [Reddit page](https://www.reddit.com/r/LightShowPi/) and / or [Facebook page](https://www.facebook.com/lightshowpi) as well to share your experiences using lightshowPi, as well as videos of your shows!
 
 Thanks, and enjoy ;)
 
@@ -46,13 +46,19 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 * Eric Higdon
 * Tom Enos
 * Brandon Lyon
-* Ken B (K5ENB)
+* Ken B
 * Paul Barnett
 * Anthony Tod
 * Brent Reinhard
 
 Release Notes
 ============
+
+2019/10/05 :: Version 3.0
+-------------------------------
+
+* Upgrade to python 3.x
+* Various bug-fixes and updates to support install on latest Raspbian versions and Pi 4
 
 2018/10/16 :: Version 1.4
 -------------------------------

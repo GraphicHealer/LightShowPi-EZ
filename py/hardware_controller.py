@@ -63,7 +63,7 @@ signal.signal(signal.SIGINT, signal.SIG_IGN)
 is_a_raspberryPI = Platform.platform_detect() == 1
 
 if is_a_raspberryPI:
-    import wiringpi
+    import wiringpipy as wiringpi
 else:
     # if this is not a RPi
     import wiring_pi as wiringpi
@@ -123,14 +123,14 @@ class Hardware(object):
                 if device.lower() == "mcp23008":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.mcp23008Setup(int(params['pinBase']),
+                        wiringpi.mcp23008SetupPY(int(params['pinBase']),
                                                int(params['i2cAddress'],
                                                    16))
 
                 elif device.lower() == "mcp23s08":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.mcp23s08Setup(int(params['pinBase']),
+                        wiringpi.mcp23s08SetupPY(int(params['pinBase']),
                                                int(params['spiPort'],
                                                    16),
                                                int(params['devId']))
@@ -138,21 +138,21 @@ class Hardware(object):
                 elif device.lower() == "mcp23016":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.mcp23016Setup(int(params['pinBase']),
+                        wiringpi.mcp23016SetupPY(int(params['pinBase']),
                                                int(params['i2cAddress'],
                                                    16))
 
                 elif device.lower() == "mcp23017":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.mcp23017Setup(int(params['pinBase']),
+                        wiringpi.mcp23017SetupPY(int(params['pinBase']),
                                                int(params['i2cAddress'],
                                                    16))
 
                 elif device.lower() == "mcp23s17":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.mcp23s17Setup(int(params['pinBase']),
+                        wiringpi.mcp23s17SetupPY(int(params['pinBase']),
                                                int(params['spiPort'],
                                                    16),
                                                int(params['devId']))
@@ -160,7 +160,7 @@ class Hardware(object):
                 elif device.lower() == "sr595":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.sr595Setup(int(params['pinBase']),
+                        wiringpi.sr595SetupPY(int(params['pinBase']),
                                             int(params['numPins']),
                                             int(params['dataPin']),
                                             int(params['clockPin']),
@@ -169,7 +169,7 @@ class Hardware(object):
                 elif device.lower() == "pcf8574":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.pcf8574Setup(int(params['pinBase']),
+                        wiringpi.pcf8574SetupPY(int(params['pinBase']),
                                               int(params['i2cAddress'],
                                                   16))
 
@@ -331,7 +331,7 @@ class Hardware(object):
 
     def initialize(self,reset=True):
         """Set pins as outputs and start all lights in the off state."""
-        wiringpi.wiringPiSetup()
+        wiringpi.wiringPiSetupPY()
         self.enable_device()
         self.set_pins_as_outputs()
         if reset:
@@ -359,19 +359,19 @@ class Channel(object):
         self.inverted = False
 
         if self.pwm:
-            self.action = lambda b: wiringpi.softPwmWrite(self.pin_number,
+            self.action = lambda b: wiringpi.softPwmWritePY(self.pin_number,
                                                           int(b * self.pwm_max))
         elif piglow:
-            self.action = lambda b: wiringpi.analogWrite(self.pin_number + 577, int(b * 255))
+            self.action = lambda b: wiringpi.analogWritePY(self.pin_number + 577, int(b * 255))
         else:
-            self.action = lambda b: wiringpi.digitalWrite(self.pin_number, int(b > 0.5))
+            self.action = lambda b: wiringpi.digitalWritePY(self.pin_number, int(b > 0.5))
 
     def set_as_input(self):
         """
         set up this pin as input
         """
         self.inout = 'pin is input'
-        wiringpi.pinMode(self.pin_number, 0)
+        wiringpi.pinModePY(self.pin_number, 0)
 
     def set_as_output(self):
         """
@@ -379,9 +379,9 @@ class Channel(object):
         """
         self.inout = 'pin is output'
         if self.pwm:
-            wiringpi.softPwmCreate(self.pin_number, 0, self.pwm_max)
+            wiringpi.softPwmCreatePY(self.pin_number, 0, self.pwm_max)
         else:
-            wiringpi.pinMode(self.pin_number, 1)
+            wiringpi.pinModePY(self.pin_number, 1)
 
     def set_always_on(self, value):
         """

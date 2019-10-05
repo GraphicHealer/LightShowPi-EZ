@@ -20,6 +20,7 @@ import time
 
 import bibliopixel.colors as colors
 import bibliopixel.util.image as image
+import bibliopixel.layout.font as font
 
 from bibliopixel.layout.strip import *
 from bibliopixel.layout.matrix import *
@@ -148,6 +149,7 @@ class Led(object):
     def matrix_setup(self):
         self.images = []
         self.p_type = self.led_config.matrix_pattern_type
+        self.last_type = ""
         self.led = LEDMatrix(self.driver,
                              width=self.led_config.matrix_width,
                              height=self.led_config.matrix_height,
@@ -165,10 +167,27 @@ class Led(object):
 
         self.drops = [[0 for _ in range(self.led_config.matrix_height)] for _ in range(self.led_config.matrix_width)]
 
-        self._cY = int(self.led_config.matrix_width / 2)
-        self._cX = int(self.led_config.matrix_height / 2)
         self._len = (self.led_config.matrix_width * 2) + (self.led_config.matrix_height * 2) - 2
         self._step = 1
+        self._bstep = 0
+        midx = int(self.led_config.matrix_height / 2)
+        if float(midx) == (self.led_config.matrix_height / 2):
+            # even number, two center px 
+            self.midxa = midx
+            self.midxb = midx - 1
+        else:
+            # odd number, one center px 
+            self.midxa = midx
+            self.midxb = midx
+        midy = int(self.led_config.matrix_width / 2)
+        if float(midy) == (self.led_config.matrix_width / 2):
+            # even number, two center px 
+            self.midya = midy
+            self.midyb = midy - 1
+        else:
+            # odd number, one center px 
+            self.midya = midy
+            self.midyb = midy
 
     def all_leds_off(self):
         self.leds = numpy.array([0 for _ in range(self.led_config.led_count)])
@@ -257,6 +276,16 @@ class Led(object):
         self.led.push_to_driver()
         self.update_skip = self.skip
 
+    def mmcm(self,p_type):
+        if self.last_type == p_type:
+            return
+        self.last_type = p_type
+        if p_type == 'BANNER':
+            self.led.coord_map = make_matrix_coord_map( self.led_config.matrix_width, self.led_config.matrix_height, serpentine=True, rotation=90, y_flip=False)
+        else:
+            self.led.coord_map = make_matrix_coord_map( self.led_config.matrix_width, self.led_config.matrix_height, serpentine=True, rotation=90, y_flip=True)
+            
+         
     def write_matrix(self, pin_list):
         if self.update_skip != 0:
             self.update_skip -= 1
@@ -268,13 +297,15 @@ class Led(object):
         else:
             for pin in range(len(pin_list)):
                 self.beats += pin_list[pin] * (len(pin_list) / (pin + 1)) * 0.002
-            if self.beats > self.led_config.beats:
+            if self.beats > self.led_config.beats and self._bstep == 0:
+                self._bstep = 0 
                 self.beats = 0
                 self.p_num += 1
                 if self.p_num >= len(self.led_config.matrix_pattern_type):
                     self.p_num = 0
             self.p_type = self.led_config.matrix_pattern_type[self.p_num]
 
+        self.mmcm(self.p_type)
         self.led.all_off()
 
         h = self.led_config.matrix_height
@@ -319,22 +350,22 @@ class Led(object):
             pos = 0
             for x in range(h):
                 c = colors.hue_helper(pos, self._len, self._step)
-                self.led.drawLine(self._cX, self._cY, x, 0, c)
+                self.led.drawLine(self.midxa, self.midya, x, 0, c)
                 pos += 1
 
             for y in range(w):
                 c = colors.hue_helper(pos, self._len, self._step)
-                self.led.drawLine(self._cX, self._cY, h - 1, y, c)
+                self.led.drawLine(self.midxb, self.midyb, h - 1, y, c)
                 pos += 1
 
             for x in range(h - 1, -1, -1):
                 c = colors.hue_helper(pos, self._len, self._step)
-                self.led.drawLine(self._cX, self._cY, x, w - 1, c)
+                self.led.drawLine(self.midxb, self.midyb, x, w - 1, c)
                 pos += 1
 
             for y in range(w - 1, -1, -1):
                 c = colors.hue_helper(pos, self._len, self._step)
-                self.led.drawLine(self._cX, self._cY, 0, y, c)
+                self.led.drawLine(self.midxa, self.midya, 0, y, c)
                 pos += 1
 
             self._step += amt
@@ -342,19 +373,31 @@ class Led(object):
                 self._step = 0
 
         elif self.p_type == 'CBARS':
-            midl = int(h / 2)
             for y in range(w):
                 level = pin_list[int((y / float(w)) * float(self.led_config.led_channel_count))]
                 brightness = int(255 * level)
                 rgb = scale(color_map[brightness], brightness)
-                mlvl = int(level * midl)
-                self.led.drawLine(midl - mlvl, y,midl + mlvl, y,rgb)
+                mlvl = int(level * self.midxa)
+                self.led.drawLine(self.midxa - mlvl, y,self.midxb + mlvl, y,rgb)
 
         elif self.p_type == 'CIRCLES':
-            for pin in range(len(pin_list)):
+            for pin in range(self.led_config.led_channel_count):
                 rgb = self.rgb[pin]
                 c = scale(rgb,int((pin_list[pin]) * 255))
-                self.led.drawCircle(self._cX,self._cY,pin,c)
+                self.led.drawCircle(self.midxa,self.midyb,int(pin * ((w / 2) / self.led_config.led_channel_count)),c)
+
+        elif self.p_type == 'BANNER':
+            rgb = self.rgb[list(pin_list).index(max(list(pin_list)))] 
+# fit 4 characters into width
+            text = self.led_config.banner_text[int(self._bstep):int(self._bstep)+4]
+# fonts : 6x4 8x6 16x8
+            self.led.drawText(text, x = 1, y = 1, color = rgb, bg = colors.Off, font='6x4', font_scale = 1)
+# scroll speed 0.1
+            self._bstep += 0.1
+# scroll with beats
+#            self._bstep += (pin_list[0] * 0.2) + (pin_list[1] * 0.1)
+            if(self._bstep >= len(self.led_config.banner_text)):
+                self._bstep = 0
 
         self.led.push_to_driver()
         self.update_skip = self.skip

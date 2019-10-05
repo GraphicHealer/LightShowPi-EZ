@@ -384,6 +384,8 @@ class Configuration(object):
         led["multiprocess"] = False
 
         led["beats"] = self.led_config.getint('led', 'beats')
+ 
+        led["banner_text"] = self.led_config.get('led', 'banner_text').replace('"','')
 
         self.led = Section(led)
 
