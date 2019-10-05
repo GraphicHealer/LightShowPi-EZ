@@ -123,14 +123,14 @@ class Hardware(object):
                 if device.lower() == "mcp23008":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.mcp23008Setup(int(params['pinBase']),
+                        wiringpi.mcp23008SetupPY(int(params['pinBase']),
                                                int(params['i2cAddress'],
                                                    16))
 
                 elif device.lower() == "mcp23s08":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.mcp23s08Setup(int(params['pinBase']),
+                        wiringpi.mcp23s08SetupPY(int(params['pinBase']),
                                                int(params['spiPort'],
                                                    16),
                                                int(params['devId']))
@@ -138,21 +138,21 @@ class Hardware(object):
                 elif device.lower() == "mcp23016":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.mcp23016Setup(int(params['pinBase']),
+                        wiringpi.mcp23016SetupPY(int(params['pinBase']),
                                                int(params['i2cAddress'],
                                                    16))
 
                 elif device.lower() == "mcp23017":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.mcp23017Setup(int(params['pinBase']),
+                        wiringpi.mcp23017SetupPY(int(params['pinBase']),
                                                int(params['i2cAddress'],
                                                    16))
 
                 elif device.lower() == "mcp23s17":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.mcp23s17Setup(int(params['pinBase']),
+                        wiringpi.mcp23s17SetupPY(int(params['pinBase']),
                                                int(params['spiPort'],
                                                    16),
                                                int(params['devId']))
@@ -160,7 +160,7 @@ class Hardware(object):
                 elif device.lower() == "sr595":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.sr595Setup(int(params['pinBase']),
+                        wiringpi.sr595SetupPY(int(params['pinBase']),
                                             int(params['numPins']),
                                             int(params['dataPin']),
                                             int(params['clockPin']),
@@ -169,7 +169,7 @@ class Hardware(object):
                 elif device.lower() == "pcf8574":
                     for slave in device_slaves:
                         params = slave
-                        wiringpi.pcf8574Setup(int(params['pinBase']),
+                        wiringpi.pcf8574SetupPY(int(params['pinBase']),
                                               int(params['i2cAddress'],
                                                   16))
 
