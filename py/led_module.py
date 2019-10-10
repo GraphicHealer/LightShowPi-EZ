@@ -34,6 +34,7 @@ from bibliopixel.drivers.serial import Serial
 from bibliopixel.drivers.serial.devices import Devices
 from bibliopixel.drivers.SPI import SPI
 from driver_sacn import DriverSACN
+from led_color_maps import lspi_color_maps
 
 #log.set_log_level(log.INFO)
 log.set_log_level(log.WARNING)
@@ -255,6 +256,8 @@ class Led(object):
             elif self.pattern_color_map == 'MAP2':
                 rgb = scale(color_map[255 - brightness], brightness)
 
+            elif self.pattern_color_map in lspi_color_maps.map.keys():
+                rgb = scale(lspi_color_maps.map[self.pattern_color_map][255 - brightness], brightness)
             else:
                 rgb = (brightness, brightness, brightness)
 

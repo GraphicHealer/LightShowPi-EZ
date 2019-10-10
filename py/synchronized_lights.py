@@ -983,6 +983,10 @@ class Lightshow(object):
             while True:
                 data = self.network.receive()
 
+                if hc.led and isinstance(data[0], np.ndarray):
+                    for led_instance in hc.led:
+                        led_instance.write_all(data[0])
+
                 if isinstance(data[0], int):
                     pin = data[0]
                     if pin in channel_keys:
