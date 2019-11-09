@@ -204,7 +204,7 @@ class Configuration(object):
         for device_type, settings in hrdwr["devices"].items():
             for count in range(len(settings)):
                 for k, v in settings[count].items():
-                    settings[count][k] = v if not isinstance(v, str) else int(v, 16)
+                    settings[count][k] = v
 
         g_pins = self.config.get('hardware', 'gpio_pins')
         try:
