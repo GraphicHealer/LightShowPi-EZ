@@ -54,6 +54,12 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 Release Notes
 ============
 
+2019/11/09 :: Version 3.01
+-------------------------------
+
+* Expander chipset bug fixed
+* Custom LED strip color maps, allow LEDs to work in network client mode 
+
 2019/10/05 :: Version 3.0
 -------------------------------
 
