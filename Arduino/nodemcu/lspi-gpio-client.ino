@@ -5,7 +5,7 @@
  * networking = serverjson
  * 
  * Author: KenB
- * Version: 1.4
+ * Version: 1.5
  * 
  * ToDo: 
  * Notes: When Serial.print(s) are enabled in loop(), GPIO states may not sync
@@ -107,6 +107,9 @@ void loop() {
       if (pvf >= turnon) {
 //        Serial.printf("GPIO %d is ON\n", gpio_pins[channels[i]]);
         digitalWrite(gpio_pins[channels[i]], turn_on);
+      } else if (pvf < 0.0) {
+//        Serial.printf("GPIO %d is Unknown\n", gpio_pins[channels[i]]);
+          continue;
       } else {
 //        Serial.printf("GPIO %d is OFF\n", gpio_pins[channels[i]]);
         digitalWrite(gpio_pins[channels[i]], turn_off);
