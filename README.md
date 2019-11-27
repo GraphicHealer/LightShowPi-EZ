@@ -54,6 +54,13 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 Release Notes
 ============
 
+2019/11/27 :: Version 3.02
+-------------------------------
+
+* bin/vol to support USB sound devices
+* serverjson fix for hardware_controller.py and sketch v1.5, broadcast bug
+* minor bugs and error handling 
+
 2019/11/09 :: Version 3.01
 -------------------------------
 
