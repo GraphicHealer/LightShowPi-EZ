@@ -1,8 +1,10 @@
 #!/bin/bash
 
 MIX=amixer
-CARD=0
-NUMID=1
+
+           # Default setting of 0 and 1 is for the pi audio jack volume
+CARD=0     # 0=internal audio,1=USB audio
+NUMID=1    # For USB, determine this value by looking at: amixer -c 1 controls
 
 declare -i LO=0     # Minimum volume; try 10 to avoid complete silence
 declare -i HI=100   # Maximum volume; try 95 to avoid distortion
