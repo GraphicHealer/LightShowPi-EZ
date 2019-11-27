@@ -829,7 +829,7 @@ class Lightshow(object):
 
         os.system("/bin/echo \"\" >" + cm.home_dir + "/logs/now_playing.txt")
         metadata = mutagen.File(self.song_filename, easy=True)
-        if not metadata is None and "title" in metadata:
+        if not metadata is None:
             if "title" in metadata and "artist" in metadata:
                 now_playing = "Now Playing " + metadata["title"][0] + " by " + metadata["artist"][0]
             elif "title" in metadata:
