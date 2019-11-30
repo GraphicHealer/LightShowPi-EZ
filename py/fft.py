@@ -142,7 +142,9 @@ class FFT(object):
 
             cache_matrix = zeros(self.num_bins)
             for i in range(self.num_bins):
-                cache_matrix[i] = log10(sum(power[self.calculate_piff(self.frequency_limits[i][0], self.chunk_size, self.sample_rate):self.calculate_piff(self.frequency_limits[i][1], self.chunk_size, self.sample_rate):1]))
+                psum = sum(power[self.calculate_piff(self.frequency_limits[i][0], self.chunk_size, self.sample_rate):self.calculate_piff(self.frequency_limits[i][1], self.chunk_size, self.sample_rate):1])
+                if (psum): 
+                    cache_matrix[i] = log10(psum)
 
         return cache_matrix
 

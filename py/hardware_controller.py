@@ -85,8 +85,7 @@ class Hardware(object):
 
         # network setup if used
         self.network = networking.Networking(cm)
-        self.server = self.network.networking == "server"
-        self.playing = self.network.playing
+        self.server = self.network.networking == "server" or self.network.networking == "serverjson"
         self.broadcast = self.network.broadcast
 
         self.led = None
@@ -313,9 +312,10 @@ class Hardware(object):
         :param brightness: float, a float representing the brightness of the lights
         :type brightness: float
         """
-        if not self.playing and self.server:
-            self.broadcast(cm.hardware.gpio_pins.index(cm.hardware.gpio_pins[pin]),
-                           brightness)
+        if not self.network.playing and self.server:
+            sendb = [-1.0 for _ in range(cm.hardware.gpio_len)]
+            sendb[pin] = float(brightness)
+            self.broadcast(sendb)
 
         self.channels[pin].set_action(use_overrides, brightness)
 

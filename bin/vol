@@ -1,6 +1,11 @@
 #!/bin/bash
 
 MIX=amixer
+
+           # Default setting of 0 and 1 is for the pi audio jack volume
+CARD=0     # 0=internal audio,1=USB audio
+NUMID=1    # For USB, determine this value by looking at: amixer -c 1 controls
+
 declare -i LO=0     # Minimum volume; try 10 to avoid complete silence
 declare -i HI=100   # Maximum volume; try 95 to avoid distortion
 declare -i ADJ=3    # Volume adjustment step size
@@ -36,13 +41,13 @@ if [ -z "$EXE" ]; then
 	exit 2
 fi
 
-GET=$(${EXE} cget numid=1)
-declare -i MIN=$(echo ${GET} | /bin/grep -E -o -e ',min=[^,]+' | /bin/grep -E -o -e '[0-9-]+')
-declare -i MAX=$(echo ${GET} | /bin/grep -E -o -e ',max=[^,]+' | /bin/grep -E -o -e '[0-9-]+')
-declare -i VAL=$(echo ${GET} | /bin/grep -E -o -e ': values=[0-9+-]+' | /bin/grep -E -o -e '[0-9-]+')
+GET="$EXE cget -c $CARD numid=$NUMID"
+MIN=`$GET | /bin/grep -v dB | /bin/grep -E -o -e ',min=[^,]+' | /bin/grep -E -o -e '[0-9-]+'`
+MAX=`$GET | /bin/grep -v dB | /bin/grep -E -o -e ',max=[^,]+' | /bin/grep -E -o -e '[0-9-]+'`
+VAL=`$GET | /bin/grep -E -o -e ': values=[0-9+-]+' | /bin/grep -E -o -e '[0-9-]+'`
 
 if (( MIN >= MAX || VAL < MIN || VAL > MAX )); then
-	echo "Error: could not get the right values from $MIX output." >&2
+	echo "Error: could not get the right values from $MIX output. $MIN $MAX $VAL" >&2
 	exit 3
 fi
 
@@ -70,7 +75,7 @@ if [ ! -z "$ARG" ]; then
 	if [[ "$PCT" != "$OLD" ]]; then
 		(( ABS = PCT * LEN / 100 ))
 		(( VAL = MIN + ABS ))
-		${EXE} -q cset numid=1 -- ${VAL}
+		${EXE} -c ${CARD} -q cset numid=${NUMID} -- ${VAL}
 	fi
 fi
 
