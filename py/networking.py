@@ -31,6 +31,7 @@ class Networking(object):
         self.cm = cm
 
         self.networking = cm.network.networking
+        self.ip_clients = cm.network.ip_clients
         self.port = cm.network.port
         self.network_buffer = cm.network.buffer
         self.channels = cm.network.channels
@@ -113,7 +114,11 @@ class Networking(object):
         if self.networking == "server":
             try:
                 data = pickle.dumps(args)
-                self.network_stream.sendto(data, ('<broadcast>', self.port))
+                if self.ip_clients[0] != '':
+                    for ip_client in self.ip_clients: 
+                        self.network_stream.sendto(data, (ip_client, self.port))
+                else:
+                    self.network_stream.sendto(data, ('<broadcast>', self.port))
             except socket.error as msg:
                 if msg[0] != 9:
                     log.error(str(msg[0]) + ' ' + msg[1])
@@ -123,7 +128,11 @@ class Networking(object):
             try:
                 data = list(map(str, [(round(item,3)) for item in args[0]]))
                 j_data = json.dumps({'data':(data)})
-                self.network_stream.sendto(bytes(j_data, 'utf-8'), ('<broadcast>', self.port))
+                if self.ip_clients[0] != '':
+                    for ip_client in self.ip_clients: 
+                        self.network_stream.sendto(bytes(j_data, 'utf-8'), (ip_client, self.port))
+                else:
+                    self.network_stream.sendto(bytes(j_data, 'utf-8'), ('<broadcast>', self.port))
             except socket.error as msg:
                 if msg[0] != 9:
                     log.error(str(msg[0]) + ' ' + msg[1])
