@@ -58,6 +58,7 @@ Release Notes
 -------------------------------
 
 * network - support for server/serverjson send to specific IPs
+* LED - add tools/led_test.py 
 
 2019/11/27 :: Version 3.02
 -------------------------------

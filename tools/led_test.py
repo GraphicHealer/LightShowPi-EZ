@@ -1,3 +1,16 @@
+#
+# LED test module for lightshowpi led.cfg files
+# Author: Ken B
+#
+# Usage:
+# python led_test.py --config=led1.cfg --sleep=0.1
+# config is your led.cfg file to test with, sleep is number of seconds between pixels
+# The program will test all of your LED pixels in sequence with the white color,
+# having a delay between pixels, and displaying which pixel is on.
+# MATRIX will run in x,y mode ( two dimensions )
+# STRIP will run in x mode ( single dimension )
+
+
 import os
 import sys
 import argparse
