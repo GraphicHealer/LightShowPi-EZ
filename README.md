@@ -54,11 +54,12 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 Release Notes
 ============
 
-2019/12/17 :: Version 3.03
+2019/12/19 :: Version 3.03
 -------------------------------
 
 * network - support for server/serverjson send to specific IPs
 * LED - add tools/led_test.py 
+* add Arduino/nodemcu/lspi-gpio-mcp23017-0.ino for nodemcu/MCP23017 combination to allow 16 GPIOs
 
 2019/11/27 :: Version 3.02
 -------------------------------
