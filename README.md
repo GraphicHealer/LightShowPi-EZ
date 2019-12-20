@@ -54,7 +54,7 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 Release Notes
 ============
 
-2019/12/19 :: Version 3.03
+2019/12/20 :: Version 3.10
 -------------------------------
 
 * network - support for server/serverjson send to specific IPs
