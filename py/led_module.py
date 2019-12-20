@@ -50,8 +50,14 @@ int_map = [colors.Green for g in range(0, 80)] + \
 class Led(object):
     """wrapper module for Bibliopixel for use with lightshowpi"""
 
-    def __init__(self, led_config):
+    def __init__(self, led_config, serpentine=True, rotation=Rotation.ROTATE_90, vert_flip=True):
         self.led_config = led_config
+        self.serpentine = serpentine
+        self.rotation = rotation
+        self.rotation_180 = rotation + 180
+        if self.rotation_180 >= 360:
+            self.rotation_180 = self.rotation_180 - 360
+        self.vert_flip = vert_flip
         self.driver = None
         self.drops = None
         self.images = None
@@ -154,9 +160,9 @@ class Led(object):
         self.led = LEDMatrix(self.driver,
                              width=self.led_config.matrix_width,
                              height=self.led_config.matrix_height,
-                             serpentine=True,
-                             vert_flip=True,
-                             rotation=Rotation.ROTATE_90,
+                             serpentine=self.serpentine,
+                             vert_flip=self.vert_flip,
+                             rotation=self.rotation,
                              threadedUpdate=self.led_config.multiprocess)
 
         image_path = self.led_config.image_path
@@ -284,9 +290,9 @@ class Led(object):
             return
         self.last_type = p_type
         if p_type == 'BANNER':
-            self.led.coord_map = make_matrix_coord_map( self.led_config.matrix_width, self.led_config.matrix_height, serpentine=True, rotation=90, y_flip=False)
+            self.led.coord_map = make_matrix_coord_map( self.led_config.matrix_width, self.led_config.matrix_height, serpentine=self.serpentine, rotation=self.rotation_180, y_flip=self.vert_flip)
         else:
-            self.led.coord_map = make_matrix_coord_map( self.led_config.matrix_width, self.led_config.matrix_height, serpentine=True, rotation=90, y_flip=True)
+            self.led.coord_map = make_matrix_coord_map( self.led_config.matrix_width, self.led_config.matrix_height, serpentine=True, rotation=self.rotation, y_flip=self.vert_flip)
             
          
     def write_matrix(self, pin_list):

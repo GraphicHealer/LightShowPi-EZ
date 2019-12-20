@@ -408,6 +408,7 @@ class Configuration(object):
         """
         ntwrk = dict()
         ntwrk["networking"] = self.config.get('network', 'networking')
+        ntwrk["ip_clients"] = list(map(str, self.config.get('network', 'ip_clients').split(",")))
         ntwrk["port"] = self.config.getint('network', 'port')
         ntwrk["buffer"] = self.config.getint('network', 'buffer')
 
