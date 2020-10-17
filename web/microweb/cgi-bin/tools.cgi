@@ -104,13 +104,6 @@ print ("""
                 <input type="hidden" name="message" value="Shutdown"/>
                 <input id="playlist" type="submit" value="Shutdown">
             </form>
-
-            <form method="post" action="tools.cgi">
-                <input type="hidden" name="message" value="Show Config"/>
-                <input id="playlist" type="submit" value="Show Config">
-            </form>
-
-     
 """) 
 
 
@@ -127,7 +120,12 @@ for channel in range(cm.hardware.gpio_len):
     print ('</form><td>')
     print ('</tr>')
 
-print ('</table>')
+print ("""</table>
+            <form method="post" action="tools.cgi">
+                <input type="hidden" name="message" value="Show Config"/>
+                <input id="playlist" type="submit" value="Show Config">
+            </form>
+""")
 
 
 if message:

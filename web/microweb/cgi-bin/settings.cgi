@@ -87,11 +87,6 @@ print ("""
 
             <p></p>
 
-            <form method="post" action="settings.cgi">
-                <input type="hidden" name="message" value="Show Config"/>
-                <input id="playlist" type="submit" value="Show Config">
-            </form>
-
 """) 
 
 if use_file:
@@ -221,17 +216,6 @@ if updown:
                 
     
 if message:
-
-    if message == 'Show Config':
-
-        if config_param:
-            proc = subprocess.Popen(["python", HOME_DIR + "/py/configuration_manager.py", config_param], stdout=subprocess.PIPE)
-        else:
-            proc = subprocess.Popen(["python", HOME_DIR + "/py/configuration_manager.py"], stdout=subprocess.PIPE)
-        out = proc.communicate()[0]
-        print ('<pre>')
-        print (out.decode())
-        print ('</pre>')
 
     if message == 'Edit Songs':
         config_path = (HOME_DIR + '/config/' + config_file)

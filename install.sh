@@ -139,6 +139,11 @@ log Installing wiringpipy...
 pip3 install --upgrade git+https://broken2048@bitbucket.org/broken2048/wiringpipy.git
 verify "Installation of wiringpipy failed"
 
+# Install python-crontab
+log Installing python-crontab...
+pip3 install --upgrade python-crontab
+verify "Installation of python-crontab failed"
+
 # Optionally add a line to /etc/sudoers
 if [ -f /etc/sudoers ]; then
     KEEP_EN="Defaults             env_keep="SYNCHRONIZED_LIGHTS_HOME""
@@ -155,6 +160,9 @@ export SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}
 # Add Lightshow Pi bin directory to path
 export PATH=\$PATH:${INSTALL_DIR}/bin
 EOF
+
+# Start on boot
+(crontab -l 2>/dev/null; echo "\nSYNCHRONIZED_LIGHTS_HOME=/home/pi/LightShowPi-EZ \n@reboot $SYNCHRONIZED_LIGHTS_HOME/bin/start_microweb >> $SYNCHRONIZED_LIGHTS_HOME/logs/microweb.log 2>&1 &") | crontab -
 
 # Clean up after ourselves
 cd ${INSTALL_DIR} && rm -rf ${BUILD_DIR}

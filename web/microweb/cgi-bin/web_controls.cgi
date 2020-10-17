@@ -165,4 +165,9 @@ if message:
 if now_playing:
     print ("""<h3>%s<h3>""" % html.escape(now_playing))
 
-print ("</body></html>")
+print ("""
+            <form method="post" action="schedule.cgi">
+                <input id="playlist" type="submit" value="Edit Schedule">
+            </form>
+
+</body></html>""")
