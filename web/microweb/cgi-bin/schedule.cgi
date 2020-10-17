@@ -4,7 +4,7 @@
 # Licensed under the BSD license.  See full license in LICENSE file.
 # http://www.lightshowpi.org/
 #
-# Author: Ken B
+# Author: Garrett J
 
 import cgi
 import cgitb
@@ -102,7 +102,7 @@ if message:
         onF = form.getvalue('onTime','').split(':')[0:2]
         ofF = form.getvalue('offTime','').split(':')[0:2]
         
-        cron.env['SYNCHRONIZED_LIGHTS_HOME'] = '/home/pi/lightshowpi'
+        cron.env['SYNCHRONIZED_LIGHTS_HOME'] = HOME_DIR
         
         micro.every_reboot()
         start.setall(dt.time(int(stF[1]),int(stF[0])))

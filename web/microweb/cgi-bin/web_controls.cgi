@@ -40,6 +40,7 @@ cfg = configparser.RawConfigParser()
 cfg.read_file(open(cfg_file))
 lightshowmode = cfg.get('lightshow','mode')
 lightshowstc = cfg.get('lightshow','stream_command_string')
+freq = cfg.get('fm','frequency')
 
 if lightshowmode == "stream-in" and lightshowstc == "pianobar":
     try:
@@ -118,6 +119,8 @@ print ("""
                 <input id="volUp" type="submit" name="message" value="Volume +">
             </form>
             </div>
+
+            <h1>FM Channel: """+freq+"""</h1>
 """)
 if lightshowmode == "playlist":
     print ("""

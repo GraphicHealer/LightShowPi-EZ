@@ -69,6 +69,8 @@ if channeloff:
 print ("Content-type: text/html")
 print
 
+freqValue = form.getvalue("frequency", "")
+
 print ("""
 <!DOCTYPE html>
 <html>
@@ -129,6 +131,7 @@ print ("""</table>
 
 
 if message:
+
     if message == 'Show Config':
 
         if config_param:
