@@ -86,4 +86,11 @@ with open(cm.lightshow.playlist_path, 'r') as playlist_fp:
 
     fcntl.lockf(playlist_fp, fcntl.LOCK_UN)
 
-print ("</body></html>")
+print ("""
+            <p></p>
+            
+            <form method="post" action="settings.cgi">
+                <input id="playlist" type="submit" value="Edit Playlist" >
+            </form>
+
+</body></html>""")

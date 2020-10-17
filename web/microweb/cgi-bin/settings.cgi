@@ -67,7 +67,7 @@ print ("""
             <h2> LightShowPi Web Controls </h2>
             <h3> Settings </h3>
 
-            <form method="post" action="web_controls.cgi">
+            <form method="post" action="playlist.cgi">
                 <input id="playlist" type="submit" value="Back">
             </form>
 

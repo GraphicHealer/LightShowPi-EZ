@@ -10,6 +10,7 @@ import cgi
 import cgitb
 import os
 import sys
+import subprocess
 import configparser
 from time import sleep
 
@@ -21,6 +22,11 @@ state_file = HOME_DIR + '/web/microweb/config/webstate.cfg'
 state = configparser.RawConfigParser()
 state.read_file(open(state_file))
 config_file = state.get('microweb','config')
+if config_file:
+    config_param = '--config=' + config_file 
+else:
+    config_param = None
+    config_file = 'defaults.cfg'
 
 hc = hardware_controller.Hardware(param_config=config_file)
 cm = hc.cm
@@ -77,6 +83,9 @@ print ("""
         <link rel="icon" sizes="196x196" href="/favicon.png">
         <link rel="apple-touch-icon" sizes="152x152" href="/favicon.png">
         <link rel="stylesheet" href="/css/style.css">
+        <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.2.1/build/styles/default.min.css">
+        <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.2.1/build/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
     </head>
     <body>
             <h2> LightShowPi Web Controls </h2>
@@ -94,6 +103,11 @@ print ("""
             <form method="post" action="tools.cgi" onsubmit="return confirm('Really Shutdown?');">
                 <input type="hidden" name="message" value="Shutdown"/>
                 <input id="playlist" type="submit" value="Shutdown">
+            </form>
+
+            <form method="post" action="tools.cgi">
+                <input type="hidden" name="message" value="Show Config"/>
+                <input id="playlist" type="submit" value="Show Config">
             </form>
 
      
@@ -115,5 +129,17 @@ for channel in range(cm.hardware.gpio_len):
 
 print ('</table>')
 
+
+if message:
+    if message == 'Show Config':
+
+        if config_param:
+            proc = subprocess.Popen(["python", HOME_DIR + "/py/configuration_manager.py", config_param], stdout=subprocess.PIPE)
+        else:
+            proc = subprocess.Popen(["python", HOME_DIR + "/py/configuration_manager.py"], stdout=subprocess.PIPE)
+        out = proc.communicate()[0]
+        print ('<pre><code>')
+        print (out.decode())
+        print ('</code></pre>')
 
 print ("</body></html>")

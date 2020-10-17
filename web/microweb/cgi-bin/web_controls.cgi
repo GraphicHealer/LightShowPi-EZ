@@ -103,17 +103,9 @@ print ("""
     <body class="centered-wrapper">
             <h2> LightShowPi Web Controls </h2>
 
-            <table class="centered-content">
-            <tr><td>
-            <form method="post" action="tools.cgi">
-                <input id="tools" type="image" src="/toolsicon64.png" >
+            <form method="post" action="tools.cgi" class="centered-content">
+                <input id="playnext" type="submit" value="Tools" >
             </form>
-            </td><td>
-            <form method="post" action="settings.cgi">
-                <input id="settings" type="image" src="/gearicon64.png" >
-            </form>
-            </td></tr>
-            </table>
 
             <div id="voldiv">
             <form method="post" action="web_controls.cgi">
