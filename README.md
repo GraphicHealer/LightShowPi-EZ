@@ -13,9 +13,19 @@ Todd Giles ([todd@lightshowpi.org](mailto:todd@lightshowpi.org))
 Installation / Getting Started
 ==============================
 
-Please visit the [Getting Started Page](http://lightshowpi.org/getting-started) for details on getting
-started.  Or for those who want to just jump on in, feel free to run the install.sh script and go 
-for it :-)
+To install LightShowPi-EZ, please follow these instructions:
+
+```
+sudo apt-get --allow-releaseinfo-change update
+sudo apt-get upgrade
+wget https://project-downloads.drogon.net/wiringpi-latest.deb
+sudo dpkg -i wiringpi-latest.deb
+sudo apt-get install git-core
+git clone 
+cd LightShowPi-EZ
+sudo ./install.sh
+sudo reboot 
+```
 
 Directory Structure
 ===================
@@ -53,6 +63,12 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 
 Release Notes
 ============
+
+2020/10/17 :: EZ 1.0
+-------------------------------
+* Modified the website layout to make it more intuitive
+* Added extra dependancies for said updates
+* Added a page for editing the schedule for lights and show on/off times
 
 2019/12/20 :: Version 3.10
 -------------------------------
