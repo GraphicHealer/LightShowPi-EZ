@@ -162,7 +162,7 @@ export PATH=\$PATH:${INSTALL_DIR}/bin
 EOF
 
 # Start on boot
-(crontab -l 2>/dev/null; echo "\nSYNCHRONIZED_LIGHTS_HOME=/home/pi/LightShowPi-EZ \n@reboot $SYNCHRONIZED_LIGHTS_HOME/bin/start_microweb >> $SYNCHRONIZED_LIGHTS_HOME/logs/microweb.log 2>&1 &") | crontab -
+(crontab -l 2>/dev/null; echo $'\nSYNCHRONIZED_LIGHTS_HOME=/home/pi/LightShowPi-EZ\n@reboot $SYNCHRONIZED_LIGHTS_HOME/bin/start_microweb >> $SYNCHRONIZED_LIGHTS_HOME/logs/microweb.log 2>&1 &') | crontab -
 
 # Clean up after ourselves
 cd ${INSTALL_DIR} && rm -rf ${BUILD_DIR}
