@@ -21,7 +21,7 @@ sudo apt-get upgrade
 wget https://project-downloads.drogon.net/wiringpi-latest.deb
 sudo dpkg -i wiringpi-latest.deb
 sudo apt-get install git-core
-git clone 
+git clone https://github.com/gljones2001/LightShowPi-EZ.git
 cd LightShowPi-EZ
 sudo ./install.sh
 sudo reboot 
