@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 #
 # Licensed under the BSD license.  See full license in LICENSE file.

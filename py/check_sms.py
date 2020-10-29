@@ -49,11 +49,11 @@ class Sms(Thread):
 
     Sample usage:
 
-    sudo python check_sms.py --playlist=/home/pi/music/.playlist
+    sudo python3 check_sms.py --playlist=/home/pi/music/.playlist
 
     For initial setup:
 
-    sudo python check_sms.py --setup=True
+    sudo python3 check_sms.py --setup=True
 
     Third party dependencies:
 

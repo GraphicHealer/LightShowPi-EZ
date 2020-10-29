@@ -43,10 +43,10 @@ playback.
 
 Sample usage:
 To play an entire list -
-sudo python synchronized_lights.py --playlist=/home/pi/music/.playlist
+sudo python3 synchronized_lights.py --playlist=/home/pi/music/.playlist
 
 To play a specific song -
-sudo python synchronized_lights.py --file=/home/pi/music/jingle_bells.mp3
+sudo python3 synchronized_lights.py --file=/home/pi/music/jingle_bells.mp3
 
 Third party dependencies:
 

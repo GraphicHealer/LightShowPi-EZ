@@ -13,4 +13,4 @@ if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
     exit 1
 fi
 
-sudo pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/web/microweb/external_web_controls.py"
+sudo pkill -f "python3 $SYNCHRONIZED_LIGHTS_HOME/web/microweb/external_web_controls.py"

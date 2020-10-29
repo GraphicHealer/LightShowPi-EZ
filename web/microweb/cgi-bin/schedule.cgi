@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
@@ -46,8 +46,8 @@ cron.remove_all()
 micro = cron.new(comment="microweb", command="$SYNCHRONIZED_LIGHTS_HOME/bin/start_microweb >> $SYNCHRONIZED_LIGHTS_HOME/logs/microweb.log 2>&1 &")
 start = cron.new(comment="start", command="$SYNCHRONIZED_LIGHTS_HOME/bin/start_music_and_lights >> $SYNCHRONIZED_LIGHTS_HOME/logs/music_and_lights.play 2>&1 &")
 stop = cron.new(comment="stop", command="$SYNCHRONIZED_LIGHTS_HOME/bin/stop_music_and_lights >> $SYNCHRONIZED_LIGHTS_HOME/logs/music_and_lights.stop 2>&1 &")
-on = cron.new(comment="on", command="python $SYNCHRONIZED_LIGHTS_HOME/py/hardware_controller.py —-state=on >> $SYNCHRONIZED_LIGHTS_HOME/logs/music_and_lights.play 2>&1 &")
-off = cron.new(comment="off", command="python $SYNCHRONIZED_LIGHTS_HOME/py/hardware_controller.py —-state=off >> $SYNCHRONIZED_LIGHTS_HOME/logs/music_and_lights.stop 2>&1 &")
+on = cron.new(comment="on", command="python3 $SYNCHRONIZED_LIGHTS_HOME/py/hardware_controller.py —-state=on >> $SYNCHRONIZED_LIGHTS_HOME/logs/music_and_lights.play 2>&1 &")
+off = cron.new(comment="off", command="python3 $SYNCHRONIZED_LIGHTS_HOME/py/hardware_controller.py —-state=off >> $SYNCHRONIZED_LIGHTS_HOME/logs/music_and_lights.stop 2>&1 &")
 
 HOME_DIR = os.getenv("SYNCHRONIZED_LIGHTS_HOME")
 sys.path.insert(0, HOME_DIR + '/py')

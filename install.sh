@@ -109,10 +109,10 @@ done
 
 # Some symlinks that will make life a little easier
 # Note that this may (intentionally) clobber Python 3 symlinks in newer OS's
-mv /usr/bin/python /usr/bin/python2
-mv /usr/bin/pip /usr/bin/pip2
-ln -fs `which python3` /usr/bin/python
-ln -fs `which pip3` /usr/bin/pip
+# mv /usr/bin/python /usr/bin/python2
+# mv /usr/bin/pip /usr/bin/pip2
+# ln -fs `which python3` /usr/bin/python
+# ln -fs `which pip3` /usr/bin/pip
 
 # Install decoder
 log Installing decoder...
@@ -174,7 +174,7 @@ cat <<EOF
 All done! Reboot your Raspberry Pi before running lightshowPi.
 Run the following command to test your installation and hardware setup:
 
-    sudo python $INSTALL_DIR/py/hardware_controller.py --state=flash
+    sudo python3 $INSTALL_DIR/py/hardware_controller.py --state=flash
 
 EOF
 exit 0

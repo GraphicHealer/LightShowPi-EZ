@@ -16,9 +16,9 @@ details on configuring your pre or post show.
 
 Sample usage (to test your preshow or postshow configuration):
 
-sudo python prepostshow.py "preshow"
+sudo python3 prepostshow.py "preshow"
 or
-sudo python prepostshow.py "postshow"
+sudo python3 prepostshow.py "postshow"
 """
 
 import builtins

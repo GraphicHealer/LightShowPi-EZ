@@ -24,9 +24,9 @@ $SYNCHRONIZED_LIGHTS_HOME/bin/stop_music_and_lights $$
 SONGCOUNT=`wc -l $PLAYLIST | cut -f1 -d' '`
 for (( i=1; i<=$SONGCOUNT; i++ ))
 do
-    sudo python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py --playlist=$PLAYLIST
+    sudo python3 $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py --playlist=$PLAYLIST
 done
 
 # Uncomment if you want to leave lights on after show
 
-#sudo python $SYNCHRONIZED_LIGHTS_HOME/py/hardware_controller.py --state=on
+#sudo python3 $SYNCHRONIZED_LIGHTS_HOME/py/hardware_controller.py --state=on

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
@@ -63,22 +63,22 @@ if message:
         os.system(HOME_DIR + '/bin/vol ' + volume)
     if message == "On":
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
-        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
-        os.system("python ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py " + config_param + "--state=on")
+        os.system('pkill -f "python3 $SYNCHRONIZED_LIGHTS_HOME/py"')
+        os.system("python3 ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py " + config_param + "--state=on")
     if message == "Off":
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
-        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
-        os.system("python ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py " + config_param + "--state=off")
+        os.system('pkill -f "python3 $SYNCHRONIZED_LIGHTS_HOME/py"')
+        os.system("python3 ${SYNCHRONIZED_LIGHTS_HOME}/py/hardware_controller.py " + config_param + "--state=off")
         sleep(2)
     if message == "Next" and lightshowmode == "playlist":
-        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
+        os.system('pkill -f "python3 $SYNCHRONIZED_LIGHTS_HOME/py"')
         sleep(1)
     if message == "Next" and lightshowmode == "stream-in" and lightshowstc == "pianobar":
         os.system('echo -n "n" > /root/.config/pianobar/ctl')
         sleep(1)
     if message == "Start":
         os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
-        os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
+        os.system('pkill -f "python3 $SYNCHRONIZED_LIGHTS_HOME/py"')
         os.popen("${SYNCHRONIZED_LIGHTS_HOME}/bin/play_sms " + config_param + "&")
         os.popen("${SYNCHRONIZED_LIGHTS_HOME}/bin/check_sms " + config_param + "&")
         sleep(1)
@@ -140,7 +140,7 @@ print ("""
             </form>
 """)
 
-cmd = 'pgrep -f "python $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py"'
+cmd = 'pgrep -f "python3 $SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py"'
 if os.system(cmd) == 0:
     try:
         with open(HOME_DIR + '/logs/now_playing.txt') as f: now_playing = f.read()

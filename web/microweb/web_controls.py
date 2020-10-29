@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 #
 # Licensed under the BSD license.  See full license in LICENSE file.
@@ -28,6 +28,6 @@ try:
 
 except KeyboardInterrupt:
     os.system('pkill -f "bash $SYNCHRONIZED_LIGHTS_HOME/bin"')
-    os.system('pkill -f "python $SYNCHRONIZED_LIGHTS_HOME/py"')
+    os.system('pkill -f "python3 $SYNCHRONIZED_LIGHTS_HOME/py"')
 
 

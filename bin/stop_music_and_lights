@@ -33,4 +33,4 @@ for OUTPUT in $(pgrep -f lightshowpi); do
 done
 
 # Turn off lights and set back to inputs
-sudo python $SYNCHRONIZED_LIGHTS_HOME/py/hardware_controller.py --state=cleanup
+sudo python3 $SYNCHRONIZED_LIGHTS_HOME/py/hardware_controller.py --state=cleanup

@@ -14,4 +14,4 @@ if [ -z ${SYNCHRONIZED_LIGHTS_HOME} ]; then
     exit 1
 fi 
 
-sudo python $SYNCHRONIZED_LIGHTS_HOME/py/check_sms.py
+sudo python3 $SYNCHRONIZED_LIGHTS_HOME/py/check_sms.py

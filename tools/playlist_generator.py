@@ -4,7 +4,7 @@
 #
 # How To:
 # cd to the location of the playlist script (i.e. "lightshowpi/tools/generatePlaylist")
-# run "python generatePlaylist.py"
+# run "python3 generatePlaylist.py"
 # Enter the path to the folder of songs which you desire a playlist for then press <enter> (i.e.
 # "/home/pi/lightshowpi/music/sample")
 # Playlist file will be created in the folder

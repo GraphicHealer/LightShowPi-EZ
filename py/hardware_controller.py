@@ -604,7 +604,7 @@ def random_pattern():
     .5 is half a second and 1 is a full second
 
     A complete command string would look like
-    sudo python hardware_controller --random_pattern --lights_in_group=2 --sleep=.75 --pwm_speed=1.5
+    sudo python3 hardware_controller --random_pattern --lights_in_group=2 --sleep=.75 --pwm_speed=1.5
 
     Initial implementation Thanks to Russell Pyburn.
     """

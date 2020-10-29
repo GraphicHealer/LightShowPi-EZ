@@ -1,7 +1,7 @@
 # sync file generator for lightshowpi
 # run usage
 #
-# python sync_file_generator.py
+# python3 sync_file_generator.py
 #
 # Enter y to confirm that you wish to run this
 # Enter the path to the folder containing your audio files
