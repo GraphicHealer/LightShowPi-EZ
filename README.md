@@ -5,6 +5,9 @@ This is an updated version of LightShowPi created for the people who aren't as t
 This allows people to use just the web interface to controll every aspect of the lightshow, including updating and controlling playlists, managing files, setting schedules, and turning lights on and off. It uses the same interface, just reorganized so non-tech people can find the settings and pages they need.
 
 
+From the original lightshowpi repo:
+===================================
+
 [http://lightshowpi.org/](http://lightshowpi.org/)
 
 All files here are free to use under the BSD License (see the LICENSE file for details).  All we
