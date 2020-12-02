@@ -145,8 +145,8 @@ pip3 install --upgrade python-crontab
 verify "Installation of python-crontab failed"
 
 # Install samba and copy smb.conf
-apt install samba samba-common-bin
-sed -i "12s+.*+   path = ${INSTALL_DIR}/music+" smb.conf
+apt install samba samba-common-bin -y
+sed -i "12s+.*+   path = ${INSTALL_DIR}/music+" ${INSTALL_DIR}/smb.conf
 cp ${INSTALL_DIR}/smb.conf /etc/samba/smb.conf
 chmod 777 ${INSTALL_DIR}/music
 service smbd restart
