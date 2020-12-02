@@ -1,3 +1,10 @@
+WELCOME!
+========
+This is an updated version of LightShowPi created for the people who aren't as tech savvy. It is much easier to use and setup, only requiring direct config editing for the hardware configuration(FM, Pins, etc.). 
+
+This allows people to use just the web interface to controll every aspect of the lightshow, including updating and controlling playlists, managing files, setting schedules, and turning lights on and off. It uses the same interface, just reorganized so non-tech people can find the settings and pages they need.
+
+
 [http://lightshowpi.org/](http://lightshowpi.org/)
 
 All files here are free to use under the BSD License (see the LICENSE file for details).  All we
