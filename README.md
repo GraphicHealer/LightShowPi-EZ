@@ -1,3 +1,13 @@
+WELCOME!
+========
+This is an updated version of LightShowPi created for the people who aren't as tech savvy. It is much easier to use and setup, only requiring direct config editing for the hardware configuration(FM, Pins, etc.). 
+
+This allows people to use just the web interface to controll every aspect of the lightshow, including updating and controlling playlists, managing files, setting schedules, and turning lights on and off. It uses the same interface, just reorganized so non-tech people can find the settings and pages they need.
+
+
+From the original lightshowpi repo:
+===================================
+
 [http://lightshowpi.org/](http://lightshowpi.org/)
 
 All files here are free to use under the BSD License (see the LICENSE file for details).  All we
@@ -17,10 +27,10 @@ To install LightShowPi-EZ, please follow these instructions:
 
 ```
 sudo apt-get --allow-releaseinfo-change update
-sudo apt-get upgrade
+sudo apt-get upgrade -y
 wget https://project-downloads.drogon.net/wiringpi-latest.deb
 sudo dpkg -i wiringpi-latest.deb
-sudo apt-get install git-core
+sudo apt-get install git-core -y
 git clone https://github.com/gljones2001/LightShowPi-EZ.git
 cd LightShowPi-EZ
 sudo ./install.sh
@@ -63,6 +73,11 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 
 Release Notes
 ============
+2020/10/17 :: EZ 1.1
+-------------------------------
+* Updated install script to install and setup Samba and add the 'music/' folder as a network accessable directory
+* Added the smb.conf file with the proper samba settings
+* fixed other stuff
 
 2020/10/17 :: EZ 1.0
 -------------------------------
