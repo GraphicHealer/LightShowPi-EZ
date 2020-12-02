@@ -27,10 +27,10 @@ To install LightShowPi-EZ, please follow these instructions:
 
 ```
 sudo apt-get --allow-releaseinfo-change update
-sudo apt-get upgrade
+sudo apt-get upgrade -y
 wget https://project-downloads.drogon.net/wiringpi-latest.deb
 sudo dpkg -i wiringpi-latest.deb
-sudo apt-get install git-core
+sudo apt-get install git-core -y
 git clone https://github.com/gljones2001/LightShowPi-EZ.git
 cd LightShowPi-EZ
 sudo ./install.sh
