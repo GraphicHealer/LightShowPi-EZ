@@ -73,6 +73,11 @@ A huge thanks to all those that have contributed to the Lightshow Pi codebase:
 
 Release Notes
 ============
+2020/10/17 :: EZ 1.1
+-------------------------------
+* Updated install script to install and setup Samba and add the 'music/' folder as a network accessable directory
+* Added the smb.conf file with the proper samba settings
+* fixed other stuff
 
 2020/10/17 :: EZ 1.0
 -------------------------------
