@@ -144,9 +144,16 @@ log Installing python-crontab...
 pip3 install --upgrade python-crontab
 verify "Installation of python-crontab failed"
 
+# Install samba and copy smb.conf
+apt install samba samba-common-bin
+sed -i "12s+.*+   path = ${INSTALL_DIR}/music+" smb.conf
+cp ${INSTALL_DIR}/smb.conf /etc/samba/smb.conf
+chmod 777 ${INSTALL_DIR}/music
+service smbd restart
+
 # Optionally add a line to /etc/sudoers
 if [ -f /etc/sudoers ]; then
-    KEEP_EN="Defaults             env_keep="SYNCHRONIZED_LIGHTS_HOME""
+    KEEP_EN="Defaults             env_keep='SYNCHRONIZED_LIGHTS_HOME'"
     grep -q "$KEEP_EN" /etc/sudoers
     if [ $? -ne 0 ]; then
         echo "$KEEP_EN" >> /etc/sudoers
@@ -156,13 +163,13 @@ fi
 # Set up environment variables
 cat <<EOF >/etc/profile.d/lightshowpi.sh
 # Lightshow Pi Home
-export SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}
+bash -c 'echo export SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR} >> /root/.bashrc'
 # Add Lightshow Pi bin directory to path
 export PATH=\$PATH:${INSTALL_DIR}/bin
 EOF
 
 # Start on boot
-(crontab -l 2>/dev/null; echo $'\nSYNCHRONIZED_LIGHTS_HOME=/home/pi/LightShowPi-EZ\n@reboot $SYNCHRONIZED_LIGHTS_HOME/bin/start_microweb >> $SYNCHRONIZED_LIGHTS_HOME/logs/microweb.log 2>&1 &') | crontab -
+(crontab -l 2>/dev/null; echo $'\nSYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}\n@reboot $SYNCHRONIZED_LIGHTS_HOME/bin/start_microweb >> $SYNCHRONIZED_LIGHTS_HOME/logs/microweb.log 2>&1 &') | crontab -
 
 # Clean up after ourselves
 cd ${INSTALL_DIR} && rm -rf ${BUILD_DIR}
