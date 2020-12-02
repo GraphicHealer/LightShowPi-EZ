@@ -163,13 +163,13 @@ fi
 # Set up environment variables
 cat <<EOF >/etc/profile.d/lightshowpi.sh
 # Lightshow Pi Home
-bash -c 'echo export SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR} >> /root/.bashrc'
+export SYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}
 # Add Lightshow Pi bin directory to path
 export PATH=\$PATH:${INSTALL_DIR}/bin
 EOF
 
 # Start on boot
-(crontab -l 2>/dev/null; echo $'\nSYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}\n@reboot $SYNCHRONIZED_LIGHTS_HOME/bin/start_microweb >> $SYNCHRONIZED_LIGHTS_HOME/logs/microweb.log 2>&1 &') | crontab -
+(crontab -l 2>/dev/null; echo $"\nSYNCHRONIZED_LIGHTS_HOME=${INSTALL_DIR}\n@reboot $SYNCHRONIZED_LIGHTS_HOME/bin/start_microweb >> $SYNCHRONIZED_LIGHTS_HOME/logs/microweb.log 2>&1 &") | crontab -
 
 # Clean up after ourselves
 cd ${INSTALL_DIR} && rm -rf ${BUILD_DIR}
